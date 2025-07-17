@@ -30,6 +30,7 @@
 #define MIN(x, y)						((x) < (y) ? (x) : (y))
 
 #define ROUND_UP(x, align)				(((x) + ((align) - 1)) & -(align))
+#define ROUND_DOWN(x, align)			( (x)                  & -(align))
 #define ROUND_DOWN_PTR(x, align)		((void *)((unsigned long)(x) & -(align)))
 
 #define IS_ALIGNED(x, align)			(((unsigned long)(x) & ((align) - 1)) == 0)
