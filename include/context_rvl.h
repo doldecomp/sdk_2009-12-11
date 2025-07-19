@@ -282,6 +282,120 @@ OSTime __OSGetSystemTime(void);
 // TODO: is there a way to make this work with an object with address declaration?
 #define CURRENT_AFH_CHANNEL_PHYSICAL_ADDR ((void *)(0x31a2))
 
+// GX
+
+/* Reference:
+ * Patent US 6,937,245 B1
+ * https://patents.google.com/patent/US6937245B1
+ * section 13, line 4
+ */
+typedef u8 GXBool;
+#define GX_TRUE		1
+#define GX_FALSE	0
+
+// [SPQE7T]/ISpyD.elf:.debug_info::0x21232f
+typedef enum _GXAnisotropy
+{
+	GX_ANISO_1,
+	GX_ANISO_2,
+	GX_ANISO_4,
+
+	GX_MAX_ANISOTROPY
+} GXAnisotropy;
+
+// [SPQE7T]/ISpyD.elf:.debug_info::0x1176fc
+typedef enum _GXTexFilter
+{
+	GX_NEAR,
+	GX_LINEAR,
+
+	GX_NEAR_MIP_NEAR,
+	GX_LIN_MIP_NEAR,
+
+	GX_NEAR_MIP_LIN,
+	GX_LIN_MIP_LIN,
+} GXTexFilter;
+
+// [SPQE7T]/ISpyD.elf:.debug_info::0x28a5e5
+typedef enum _GXTexFmt
+{
+	GX_TF_I4		=  0,
+	GX_TF_I8		=  1,
+	GX_TF_IA4		=  2,
+	GX_TF_IA8		=  3,
+
+	GX_TF_RGB565	=  4,
+	GX_TF_RGB5A3	=  5,
+	GX_TF_RGBA8		=  6,
+
+	GX_TF_CMPR		= 14,
+
+	GX_CTF_R4		= 32,
+	GX_CTF_RA4		= 34,
+	GX_CTF_RA8		= 35,
+	GX_CTF_YUVA8	= 38,
+
+	GX_CTF_A8		= 39,
+	GX_CTF_R8		= 40,
+	GX_CTF_G8		= 41,
+	GX_CTF_B8		= 42,
+	GX_CTF_RG8		= 43,
+	GX_CTF_GB8		= 44,
+
+	GX_TF_Z8		= 17,
+	GX_TF_Z16		= 19,
+	GX_TF_Z24X8		= 22,
+
+	GX_CTF_Z4		= 48,
+	GX_CTF_Z8M		= 57,
+	GX_CTF_Z8L		= 58,
+	GX_CTF_Z16L		= 60,
+
+	GX_TF_A8		= GX_CTF_A8,
+} GXTexFmt;
+
+// [SPQE7T]/ISpyD.elf:.debug_info::0x2122a1
+typedef enum _GXTexWrapMode
+{
+	GX_CLAMP,
+	GX_REPEAT,
+	GX_MIRROR,
+
+	GX_MAX_TEXWRAPMODE
+} GXTexWrapMode;
+
+// [SPQE7T]/ISpyD.elf:.debug_info::0x288777
+typedef enum _GXTlutFmt
+{
+	GX_TL_IA8,
+	GX_TL_RGB565,
+	GX_TL_RGB5A3,
+
+	GX_MAX_TLUTFMT
+} GXTlutFmt;
+
+// [SPQE7T]/ISpyD.elf:.debug_info::0x11894d
+typedef struct _GXTexObj
+{
+	// i guess they didn't want to expose the internals
+	byte4_t	dummy[8];
+} GXTexObj; // size 0x20
+
+// [SPQE7T]/ISpyD.elf:.debug_info::0x1eb04c
+typedef struct _GXTlutObj
+{
+	byte4_t	dummy[3];
+} GXTlutObj; // size 0x0c
+
+void GXInitTexObj(GXTexObj *, void *, u16, u16, GXTexFmt, GXTexWrapMode,
+                  GXTexWrapMode, GXBool);
+void GXInitTexObjCI(GXTexObj *, void *, u16, u16, GXTexFmt, GXTexWrapMode,
+                    GXTexWrapMode, GXBool, u32);
+void GXInitTexObjLOD(GXTexObj *, GXTexFilter, GXTexFilter,
+                     f32, f32, f32, GXBool,
+                     GXBool, GXAnisotropy);
+void GXInitTlutObj(GXTlutObj *, void *, GXTlutFmt, u16);
+
 // IPC
 
 extern u32 volatile __IPCRegs[] AT_ADDRESS(0xcd000000);
@@ -300,37 +414,37 @@ inline void ACRWriteReg(u32 reg, u32 val)
 
 // Matrices
 
-typedef float Mtx23[2][3];
-typedef float Mtx[3][4];
-typedef float Mtx43[4][3];
-typedef float Mtx44[4][4];
+typedef f32 Mtx23[2][3];
+typedef f32 Mtx[3][4];
+typedef f32 Mtx43[4][3];
+typedef f32 Mtx44[4][4];
 
-typedef float (*Mtx23Ptr)[3];
-typedef float (*MtxPtr)[4];
-typedef float (*Mtx43Ptr)[3];
-typedef float (*Mtx44Ptr)[4];
+typedef f32 (*Mtx23Ptr)[3];
+typedef f32 (*MtxPtr)[4];
+typedef f32 (*Mtx43Ptr)[3];
+typedef f32 (*Mtx44Ptr)[4];
 
 // not official names, just what i thought would make sense
-typedef float const (*CMtx23Ptr)[3];
-typedef float const (*CMtxPtr)[4];
-typedef float const (*CMtx43Ptr)[3];
-typedef float const (*CMtx44Ptr)[4];
+typedef f32 const (*CMtx23Ptr)[3];
+typedef f32 const (*CMtxPtr)[4];
+typedef f32 const (*CMtx43Ptr)[3];
+typedef f32 const (*CMtx44Ptr)[4];
 
 // Vectors
 
 // [SPQE7T]/ISpyD.elf:.debug_info::0xd64ea
 typedef struct Vec2
 {
-	float	x;	// size 0x04, offset 0x00
-	float	y;	// size 0x04, offset 0x04
+	f32	x;	// size 0x04, offset 0x00
+	f32	y;	// size 0x04, offset 0x04
 } Vec2; // size 0x08
 
 // [SPQE7T]/ISpyD.elf:.debug_info::0xd64bb
 typedef struct Vec
 {
-	float	x;	// size 0x04, offset 0x00
-	float	y;	// size 0x04, offset 0x04
-	float	z;	// size 0x04, offset 0x08
+	f32	x;	// size 0x04, offset 0x00
+	f32	y;	// size 0x04, offset 0x04
+	f32	z;	// size 0x04, offset 0x08
 } Vec; // size 0x0c
 
 // I think some of these names were in assert strings in debug MTX
@@ -348,7 +462,6 @@ typedef Vec const *CVecPtr;
 
 void C_MTXMultVec(CMtxPtr m, CVecPtr src, VecPtr dst);
 void PSMTXMultVec(CMtxPtr m, CVecPtr src, VecPtr dst);
-
 
 // NAND
 

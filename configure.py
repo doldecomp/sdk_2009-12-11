@@ -820,7 +820,7 @@ config.libs = [
     RvlLib(
         "tpl",
         [
-            Object(DebugNonMatching, ReleaseNonMatching, "tpl/TPL.c"),
+            Object(DebugMatching, ReleaseMatching, "tpl/TPL.c"),
         ],
     ),
     RvlLib(
