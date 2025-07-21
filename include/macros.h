@@ -21,8 +21,10 @@
 
 #if defined(__MWERKS__)
 # define AT_ADDRESS(x)					: x
+# define ATTR_NOINLINE					__attribute__((never_inline))
 #else
 # define AT_ADDRESS(x)
+# define ATTR_NOINLINE					__attribute__((noinline))
 #endif
 
 // useful stuff

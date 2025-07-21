@@ -3,6 +3,7 @@
 
 #include <revolution/cx.h>
 #include <revolution/kpad.h>
+/* #include <revolution/rso.h> */ // Not included in <revolution.h>.
 #include <revolution/wenc.h>
 #include <revolution/wpad.h>
 

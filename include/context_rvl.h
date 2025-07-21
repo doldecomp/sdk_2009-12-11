@@ -95,7 +95,9 @@ void OSSetPeriodicAlarm(OSAlarm *alarm, OSTime tick, OSTime period,
                         OSAlarmHandler handler);
 void OSCancelAlarm(OSAlarm *alarm);
 
+void DCFlushRange(void const *buf, u32 len);
 void DCInvalidateRange(void const *buf, u32 len);
+void ICInvalidateRange(void const *buf, u32 len);
 
 typedef void OSFiber(/* unspecified */);
 
