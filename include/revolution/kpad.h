@@ -230,7 +230,7 @@ void KPADSetMplsDirection(KPADChannel chan, void *);
 void KPADSetMplsDirectionMag(KPADChannel chan, f32 mag);
 
 void KPADStartMplsCalibration(KPADChannel chan);
-void KPADWorkMplsCalibration(KPADChannel chan);
+f32 KPADWorkMplsCalibration(KPADChannel chan);
 void KPADStopMplsCalibration(KPADChannel chan);
 
 void KPADEnableMplsZeroPlay(KPADChannel chan);

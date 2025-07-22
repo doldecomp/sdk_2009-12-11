@@ -3045,9 +3045,9 @@ void KPADStartMplsCalibration(KPADChannel chan)
 	KMPLSStartCalibration(chan);
 }
 
-void KPADWorkMplsCalibration(KPADChannel chan)
+f32 KPADWorkMplsCalibration(KPADChannel chan)
 {
-	KMPLSWorkCalibration(chan);
+	return KMPLSWorkCalibration(chan);
 }
 
 void KPADStopMplsCalibration(KPADChannel chan)
