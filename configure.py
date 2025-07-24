@@ -219,6 +219,7 @@ cflags_opt_release = [
     *cflags_base,
     "-O4,p",
     "-ipa file",
+    "-inline auto",
     "-DNDEBUG",
 ]
 
@@ -434,8 +435,8 @@ config.libs = [
             Object(DebugNonMatching, ReleaseNonMatching, "bte/sdp_main.c"),
             Object(DebugNonMatching, ReleaseNonMatching, "bte/sdp_server.c"),
             Object(DebugNonMatching, ReleaseNonMatching, "bte/sdp_utils.c"),
-            Object(DebugNonMatching, ReleaseNonMatching, "bte/xml_bld.c"),
-            Object(DebugNonMatching, ReleaseNonMatching, "bte/xml_parse.c"),
+            Object(DebugMatching, ReleaseMatching, "bte/xml_bld.c", mw_version = "GC/3.0a5.2"),
+            Object(DebugMatching, ReleaseMatching, "bte/xml_parse.c", mw_version = "GC/3.0a5"),
         ],
     ),
     RvlLib(
