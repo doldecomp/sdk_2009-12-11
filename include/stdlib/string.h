@@ -5,6 +5,7 @@
 #include <__internal/__NULL.h>
 
 extern void *memcpy(void * restrict s1, const void * restrict s2, size_t n);
+extern char *strcpy(char * restrict s1, const char * restrict s2);
 extern char *strncpy(char * restrict s1, const char * restrict s2, size_t n);
 
 extern int memcmp(const void *s1, const void *s2, size_t n);
