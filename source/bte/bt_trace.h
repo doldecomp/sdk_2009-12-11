@@ -63,8 +63,16 @@ extern void LogMsg_6(UINT32 trace_set_mask, const char *fmt_str, UINT32 p1, UINT
 // clang-format on
 
 /*******************************************************************************
- * trace set mask
+ * Trace info
  */
+
+#define BT_TRACE_LEVEL_NONE			0	/* No trace messages to be generated    */
+#define BT_TRACE_LEVEL_ERROR		1	/* Error condition trace messages       */
+#define BT_TRACE_LEVEL_WARNING		2	/* Warning condition trace messages     */
+#define BT_TRACE_LEVEL_API			3	/* API traces                           */
+#define BT_TRACE_LEVEL_EVENT		4	/* Debug messages for events            */
+#define BT_TRACE_LEVEL_DEBUG		5	/* Full debug messages                  */
+#define BT_MAX_TRACE_LEVEL			BT_TRACE_LEVEL_DEBUG
 
 // clang-format off
 /* TRACE_CTRL_TYPE					0x^^000000 */
@@ -90,6 +98,7 @@ extern void LogMsg_6(UINT32 trace_set_mask, const char *fmt_str, UINT32 p1, UINT
 #define TRACE_ORG(x)				((((UINT32)(x)) << 8) & TRACE_ORG_MASK)
 
 #define TRACE_ORG_STACK				0
+#define TRACE_ORG_APPL				5
 #define TRACE_ORG_MAX_NUM			10
 
 /* TRACE_TYPE						0x000000^^ */
@@ -117,6 +126,7 @@ extern void LogMsg_6(UINT32 trace_set_mask, const char *fmt_str, UINT32 p1, UINT
 
 // clang-format off
 
+#define APPL_TRACE(type_, ...)	do { if (appl_trace_level >= BT_TRACE_LEVEL_ ## type_) BLUEDROID_LOG_TRACE(GENERAL, NONE, APPL, type_, __VA_ARGS__); } while (FALSE)
 #define XML_TRACE(type_, ...)	BLUEDROID_LOG_TRACE(GENERAL, XML, STACK, type_, __VA_ARGS__)
 
 // clang-format on

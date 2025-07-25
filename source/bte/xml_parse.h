@@ -31,7 +31,7 @@ typedef UINT16 tXML_WS_OP; // I don't know what exactly these represent
 #define XML_WS_OP_1					1
 #define XML_WS_OP_2					2
 
-typedef UINT8 (*tXML_CBACK)(tXML_EVENT_TYPE, void *, void *);
+typedef UINT8 tXML_CBACK(tXML_EVENT_TYPE, void *, void *);
 
 typedef struct
 {
@@ -149,7 +149,7 @@ typedef struct
 {
 	tXML_OS			xml_os;			// size 0x00c, offset 0x000
 	UINT8			*p_cur;			// size 0x004, offset 0x00c
-	tXML_CBACK		cback;			// size 0x004, offset 0x010
+	tXML_CBACK		*cback;			// size 0x004, offset 0x010
 	void			*p_usr_data;	// size 0x004, offset 0x014
 	tXML_EVENT_DATA	event_data;		// size 0x024, offset 0x018
 	UINT8			*p_data_bfr;	// size 0x004, offset 0x03c
@@ -173,7 +173,7 @@ typedef struct
  * functions
  */
 
-void XML_InitPars(tXML_ST *p_st, tXML_CBACK xml_cback, void *p_usr_data);
+void XML_InitPars(tXML_ST *p_st, tXML_CBACK *xml_cback, void *p_usr_data);
 UINT16 XML_MulParse(tXML_ST *p_st, tXML_OS *p_os);
 
 #ifdef __cplusplus

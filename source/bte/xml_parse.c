@@ -53,7 +53,7 @@ static UINT8 const xml_name_srch[] = ":=/> \t\n\r";
  * functions
  */
 
-void XML_InitPars(tXML_ST *p_st, tXML_CBACK xml_cback, void *p_usr_data)
+void XML_InitPars(tXML_ST *p_st, tXML_CBACK *xml_cback, void *p_usr_data)
 {
 	memset(p_st, 0, sizeof *p_st);
 
@@ -170,8 +170,8 @@ UINT16 XML_MulParse(tXML_ST *p_st, tXML_OS *p_os)
 			p_st->event_data.copy.last.p = p_st->last_bfr.p;
 			p_st->event_data.copy.last.len = p_st->used_last_bfr;
 
-			p_st->cback(XML_EVENT_TYPE_COPY, &p_st->event_data.copy,
-			            p_st->p_usr_data);
+			(*p_st->cback)(XML_EVENT_TYPE_COPY, &p_st->event_data.copy,
+			               p_st->p_usr_data);
 		}
 		else if (!p_st->used_last_bfr)
 		{
@@ -201,8 +201,8 @@ UINT16 XML_MulParse(tXML_ST *p_st, tXML_OS *p_os)
 
 		if (!parse_ok)
 		{
-			query = p_st->cback(XML_EVENT_TYPE_QUERY, &p_st->event_data.stack,
-			                    p_st->p_usr_data);
+			query = (*p_st->cback)(XML_EVENT_TYPE_QUERY,
+			                       &p_st->event_data.stack, p_st->p_usr_data);
 
 			if (query == 1)
 				xml_incr_pars_res(p_st, 5);
@@ -218,8 +218,8 @@ UINT16 XML_MulParse(tXML_ST *p_st, tXML_OS *p_os)
 		{
 			parse_ok = xml_elems(p_st, parse_ok);
 
-			query = p_st->cback(XML_EVENT_TYPE_QUERY, &p_st->event_data.stack,
-			                    p_st->p_usr_data);
+			query = (*p_st->cback)(XML_EVENT_TYPE_QUERY,
+			                       &p_st->event_data.stack, p_st->p_usr_data);
 
 			if (!parse_ok || query == 0)
 				partial = TRUE;
@@ -237,8 +237,8 @@ UINT16 XML_MulParse(tXML_ST *p_st, tXML_OS *p_os)
 
 				XML_TRACE(DEBUG, "p_st->p_cur:x%x (last_stm)", p_st->p_cur);
 
-				p_st->cback(XML_EVENT_TYPE_PART, &p_st->event_data.part,
-				            p_st->p_usr_data);
+				(*p_st->cback)(XML_EVENT_TYPE_PART, &p_st->event_data.part,
+				               p_st->p_usr_data);
 				xml_incr_pars_res(p_st, 6);
 			}
 			else if (p_st->last_bfr.p && p_st->p_copy > p_st->xml_os.p_begin
@@ -270,8 +270,8 @@ UINT16 XML_MulParse(tXML_ST *p_st, tXML_OS *p_os)
 						XML_TRACE(DEBUG, "ERROR to store partial data");
 					}
 
-					p_st->cback(XML_EVENT_TYPE_PART, &p_st->event_data.part,
-					            p_st->p_usr_data);
+					(*p_st->cback)(XML_EVENT_TYPE_PART, &p_st->event_data.part,
+					               p_st->p_usr_data);
 					xml_incr_pars_res(p_st, 6);
 				}
 			}
@@ -694,8 +694,8 @@ static BOOLEAN xml_attributes(tXML_ST *p_st)
 
 		p_st->value.len = 0;
 
-		cb_ret = p_st->cback(XML_EVENT_TYPE_ATTR, &p_st->event_data.attr,
-		                     p_st->p_usr_data);
+		cb_ret = (*p_st->cback)(XML_EVENT_TYPE_ATTR, &p_st->event_data.attr,
+		                        p_st->p_usr_data);
 
 		if (cb_ret == 0)
 		{
@@ -746,9 +746,9 @@ static BOOLEAN xml_elems(tXML_ST *p_st, BOOLEAN prev_ok)
 
 					p_st->value.len = 0;
 
-					cb_ret = p_st->cback(XML_EVENT_TYPE_CH_DATA,
-					                     &p_st->event_data.ch_data,
-					                     p_st->p_usr_data);
+					cb_ret = (*p_st->cback)(XML_EVENT_TYPE_CH_DATA,
+					                        &p_st->event_data.ch_data,
+					                        p_st->p_usr_data);
 
 					if (cb_ret == 0)
 					{
@@ -770,8 +770,8 @@ static BOOLEAN xml_elems(tXML_ST *p_st, BOOLEAN prev_ok)
 			if (p_st->p_cur)
 				p_st->p_copy = p_st->p_last_stm;
 
-			p_st->cback(XML_EVENT_TYPE_9, &p_st->event_data.stack,
-			            p_st->p_usr_data);
+			(*p_st->cback)(XML_EVENT_TYPE_9, &p_st->event_data.stack,
+			               p_st->p_usr_data);
 		}
 
 		if (!xml_get_next(p_st, XML_WS_OP_0))
@@ -879,8 +879,8 @@ static BOOLEAN xml_tag_elem(tXML_ST *p_st)
 
 	p_st->event_data.tag.p_last_stm = p_st->p_last_stm;
 
-	cb_ret = p_st->cback(XML_EVENT_TYPE_TAG, &p_st->event_data.tag,
-	                     p_st->p_usr_data);
+	cb_ret = (*p_st->cback)(XML_EVENT_TYPE_TAG, &p_st->event_data.tag,
+	                        p_st->p_usr_data);
 
 	if (cb_ret == 0)
 	{
@@ -904,8 +904,8 @@ static BOOLEAN xml_tag_elem(tXML_ST *p_st)
 
 	xml_get_next(p_st, XML_WS_OP_0);
 
-	cb_ret = p_st->cback(XML_EVENT_TYPE_EMPTY_ELEM,
-	                     &p_st->event_data.empty_elem, p_st->p_usr_data);
+	cb_ret = (*p_st->cback)(XML_EVENT_TYPE_EMPTY_ELEM,
+	                        &p_st->event_data.empty_elem, p_st->p_usr_data);
 
 	if (cb_ret == 0)
 	{
@@ -915,7 +915,7 @@ static BOOLEAN xml_tag_elem(tXML_ST *p_st)
 
 	p_st->p_copy = p_st->p_cur - 1;
 
-	p_st->cback(XML_EVENT_TYPE_9, &p_st->event_data.stack, p_st->p_usr_data);
+	(*p_st->cback)(XML_EVENT_TYPE_9, &p_st->event_data.stack, p_st->p_usr_data);
 
 	return TRUE;
 }
@@ -937,8 +937,8 @@ static BOOLEAN xml_etag_elem(tXML_ST *p_st)
 	p_st->event_data.etag.name.len = p_st->name.len;
 	p_st->event_data.etag.prefix.len = p_st->prefix.len;
 
-	cb_ret = p_st->cback(XML_EVENT_TYPE_ETAG, &p_st->event_data,
-	                     p_st->p_usr_data);
+	cb_ret = (*p_st->cback)(XML_EVENT_TYPE_ETAG, &p_st->event_data,
+	                        p_st->p_usr_data);
 
 	if (cb_ret == 0)
 	{
@@ -948,7 +948,7 @@ static BOOLEAN xml_etag_elem(tXML_ST *p_st)
 
 	p_st->p_copy = p_st->prefix.p ? p_st->prefix.p - 2 : p_st->name.p - 2;
 
-	p_st->cback(XML_EVENT_TYPE_9, &p_st->event_data.stack, p_st->p_usr_data);
+	(*p_st->cback)(XML_EVENT_TYPE_9, &p_st->event_data.stack, p_st->p_usr_data);
 
 	if (p_st->curr_res <= 0)
 		return FALSE;
