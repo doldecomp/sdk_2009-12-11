@@ -196,7 +196,7 @@ cflags_base = [
     "-i include",
     "-i include/stdlib",
     "-i source",
-    "-enc mb",
+    "-enc sjis",
     "-flag no-cats",
 ]
 
@@ -641,7 +641,7 @@ config.libs = [
     RvlLib(
         "kpr",
         [
-            Object(DebugMatching, ReleaseMatching, "kpr/kpr_lib.c", shift_jis = False),
+            Object(DebugMatching, ReleaseMatching, "kpr/kpr_lib.c", shift_jis = False, extra_cflags = ["-enc UTF-8"]),
         ],
     ),
     RvlLib(
