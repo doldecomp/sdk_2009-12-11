@@ -1,5 +1,5 @@
-#ifndef BTE_XML_PARSE_H
-#define BTE_XML_PARSE_H
+#ifndef BTE_XML_API_H
+#define BTE_XML_API_H
 
 /*******************************************************************************
  * headers
@@ -15,21 +15,36 @@
 	extern "C" {
 #endif
 
-typedef UINT16 tXML_EVENT_TYPE;
-#define XML_EVENT_TYPE_TAG			1
-#define XML_EVENT_TYPE_EMPTY_ELEM	2
-#define XML_EVENT_TYPE_ATTR			3
-#define XML_EVENT_TYPE_CH_DATA		4
-#define XML_EVENT_TYPE_ETAG			5
-#define XML_EVENT_TYPE_PART			6
-#define XML_EVENT_TYPE_COPY			7
-#define XML_EVENT_TYPE_QUERY		8 // query of what?
-#define XML_EVENT_TYPE_9			9 // preceded by setting of p_copy?
+typedef UINT16 tXML_STATUS;
+enum
+{
+	XML_SUCCESS,
+	XML_ERROR,
+};
 
-typedef UINT16 tXML_WS_OP; // I don't know what exactly these represent
-#define XML_WS_OP_0					0
-#define XML_WS_OP_1					1
-#define XML_WS_OP_2					2
+typedef UINT16 tXML_EVENT_TYPE;
+enum
+{
+	XML_EVENT_TYPE_NONE,
+	XML_EVENT_TYPE_TAG,
+	XML_EVENT_TYPE_EMPTY_ELEM,
+	XML_EVENT_TYPE_ATTR,
+	XML_EVENT_TYPE_CH_DATA,
+	XML_EVENT_TYPE_ETAG,
+	XML_EVENT_TYPE_PART,
+	XML_EVENT_TYPE_COPY,
+	XML_EVENT_TYPE_QUERY, // query of what?
+	XML_EVENT_TYPE_9, // preceded by setting of p_copy?
+};
+
+typedef UINT16 tXML_WS_OP;
+enum
+{
+	// I don't know what exactly these represent
+	XML_WS_OP_0,
+	XML_WS_OP_1,
+	XML_WS_OP_2,
+};
 
 typedef UINT8 tXML_CBACK(tXML_EVENT_TYPE, void *, void *);
 
@@ -135,16 +150,15 @@ typedef struct
 {
 	UINT8	p[512];	// size 0x200, offset 0x000
 	UINT16	len;	// size 0x002, offset 0x200
-} tXML_LAST_BFR; // size 0x202
+} tXML_BIG_BFR; // size 0x202
 
 typedef struct
 {
-	tXML_LAST_BFR	last_bfr;		// size 0x202, offset 0x000
+	tXML_BIG_BFR	last_bfr;		// size 0x202, offset 0x000
 	UINT16			used_last_bfr;	// size 0x002, offset 0x202
 	tXML_EVENT_DATA	event_data;		// size 0x024, offset 0x204
 } tXML_PARTIAL_ST; // size 0x228
 
-// TODO: padding comments
 typedef struct
 {
 	tXML_OS			xml_os;			// size 0x00c, offset 0x000
@@ -174,10 +188,16 @@ typedef struct
  */
 
 void XML_InitPars(tXML_ST *p_st, tXML_CBACK *xml_cback, void *p_usr_data);
-UINT16 XML_MulParse(tXML_ST *p_st, tXML_OS *p_os);
+tXML_STATUS XML_MulParse(tXML_ST *p_st, tXML_OS *p_os);
+tXML_STATUS XML_BufAddTag(UINT8 **pp_buf, UINT8 const *prefix, UINT8 const *tag,
+                          BOOLEAN start_tag, BOOLEAN has_attr);
+tXML_STATUS XML_BufAddAttribute(UINT8 **pp_buf, UINT8 const *prefix,
+                                UINT8 const *attr_name, UINT8 const *attr_value,
+                                UINT8 last_attr);
+tXML_STATUS XML_BufAddCharData(UINT8 **pp_buf, UINT8 const *charData);
 
 #ifdef __cplusplus
 	}
 #endif
 
-#endif // BTE_XML_PARSE_H
+#endif // BTE_XML_API_H

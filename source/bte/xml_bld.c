@@ -1,4 +1,4 @@
-#include "xml_bld.h"
+#include "xml_api.h"
 
 /*******************************************************************************
  * headers
@@ -12,10 +12,10 @@
  * functions
  */
 
-UINT16 XML_BufAddTag(UINT8 **pp_buf, UINT8 const *prefix, UINT8 const *tag,
+tXML_STATUS XML_BufAddTag(UINT8 **pp_buf, UINT8 const *prefix, UINT8 const *tag,
                      BOOLEAN start_tag, BOOLEAN has_attr)
 {
-	UINT16 status = 1;
+	tXML_STATUS status = XML_ERROR;
 	int n;
 
 	if (tag)
@@ -48,17 +48,17 @@ UINT16 XML_BufAddTag(UINT8 **pp_buf, UINT8 const *prefix, UINT8 const *tag,
 			}
 		}
 
-		status = 0;
+		status = XML_SUCCESS;
 	}
 
 	return status;
 }
 
-UINT16 XML_BufAddAttribute(UINT8 **pp_buf, UINT8 const *prefix,
+tXML_STATUS XML_BufAddAttribute(UINT8 **pp_buf, UINT8 const *prefix,
                            UINT8 const *attr_name, UINT8 const *attr_value,
                            UINT8 last_attr)
 {
-	UINT16 status = 1;
+	tXML_STATUS status = XML_ERROR;
 	int n;
 
 	if (attr_name && attr_value)
@@ -97,22 +97,22 @@ UINT16 XML_BufAddAttribute(UINT8 **pp_buf, UINT8 const *prefix,
 
 		*pp_buf += n;
 
-		status = 0;
+		status = XML_SUCCESS;
 	}
 	else if (last_attr == 2)
 	{
 		n = sprintf((char *)*pp_buf, "/>\n");
 		*pp_buf += n;
 
-		status = 0;
+		status = XML_SUCCESS;
 	}
 
 	return status;
 }
 
-UINT16 XML_BufAddCharData(UINT8 **pp_buf, UINT8 const *charData)
+tXML_STATUS XML_BufAddCharData(UINT8 **pp_buf, UINT8 const *charData)
 {
-	UINT16 status = 1;
+	tXML_STATUS status = XML_ERROR;
 	int n;
 
 	if (charData)
@@ -120,7 +120,7 @@ UINT16 XML_BufAddCharData(UINT8 **pp_buf, UINT8 const *charData)
 		n = sprintf((char *)*pp_buf, "%s", (char const *)charData);
 		*pp_buf += n;
 
-		status = 0;
+		status = XML_SUCCESS;
 	}
 
 	// TODO: Where can this use go

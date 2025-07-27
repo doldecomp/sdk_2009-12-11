@@ -30,6 +30,7 @@
  * headers
  */
 
+#include "bt_target.h"
 #include "bt_types.h"
 #include "data_types.h"
 
@@ -73,6 +74,13 @@ typedef struct t_sdp_di_get_record
 	tSDP_DI_RECORD	rec;		// size 0xfa, offset 0x02
 } tSDP_DI_GET_RECORD; // size 0xfc
 
+typedef struct
+{
+	UINT16	protocol_uuid;						// size 0x02, offset 0x00
+	UINT16	num_params;							// size 0x02, offset 0x02
+	UINT16	params[SDP_MAX_PROTOCOL_PARAMS];	// size 0x04, offset 0x04
+} tSDP_PROTOCOL_ELEM; // size 0x08
+
 /*******************************************************************************
  * external globals
  */
@@ -81,14 +89,22 @@ typedef struct t_sdp_di_get_record
  * functions
  */
 
-extern tSDP_STATUS SDP_SetLocalDiRecord(tSDP_DI_RECORD *p_device_info,
-                                        UINT32 *p_handle);
-extern tSDP_STATUS SDP_GetLocalDiRecord(tSDP_DI_GET_RECORD *p_device_info,
-                                        UINT32 *p_handle);
-extern BOOLEAN SDP_AddUuidSequence(UINT32 handle, UINT16 attr_id,
-                                 UINT16 num_uuids, UINT16 *p_uuids);
-extern BOOLEAN SDP_AddAttribute(UINT32 handle, UINT16 attr_id, UINT8 attr_type,
-                              UINT32 attr_len, UINT8 *p_val);
+tSDP_STATUS SDP_SetLocalDiRecord(tSDP_DI_RECORD *p_device_info,
+                                 UINT32 *p_handle);
+tSDP_STATUS SDP_GetLocalDiRecord(tSDP_DI_GET_RECORD *p_device_info,
+                                 UINT32 *p_handle);
+BOOLEAN SDP_AddUuidSequence(UINT32 handle, UINT16 attr_id, UINT16 num_uuids,
+                            UINT16 *p_uuids);
+BOOLEAN SDP_AddAttribute(UINT32 handle, UINT16 attr_id, UINT8 attr_type,
+                         UINT32 attr_len, UINT8 *p_val);
+UINT32 SDP_CreateRecord(void);
+BOOLEAN SDP_AddServiceClassIdList(UINT32 handle, UINT16 num_services,
+                                  UINT16 *p_service_uuids);
+BOOLEAN SDP_AddProtocolList(UINT32 handle, UINT16 num_elem,
+                            tSDP_PROTOCOL_ELEM *p_elem_list);
+BOOLEAN SDP_AddProfileDescriptorList(UINT32 handle, UINT16 profile_uuid,
+                                     UINT16 version);
+BOOLEAN SDP_DeleteRecord(UINT32 handle);
 
 #ifdef __cplusplus
 	}

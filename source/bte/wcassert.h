@@ -1,9 +1,9 @@
-#ifndef BTE_GKI_TARGET_H
-#define BTE_GKI_TARGET_H
+#ifndef BTE_WC_ASSERT_H
+#define BTE_WC_ASSERT_H
 
 /* Original source:
  * bluedroid <android.googlesource.com/platform/external/bluetooth/bluedroid>
- * include/gki_target.h
+ * stack/include/wcassert.h
  */
 
 /******************************************************************************
@@ -27,47 +27,33 @@
 /* Includes changes by muff1n1634 */
 
 /*******************************************************************************
- * headers
- */
-
-/*******************************************************************************
  * macros
  */
 
-#ifndef PPC_TASK
-# define PPC_TASK			2
+#if !defined(NDEBUG)
+# define WCAssert_FileLine(file_, line_)	\
+	wc_assert("ASSERT at %s line %d\n", file_, line_)
+#else
+# define WCAssert_FileLine(file_, line_)
 #endif
 
-#ifndef GKI_POOL_ID_3
-# define GKI_POOL_ID_3		3
-#endif
-
-#ifndef TICKS_PER_SEC
-# define TICKS_PER_SEC		100
-#endif
-
-#ifndef GKI_MS_TO_TICKS
-# define GKI_MS_TO_TICKS(x)	((x) / (1000 / TICKS_PER_SEC))
-#endif
-
-/*******************************************************************************
- * types
- */
-
-#ifdef __cplusplus
-	extern "C" {
-#endif
-
-/*******************************************************************************
- * external globals
- */
+#define WCAssert_File(file_)	WCAssert_FileLine(  file_ , __LINE__)
+#define WCAssert_Line(line_)	WCAssert_FileLine(__FILE__,   line_ )
+#define WCAssert()				WCAssert_FileLine(__FILE__, __LINE__)
 
 /*******************************************************************************
  * functions
  */
 
 #ifdef __cplusplus
+	extern "C" {
+#endif
+
+// WARNING: This function does not have a definition
+void wc_assert(char const *message, char const *file, unsigned long int line);
+
+#ifdef __cplusplus
 	}
 #endif
 
-#endif // BTE_GKI_TARGET_H
+#endif // BTE_WC_ASSERT_H

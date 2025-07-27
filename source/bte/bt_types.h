@@ -38,6 +38,10 @@
 
 #define BT_EVT_TO_BTU_SP_DATA	0x1500
 
+#define BT_PSM_RFCOMM			3
+
+#define BTM_SEC_PROTO_RFCOMM	3
+
 /*******************************************************************************
  * types
  */

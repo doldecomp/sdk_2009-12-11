@@ -48,6 +48,10 @@
 # define L2CAP_MTU_SIZE				1691
 #endif
 
+#ifndef SDP_MAX_PROTOCOL_PARAMS
+# define SDP_MAX_PROTOCOL_PARAMS	2
+#endif
+
 /*******************************************************************************
  * types
  */

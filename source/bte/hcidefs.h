@@ -41,6 +41,8 @@
 #define HCI_PER_INQ_MIN_MAX_PERIOD	0x0003
 #define HCI_PER_INQ_MAX_MAX_PERIOD	0xffff
 
+#define LMP_COMPID_BROADCOM			15
+
 /*******************************************************************************
  * types
  */

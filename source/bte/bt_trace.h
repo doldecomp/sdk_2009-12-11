@@ -115,6 +115,7 @@ extern void LogMsg_6(UINT32 trace_set_mask, char const *fmt_str, UINT32 p1, UINT
 
 #define TRACE_LAYER_NONE			0
 #define TRACE_LAYER_GAP				14
+#define TRACE_LAYER_GOEP			16
 #define TRACE_LAYER_XML				16
 #define TRACE_LAYER_MAX_NUM			49
 
@@ -154,6 +155,7 @@ extern void LogMsg_6(UINT32 trace_set_mask, char const *fmt_str, UINT32 p1, UINT
 
 #define APPL_TRACE(type_, ...)	do { if (appl_trace_level >= BT_TRACE_LEVEL_ ## type_) BLUEDROID_LOG_TRACE(GENERAL, NONE, APPL, type_, __VA_ARGS__); } while (FALSE)
 #define GAP_TRACE(type_, ...)	do { if (gap_cb.trace_level >= BT_TRACE_LEVEL_ ## type_) BLUEDROID_LOG_TRACE(GENERAL, GAP, STACK, type_, __VA_ARGS__); } while (FALSE)
+#define GOEP_TRACE(type_, ...)	do { if (goep_cb.trace_level >= BT_TRACE_LEVEL_ ## type_) BLUEDROID_LOG_TRACE(GENERAL, GOEP, STACK, type_, __VA_ARGS__); } while (FALSE)
 #define XML_TRACE(type_, ...)	BLUEDROID_LOG_TRACE(GENERAL, XML, STACK, type_, __VA_ARGS__)
 
 // clang-format on
