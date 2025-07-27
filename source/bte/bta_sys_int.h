@@ -33,6 +33,7 @@
 #include "data_types.h"
 
 #include "bta_sys.h"
+#include "ptim.h"
 
 /*******************************************************************************
  * macros

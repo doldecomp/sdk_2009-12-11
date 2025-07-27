@@ -10,11 +10,7 @@
 
 #include "data_types.h"
 
-#if 0
 #include "sdp_api.h"
-#else
-#include "bte_context.h"
-#endif
 
 /*******************************************************************************
  * functions

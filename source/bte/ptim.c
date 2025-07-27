@@ -31,15 +31,12 @@
 
 #include <stddef.h>
 
+#include "gki_target.h"
 #include "bt_types.h"
 #include "data_types.h"
 
-#if 0
+#include "bta_sys.h"
 #include "gki.h"
-#include "gki_target.h"
-#else
-#include "bte_context.h"
-#endif
 
 /*******************************************************************************
  * functions

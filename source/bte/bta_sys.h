@@ -33,8 +33,6 @@
 #include "bt_types.h"
 #include "data_types.h"
 
-#include "ptim.h" // tPTIM_CB
-
 /*******************************************************************************
  * macros
  */
@@ -78,7 +76,6 @@ typedef struct
 void bta_sys_rm_register(tBTA_SYS_CONN_CBACK *p_cback);
 void bta_sys_compress_register(tBTA_SYS_CONN_CBACK *p_cback);
 void bta_sys_pm_register(tBTA_SYS_CONN_CBACK *p_cback);
-
 void bta_sys_conn_open(UINT8 id, UINT8 app_id, BD_ADDR peer_addr);
 void bta_sys_conn_close(UINT8 id, UINT8 app_id, BD_ADDR peer_addr);
 void bta_sys_app_open(UINT8 id, UINT8 app_id, BD_ADDR peer_addr);
@@ -87,6 +84,7 @@ void bta_sys_sco_open(UINT8 id, UINT8 app_id, BD_ADDR peer_addr);
 void bta_sys_sco_close(UINT8 id, UINT8 app_id, BD_ADDR peer_addr);
 void bta_sys_idle(UINT8 id, UINT8 app_id, BD_ADDR peer_addr);
 void bta_sys_busy(UINT8 id, UINT8 app_id, BD_ADDR peer_addr);
+void bta_sys_sendmsg(void *p_msg);
 
 #ifdef __cplusplus
 	}

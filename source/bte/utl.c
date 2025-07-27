@@ -34,12 +34,8 @@
 #include "bt_types.h"
 #include "data_types.h"
 
-#if 0
 #include "btm_api.h"
-#include "gki_buffer.h"
-#else
-#include "bte_context.h"
-#endif
+#include "gki.h"
 
 /*******************************************************************************
  * functions

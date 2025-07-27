@@ -1,3 +1,4 @@
+#include "bt_types.h"
 #include "bta_sys_int.h"
 
 /* Original source:
@@ -32,15 +33,12 @@
 #include <string.h>
 
 #include "bt_trace.h"
+#include "data_types.h"
 
+#include "bta_dm_int.h"
 #include "bta_sys.h"
-#include "ptim.h"
-
-#if 0
 #include "gki.h"
-#else
-#include "bte_context.h"
-#endif
+#include "ptim.h"
 
 /*******************************************************************************
  * macros
