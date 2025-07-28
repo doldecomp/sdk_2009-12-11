@@ -408,7 +408,7 @@ config.libs = [
             Object(DebugMatching, ReleaseMatching, "bte/goep_trace.c", mw_version = "GC/3.0a5"),
             Object(DebugMatching, ReleaseMatching, "bte/goep_util.c", mw_version = "GC/3.0a5"),
             Object(DebugMatching, ReleaseMatching, "bte/goep_fs.c", mw_version = "GC/3.0a5"),
-            Object(DebugNonMatching, ReleaseNonMatching, "bte/hcicmds.c"),
+            Object(DebugMatching, ReleaseMatching, "bte/hcicmds.c", mw_version = "GC/3.0a5"),
             Object(DebugNonMatching, ReleaseNonMatching, "bte/hidd_api.c"),
             Object(DebugNonMatching, ReleaseNonMatching, "bte/hidd_conn.c"),
             Object(DebugNonMatching, ReleaseNonMatching, "bte/hidd_mgmt.c"),

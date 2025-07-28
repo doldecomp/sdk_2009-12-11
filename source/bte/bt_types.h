@@ -37,10 +37,91 @@
  */
 
 #define BT_EVT_TO_BTU_SP_DATA	0x1500
+#define BT_EVT_TO_LM_HCI_ACL	0x2100
 
 #define BT_PSM_RFCOMM			3
 
 #define BTM_SEC_PROTO_RFCOMM	3
+
+// clang-format off
+#define UINT8_TO_STREAM(p, u8)								\
+	do														\
+	{														\
+		*(p)++ = (UINT8)(u8);								\
+	}														\
+	while (FALSE)
+
+#define UINT16_TO_STREAM(p, u16)							\
+	do														\
+	{														\
+		*(p)++ = (UINT8)(u16);								\
+		*(p)++ = (UINT8)((u16) >> 8);						\
+	} while (FALSE)
+
+#define UINT32_TO_STREAM(p, u32)							\
+	do														\
+	{														\
+		*(p)++ = (UINT8)(u32);								\
+		*(p)++ = (UINT8)((u32) >> 8);						\
+		*(p)++ = (UINT8)((u32) >> 16);						\
+		*(p)++ = (UINT8)((u32) >> 24);						\
+	} while (FALSE)
+
+#define ARRAY8_TO_STREAM(p, a)								\
+	do														\
+	{														\
+		register int ijk;									\
+															\
+		for (ijk = 0; ijk < 8; ijk++)						\
+			*(p)++ = (UINT8)(a)[(8 - 1) - ijk];				\
+	} while (FALSE)
+
+#define ARRAY16_TO_STREAM(p, a)								\
+	do														\
+	{														\
+		register int ijk;									\
+															\
+		for (ijk = 0; ijk < 16; ijk++)						\
+			*(p)++ = (UINT8)(a)[(16 - 1) - ijk];			\
+	} while (FALSE)
+
+#define BDADDR_TO_STREAM(p, a)								\
+	do														\
+	{														\
+		register int ijk;									\
+															\
+		for (ijk = 0; ijk < BD_ADDR_LEN; ijk++)				\
+			*(p)++ = (UINT8)(a)[(BD_ADDR_LEN - 1) - ijk];	\
+	} while (FALSE)
+
+#define DEVCLASS_TO_STREAM(p, a)							\
+	do														\
+	{														\
+		register int ijk;									\
+															\
+		for (ijk = 0; ijk < DEV_CLASS_LEN; ijk++)			\
+			*(p)++ = (UINT8)(a)[(DEV_CLASS_LEN - 1) - ijk];	\
+	} while (FALSE)
+
+#define LAP_TO_STREAM(p, a)									\
+	do														\
+	{														\
+		register int ijk;									\
+															\
+		for (ijk = 0; ijk < LAP_LEN; ijk++)					\
+			*(p)++ = (UINT8)(a)[(LAP_LEN - 1) - ijk];		\
+	} while (FALSE)
+
+#define ARRAY_TO_STREAM(p, a, len)							\
+	do														\
+	{														\
+		register int ijk;									\
+															\
+		for (ijk = 0; ijk < len; ijk++)						\
+			*(p)++ = (UINT8) a[ijk];						\
+	} while (FALSE)
+
+// clang-format on
 
 /*******************************************************************************
  * types
@@ -59,24 +140,34 @@ typedef struct
 } BT_HDR; // size 0x08
 
 // only for bc; do not use (TODO: migrate uses to actual sizeof expression)
-#define BT_HDR_SIZE		(sizeof(BT_HDR))
+#define BT_HDR_SIZE			(sizeof(BT_HDR))
 
-#define BD_ADDR_LEN		6
+#define BD_ADDR_LEN			6
 typedef UINT8 BD_ADDR[BD_ADDR_LEN];
 typedef UINT8 *BD_ADDR_PTR;
 
-#define LINK_KEY_LEN	16
+#define LINK_KEY_LEN		16
 typedef UINT8 LINK_KEY[LINK_KEY_LEN];
 
-#define DEV_CLASS_LEN	3
+#define DEV_CLASS_LEN		3
 typedef UINT8 DEV_CLASS[DEV_CLASS_LEN];
 typedef UINT8 *DEV_CLASS_PTR;
 
-#define BD_NAME_LEN		248 // or is 247 to keep the + 1?
+#define BD_NAME_LEN			248 // or is 247 to keep the + 1?
 typedef UINT8 BD_NAME[BD_NAME_LEN];
 typedef UINT8 *BD_NAME_PTR;
 
-#define MAX_UUID_SIZE	16
+#define LAP_LEN				3
+typedef UINT8 LAP[LAP_LEN];
+
+#define PIN_CODE_LEN		16
+typedef UINT8 PIN_CODE[PIN_CODE_LEN];
+typedef UINT8 *PIN_CODE_PTR;
+
+#define BT_EVENT_MASK_LEN	8
+typedef UINT8 BT_EVENT_MASK[BT_EVENT_MASK_LEN];
+
+#define MAX_UUID_SIZE		16
 typedef struct
 {
 	UINT16	len;	// size 0x02, offset 0x00

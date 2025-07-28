@@ -55,6 +55,8 @@ extern BD_ADDR const BT_BD_ANY;
  * functions
  */
 
+void btu_hcif_send_cmd(BT_HDR *p_msg);
+
 #ifdef __cplusplus
 	}
 #endif

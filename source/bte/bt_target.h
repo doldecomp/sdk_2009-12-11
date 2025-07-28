@@ -30,6 +30,9 @@
  * headers
  */
 
+#include "bt_types.h"
+#include "data_types.h"
+
 #include "gki_target.h"
 
 /*******************************************************************************
@@ -38,6 +41,10 @@
 
 #ifndef BTM_MAX_REM_BD_NAME_LEN
 # define BTM_MAX_REM_BD_NAME_LEN	248 /* NOTE: confirmed 248 */
+#endif
+
+#ifndef HCI_CMD_POOL_ID
+# define HCI_CMD_POOL_ID			GKI_POOL_ID_2
 #endif
 
 #ifndef GAP_DATA_POOL_ID
@@ -50,6 +57,11 @@
 
 #ifndef SDP_MAX_PROTOCOL_PARAMS
 # define SDP_MAX_PROTOCOL_PARAMS	2
+#endif
+
+void bte_hcisu_send(BT_HDR *p_msg, UINT16 event);
+#ifndef HCI_ACL_DATA_TO_LOWER
+#define HCI_ACL_DATA_TO_LOWER(p)	bte_hcisu_send((BT_HDR *)(p), BT_EVT_TO_LM_HCI_ACL);
 #endif
 
 /*******************************************************************************
