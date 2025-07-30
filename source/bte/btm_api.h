@@ -34,6 +34,7 @@
 #include "bt_types.h"
 #include "data_types.h"
 
+#include "hcidefs.h"
 #include "sdp_api.h"
 
 /*******************************************************************************
@@ -106,6 +107,29 @@ enum
 	BTM_SUCCESS_NO_SECURITY,
 	BTM_FAILED_ON_SECURITY,
 	BTM_REPEATED_ATTEMPTS,
+};
+
+enum
+{
+    BTM_PM_STS_ACTIVE = HCI_MODE_ACTIVE,
+    BTM_PM_STS_HOLD   = HCI_MODE_HOLD,
+    BTM_PM_STS_SNIFF  = HCI_MODE_SNIFF,
+    BTM_PM_STS_PARK   = HCI_MODE_PARK,
+    BTM_PM_STS_SSR,     /* report the SSR parameters in HCI_SNIFF_SUB_RATE_EVT */
+    BTM_PM_STS_PENDING,   /* when waiting for status from controller */
+    BTM_PM_STS_ERROR   /* when HCI command status returns error */
+};
+typedef UINT8 tBTM_PM_STATUS;
+
+/* BTM Power manager modes */
+typedef UINT8 tBTM_PM_MODE;
+enum
+{
+    BTM_PM_MD_ACTIVE = BTM_PM_STS_ACTIVE,
+    BTM_PM_MD_HOLD   = BTM_PM_STS_HOLD,
+    BTM_PM_MD_SNIFF  = BTM_PM_STS_SNIFF,
+    BTM_PM_MD_PARK   = BTM_PM_STS_PARK,
+    BTM_PM_MD_FORCE  = 0x10 /* OR this to force ACL link to a certain mode */
 };
 
 // NOTE: does not seem to be BTM_MAX_REM_BD_NAME_LEN + 1
@@ -193,6 +217,15 @@ typedef struct
 	BD_NAME	remote_bd_name;	// size 0xf8, offset 0x04
 } tBTM_REMOTE_DEV_NAME; // size 0xfc
 
+typedef struct
+{
+    UINT16          max;
+    UINT16          min;
+    UINT16          attempt;
+    UINT16          timeout;
+    tBTM_PM_MODE    mode;
+} tBTM_PM_PWR_MD;
+
 /*******************************************************************************
  * external globals
  */
@@ -235,6 +268,9 @@ BOOLEAN BTM_SetSecurityLevel(BOOLEAN is_originator, char *p_name,
                              UINT32 mx_proto_id, UINT32 mx_chan_id);
 tBTM_INQ_INFO *BTM_InqDbNext(tBTM_INQ_INFO *p_cur);
 tBTM_INQ_INFO *BTM_InqDbFirst(void);
+tBTM_STATUS BTM_SetQoS(BD_ADDR bd, FLOW_SPEC *p_flow, tBTM_CMPL_CB *p_cb);
+tBTM_STATUS BTM_SetPowerMode(UINT8 pm_id, BD_ADDR remote_bda,
+                                                 tBTM_PM_PWR_MD *p_mode);
 
 #ifdef __cplusplus
 	}

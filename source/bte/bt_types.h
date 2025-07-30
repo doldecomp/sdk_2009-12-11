@@ -33,7 +33,7 @@
 #include "data_types.h"
 
 /*******************************************************************************
- * banner
+ * macros
  */
 
 #define BT_EVT_TO_BTU_SP_DATA	0x1500
@@ -44,83 +44,104 @@
 #define BTM_SEC_PROTO_RFCOMM	3
 
 // clang-format off
-#define UINT8_TO_STREAM(p, u8)								\
-	do														\
-	{														\
-		*(p)++ = (UINT8)(u8);								\
-	}														\
+#define UINT8_TO_STREAM(p, u8)										\
+	do																\
+	{																\
+		*(p)++ = (UINT8)(u8);										\
+	}																\
 	while (FALSE)
 
-#define UINT16_TO_STREAM(p, u16)							\
-	do														\
-	{														\
-		*(p)++ = (UINT8)(u16);								\
-		*(p)++ = (UINT8)((u16) >> 8);						\
+#define UINT16_TO_STREAM(p, u16)									\
+	do																\
+	{																\
+		*(p)++ = (UINT8)(u16);										\
+		*(p)++ = (UINT8)((u16) >> 8);								\
 	} while (FALSE)
 
-#define UINT32_TO_STREAM(p, u32)							\
-	do														\
-	{														\
-		*(p)++ = (UINT8)(u32);								\
-		*(p)++ = (UINT8)((u32) >> 8);						\
-		*(p)++ = (UINT8)((u32) >> 16);						\
-		*(p)++ = (UINT8)((u32) >> 24);						\
+#define UINT32_TO_STREAM(p, u32)									\
+	do																\
+	{																\
+		*(p)++ = (UINT8)(u32);										\
+		*(p)++ = (UINT8)((u32) >> 8);								\
+		*(p)++ = (UINT8)((u32) >> 16);								\
+		*(p)++ = (UINT8)((u32) >> 24);								\
 	} while (FALSE)
 
-#define ARRAY8_TO_STREAM(p, a)								\
-	do														\
-	{														\
-		register int ijk;									\
-															\
-		for (ijk = 0; ijk < 8; ijk++)						\
-			*(p)++ = (UINT8)(a)[(8 - 1) - ijk];				\
+#define ARRAY8_TO_STREAM(p, a)										\
+	do																\
+	{																\
+		register int ijk;											\
+																	\
+		for (ijk = 0; ijk < 8; ijk++)								\
+			*(p)++ = (UINT8)(a)[(8 - 1) - ijk];						\
 	} while (FALSE)
 
-#define ARRAY16_TO_STREAM(p, a)								\
-	do														\
-	{														\
-		register int ijk;									\
-															\
-		for (ijk = 0; ijk < 16; ijk++)						\
-			*(p)++ = (UINT8)(a)[(16 - 1) - ijk];			\
+#define ARRAY16_TO_STREAM(p, a)										\
+	do																\
+	{																\
+		register int ijk;											\
+																	\
+		for (ijk = 0; ijk < 16; ijk++)								\
+			*(p)++ = (UINT8)(a)[(16 - 1) - ijk];					\
 	} while (FALSE)
 
-#define BDADDR_TO_STREAM(p, a)								\
-	do														\
-	{														\
-		register int ijk;									\
-															\
-		for (ijk = 0; ijk < BD_ADDR_LEN; ijk++)				\
-			*(p)++ = (UINT8)(a)[(BD_ADDR_LEN - 1) - ijk];	\
+#define BDADDR_TO_STREAM(p, a)										\
+	do																\
+	{																\
+		register int ijk;											\
+																	\
+		for (ijk = 0; ijk < BD_ADDR_LEN; ijk++)						\
+			*(p)++ = (UINT8)(a)[(BD_ADDR_LEN - 1) - ijk];			\
 	} while (FALSE)
 
-#define DEVCLASS_TO_STREAM(p, a)							\
-	do														\
-	{														\
-		register int ijk;									\
-															\
-		for (ijk = 0; ijk < DEV_CLASS_LEN; ijk++)			\
-			*(p)++ = (UINT8)(a)[(DEV_CLASS_LEN - 1) - ijk];	\
+#define DEVCLASS_TO_STREAM(p, a)									\
+	do																\
+	{																\
+		register int ijk;											\
+																	\
+		for (ijk = 0; ijk < DEV_CLASS_LEN; ijk++)					\
+			*(p)++ = (UINT8)(a)[(DEV_CLASS_LEN - 1) - ijk];			\
 	} while (FALSE)
 
-#define LAP_TO_STREAM(p, a)									\
-	do														\
-	{														\
-		register int ijk;									\
-															\
-		for (ijk = 0; ijk < LAP_LEN; ijk++)					\
-			*(p)++ = (UINT8)(a)[(LAP_LEN - 1) - ijk];		\
+#define LAP_TO_STREAM(p, a)											\
+	do																\
+	{																\
+		register int ijk;											\
+																	\
+		for (ijk = 0; ijk < LAP_LEN; ijk++)							\
+			*(p)++ = (UINT8)(a)[(LAP_LEN - 1) - ijk];				\
 	} while (FALSE)
 
-#define ARRAY_TO_STREAM(p, a, len)							\
-	do														\
-	{														\
-		register int ijk;									\
-															\
-		for (ijk = 0; ijk < len; ijk++)						\
-			*(p)++ = (UINT8) a[ijk];						\
+#define ARRAY_TO_STREAM(p, a, len)									\
+	do																\
+	{																\
+		register int ijk;											\
+																	\
+		for (ijk = 0; ijk < len; ijk++)								\
+			*(p)++ = (UINT8) a[ijk];								\
 	} while (FALSE)
 
+#define STREAM_TO_UINT8(p, u8)										\
+	do																\
+	{																\
+		*(u8) = (UINT8)(*(p));										\
+		(p) += 1;													\
+	} while (FALSE)
+
+#define STREAM_TO_UINT16(p, u16)									\
+	do																\
+	{																\
+		*(u16) = ((UINT16)(*(p)) + (((UINT16)(*((p) + 1))) << 8));	\
+		(p) += 2;													\
+	} while (FALSE)
+
+
+#define UINT16_TO_BE_FIELD(p, u16)									\
+	do																\
+	{																\
+		*((UINT8 *)(p) + 0) = (UINT8)((u16) >> 8);					\
+		*((UINT8 *)(p) + 1) = (UINT8)((u16)     );					\
+	} while (FALSE)
 // clang-format on
 
 /*******************************************************************************

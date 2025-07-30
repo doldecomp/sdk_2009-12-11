@@ -38,6 +38,8 @@
  * macros
  */
 
+#define SDP_MAX_LIST_ELEMS	3
+
 #define SDP_MAX_ATTR_LEN	80
 
 /*******************************************************************************
@@ -81,6 +83,41 @@ typedef struct
 	UINT16	params[SDP_MAX_PROTOCOL_PARAMS];	// size 0x04, offset 0x04
 } tSDP_PROTOCOL_ELEM; // size 0x08
 
+typedef struct
+{
+	UINT16				num_elems;						// size 0x02, offset 0x00
+	tSDP_PROTOCOL_ELEM	list_elem[SDP_MAX_LIST_ELEMS];	// size 0x18, offset 0x02
+} tSDP_PROTO_LIST_ELEM; // size 0x1a
+
+typedef struct
+{
+	union
+	{
+		UINT8					u8;				// size 0x01
+		UINT16					u16;			// size 0x02
+		UINT32					u32;			// size 0x04
+		UINT8					array[4];		// size 0x04
+		struct t_sdp_disc_attr	*p_sub_attr;	// size 0x04
+	} v; // size 0x04, offset 0x00
+} tSDP_DISC_ATVAL; // size 0x04
+
+typedef struct t_sdp_disc_attr
+{
+	struct t_sdp_disc_attr	*p_next_attr;	// size 0x04, offset 0x00
+	UINT16					attr_id;		// size 0x02, offset 0x04
+	UINT16					attr_len_type;	// size 0x02, offset 0x06
+	tSDP_DISC_ATVAL			attr_value;		// size 0x04, offset 0x08
+} tSDP_DISC_ATTR; // size 0x0c
+
+typedef struct t_sdp_disc_rec
+{
+	tSDP_DISC_ATTR			*p_first_attr;	// size 0x04, offset 0x00
+	struct t_sdp_disc_rec	*p_next_rec;	// size 0x04, offset 0x04
+	UINT32					time_read;		// size 0x04, offset 0x08
+	BD_ADDR					remote_bd_addr;	// size 0x06, offset 0x0c
+	/* 2 bytes padding */
+} tSDP_DISC_REC; // size 0x14
+
 /*******************************************************************************
  * external globals
  */
@@ -105,6 +142,10 @@ BOOLEAN SDP_AddProtocolList(UINT32 handle, UINT16 num_elem,
 BOOLEAN SDP_AddProfileDescriptorList(UINT32 handle, UINT16 profile_uuid,
                                      UINT16 version);
 BOOLEAN SDP_DeleteRecord(UINT32 handle);
+BOOLEAN SDP_AddLanguageBaseAttrIDList(UINT32 handle, UINT16 lang,
+                                      UINT16 char_enc, UINT16 base_id);
+BOOLEAN SDP_AddAdditionProtoLists(UINT32 handle, UINT16 num_elem,
+                                  tSDP_PROTO_LIST_ELEM *p_proto_list);
 
 #ifdef __cplusplus
 	}

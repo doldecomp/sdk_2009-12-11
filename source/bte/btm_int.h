@@ -30,6 +30,8 @@
  * headers
  */
 
+#include "data_types.h"
+
 #include "btm_api.h"
 #include "hcidefs.h"
 
@@ -63,6 +65,13 @@ typedef tBTM_SEC_CBACK tBTM_SEC_CALLBACK;
 /*******************************************************************************
  * functions
  */
+
+tBTM_STATUS btm_sec_mx_access_request(BD_ADDR bd_addr, UINT16 psm,
+                                      BOOLEAN is_originator, UINT32 mx_proto_id,
+                                      UINT32 mx_chan_id,
+                                      tBTM_SEC_CALLBACK *p_callback,
+                                      void *p_ref_data);
+UINT16 btm_get_acl_disc_reason_code(void);
 
 #ifdef __cplusplus
 	}

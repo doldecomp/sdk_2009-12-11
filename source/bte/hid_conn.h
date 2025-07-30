@@ -1,14 +1,14 @@
-#ifndef BTE_BT_TARGET_H
-#define BTE_BT_TARGET_H
+#ifndef BTE_HID_CONN_H
+#define BTE_HID_CONN_H
 
 /* Original source:
  * bluedroid <android.googlesource.com/platform/external/bluetooth/bluedroid>
- * include/bt_target.h
+ * stack/hid/hid_conn.h
  */
 
 /******************************************************************************
  *
- *  Copyright (C) 1999-2012 Broadcom Corporation
+ *  Copyright (C) 2002-2012 Broadcom Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -30,51 +30,13 @@
  * headers
  */
 
-#include "bt_types.h"
 #include "data_types.h"
 
-#include "gki_target.h"
+#include "gki.h"
 
 /*******************************************************************************
  * macros
  */
-
-#ifndef BTM_MAX_REM_BD_NAME_LEN
-# define BTM_MAX_REM_BD_NAME_LEN	248 /* NOTE: confirmed 248 */
-#endif
-
-#ifndef HCI_CMD_POOL_ID
-# define HCI_CMD_POOL_ID			GKI_POOL_ID_2
-#endif
-
-#ifndef GAP_DATA_POOL_ID
-# define GAP_DATA_POOL_ID			GKI_POOL_ID_3
-#endif
-
-#ifndef L2CAP_MTU_SIZE
-# define L2CAP_MTU_SIZE				1691
-#endif
-
-#ifndef SDP_MAX_PROTOCOL_PARAMS
-# define SDP_MAX_PROTOCOL_PARAMS	2
-#endif
-
-void bte_hcisu_send(BT_HDR *p_msg, UINT16 event);
-#ifndef HCI_ACL_DATA_TO_LOWER
-#define HCI_ACL_DATA_TO_LOWER(p)	bte_hcisu_send((BT_HDR *)(p), BT_EVT_TO_LM_HCI_ACL);
-#endif
-
-#ifndef HID_MAX_SVC_NAME_LEN
-# define HID_MAX_SVC_NAME_LEN		32
-#endif
-
-#ifndef HID_MAX_SVC_DESCR_LEN
-# define HID_MAX_SVC_DESCR_LEN		32
-#endif
-
-#ifndef HID_MAX_PROV_NAME_LEN
-# define HID_MAX_PROV_NAME_LEN		32
-#endif
 
 /*******************************************************************************
  * types
@@ -83,6 +45,44 @@ void bte_hcisu_send(BT_HDR *p_msg, UINT16 event);
 #ifdef __cplusplus
 	extern "C" {
 #endif
+
+typedef UINT8 tHID_CONN_STATE;
+enum
+{
+	HID_CONN_STATE_UNUSED,
+	HID_CONN_STATE_CONNECTING_CTRL,
+	HID_CONN_STATE_CONNECTING_INTR,
+	HID_CONN_STATE_CONFIG,
+	HID_CONN_STATE_CONNECTED,
+	HID_CONN_STATE_DISCONNECTING,
+	HID_CONN_STATE_SECURITY,
+};
+
+typedef UINT8 tHID_CONN_FLAGS;
+enum
+{
+	HID_CONN_FLAGS_IS_ORIG				= 1 << 0,
+	HID_CONN_FLAGS_HER_CTRL_CFG_DONE	= 1 << 1,
+	HID_CONN_FLAGS_MY_CTRL_CFG_DONE		= 1 << 2,
+	HID_CONN_FLAGS_HER_INTR_CFG_DONE	= 1 << 3,
+	HID_CONN_FLAGS_MY_INTR_CFG_DONE		= 1 << 4,
+	HID_CONN_FLAGS_ALL_CONFIGURED		= 0x1e,
+	HID_CONN_FLAGS_CONGESTED			= 1 << 5,
+	HID_CONN_FLAGS_INACTIVE				= 1 << 6,
+};
+
+typedef struct hid_conn
+{
+	tHID_CONN_STATE	conn_state;		// size 0x01, offset 0x00
+	UINT8			conn_flags;		// size 0x01, offset 0x01
+	UINT8			ctrl_id;		// size 0x01, offset 0x02
+	/* 1 byte padding */
+	UINT16			ctrl_cid;		// size 0x02, offset 0x04
+	UINT16			intr_cid;		// size 0x02, offset 0x06
+	UINT16			rem_mtu_size;	// size 0x02, offset 0x08
+	UINT16			disc_reason;	// size 0x02, offset 0x0a
+	TIMER_LIST_ENT	timer_entry;	// size 0x18, offset 0x0c
+} tHID_CONN; // size 0x24
 
 /*******************************************************************************
  * external globals
@@ -96,4 +96,4 @@ void bte_hcisu_send(BT_HDR *p_msg, UINT16 event);
 	}
 #endif
 
-#endif // BTE_BT_TARGET_H
+#endif // BTE_HID_CONN_H

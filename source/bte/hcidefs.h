@@ -48,6 +48,12 @@
 
 #define HCIC_PREAMBLE_SIZE						3
 
+/* HCI mode defenitions */
+#define HCI_MODE_ACTIVE                 0x00
+#define HCI_MODE_HOLD                   0x01
+#define HCI_MODE_SNIFF                  0x02
+#define HCI_MODE_PARK                   0x03
+
 #define HCI_FILTER_COND_NEW_DEVICE				0x00
 #define HCI_FILTER_COND_DEVICE_CLASS			0x01
 #define HCI_FILTER_COND_BD_ADDR					0x02

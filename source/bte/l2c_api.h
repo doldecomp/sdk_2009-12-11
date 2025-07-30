@@ -115,7 +115,7 @@ typedef struct
  * functions
  */
 
-UINT16 L2CA_Register(UINT16 psm, tL2CAP_APPL_INFO *p_cb_info);
+UINT8 L2CA_Register(UINT16 psm, tL2CAP_APPL_INFO *p_cb_info);
 UINT16 L2CA_ConnectReq(UINT16 psm, BD_ADDR p_bd_addr);
 BOOLEAN L2CA_DisconnectReq(UINT16 cid);
 UINT8 L2CA_DataWrite(UINT16 cid, BT_HDR *p_data);

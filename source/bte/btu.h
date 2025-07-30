@@ -31,6 +31,9 @@
  */
 
 #include "bt_types.h"
+#include "data_types.h"
+
+#include "gki.h"
 
 /*******************************************************************************
  * macros
@@ -56,6 +59,8 @@ extern BD_ADDR const BT_BD_ANY;
  */
 
 void btu_hcif_send_cmd(BT_HDR *p_msg);
+void btu_start_timer(TIMER_LIST_ENT *p_tle, UINT16 type, UINT32 timeout);
+void btu_stop_timer(TIMER_LIST_ENT *p_tle);
 
 #ifdef __cplusplus
 	}
