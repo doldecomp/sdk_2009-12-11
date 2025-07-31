@@ -37,7 +37,7 @@
  * macros
  */
 
-#define L2CAP_MIN_OFFSET		9 // NOTE: not 13
+#define L2CAP_MIN_OFFSET	9 // NOTE: not 13
 
 /*******************************************************************************
  * types

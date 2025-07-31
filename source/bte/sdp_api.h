@@ -38,9 +38,13 @@
  * macros
  */
 
-#define SDP_MAX_LIST_ELEMS	3
+#define SDP_MAX_LIST_ELEMS				3
 
-#define SDP_MAX_ATTR_LEN	80
+#define SDP_MAX_ATTR_LEN				80
+
+#define SDP_DISC_ATTR_LEN_MASK			0x0fff
+#define SDP_DISC_ATTR_TYPE(len_type)	((len_type) >> 12)
+#define SDP_DISC_ATTR_LEN(len_type)		((len_type) & SDP_DISC_ATTR_LEN_MASK)
 
 /*******************************************************************************
  * types
@@ -54,9 +58,12 @@ typedef UINT16 tSDP_STATUS;
 enum
 {
 	SDP_SUCCESS,
+	SDP_ILLEGAL_PARAMETER = 11,
 };
 
 typedef tBT_UUID tSDP_UUID;
+
+typedef void tSDP_DISC_CMPL_CB(UINT16 result);
 
 typedef struct t_sdp_di_record
 {
@@ -118,6 +125,20 @@ typedef struct t_sdp_disc_rec
 	/* 2 bytes padding */
 } tSDP_DISC_REC; // size 0x14
 
+typedef struct
+{
+	UINT32			mem_size;							// size 0x04, offset 0x00
+	UINT32			mem_free;							// size 0x04, offset 0x04
+	tSDP_DISC_REC	*p_first_rec;						// size 0x04, offset 0x08
+	UINT16			num_uuid_filters;					// size 0x02, offset 0x0c
+	/* 2 bytes padding */
+	tSDP_UUID		uuid_filters[SDP_MAX_UUID_FILTERS];	// size 0x3c, offset 0x10
+	UINT16			num_attr_filters;					// size 0x02, offset 0x4c
+	UINT16			attr_filters[SDP_MAX_ATTR_FILTERS];	// size 0x18, offset 0x4e
+	/* 2 bytes padding */
+	UINT8			*p_free_mem;						// size 0x04, offset 0x68
+} tSDP_DISCOVERY_DB;
+
 /*******************************************************************************
  * external globals
  */
@@ -146,6 +167,15 @@ BOOLEAN SDP_AddLanguageBaseAttrIDList(UINT32 handle, UINT16 lang,
                                       UINT16 char_enc, UINT16 base_id);
 BOOLEAN SDP_AddAdditionProtoLists(UINT32 handle, UINT16 num_elem,
                                   tSDP_PROTO_LIST_ELEM *p_proto_list);
+BOOLEAN SDP_InitDiscoveryDb(tSDP_DISCOVERY_DB *p_db, UINT32 len,
+                            UINT16 num_uuid, tSDP_UUID *p_uuid_list,
+                            UINT16 num_attr, UINT16 *p_attr_list);
+BOOLEAN SDP_ServiceSearchRequest(UINT8 *p_bd_addr, tSDP_DISCOVERY_DB *p_db,
+                                 tSDP_DISC_CMPL_CB *p_cb);
+tSDP_DISC_ATTR *SDP_FindAttributeInRec(tSDP_DISC_REC *p_rec, UINT16 attr_id);
+tSDP_DISC_REC *SDP_FindServiceUUIDInDb(tSDP_DISCOVERY_DB *p_db,
+                                       tBT_UUID *p_uuid,
+                                       tSDP_DISC_REC *p_start_rec);
 
 #ifdef __cplusplus
 	}

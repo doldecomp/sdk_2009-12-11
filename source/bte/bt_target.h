@@ -61,7 +61,8 @@
 
 void bte_hcisu_send(BT_HDR *p_msg, UINT16 event);
 #ifndef HCI_ACL_DATA_TO_LOWER
-#define HCI_ACL_DATA_TO_LOWER(p)	bte_hcisu_send((BT_HDR *)(p), BT_EVT_TO_LM_HCI_ACL);
+#define HCI_ACL_DATA_TO_LOWER(p)	\
+	bte_hcisu_send((BT_HDR *)(p), BT_EVT_TO_LM_HCI_ACL);
 #endif
 
 #ifndef HID_MAX_SVC_NAME_LEN
@@ -74,6 +75,48 @@ void bte_hcisu_send(BT_HDR *p_msg, UINT16 event);
 
 #ifndef HID_MAX_PROV_NAME_LEN
 # define HID_MAX_PROV_NAME_LEN		32
+#endif
+
+#define HID_HOST_MAX_DEVICES		16
+
+#ifndef HID_HOST_MAX_DEVICES
+# define HID_HOST_MAX_DEVICES		7
+#endif
+
+#define SDP_MAX_ATTR_FILTERS		12
+
+#ifndef SDP_MAX_ATTR_FILTERS
+# define SDP_MAX_ATTR_FILTERS		15
+#endif
+
+#ifndef SDP_MAX_UUID_FILTERS
+# define SDP_MAX_UUID_FILTERS		3
+#endif
+
+#define HID_HOST_MAX_CONN_RETRY		0
+
+#ifndef HID_HOST_MAX_CONN_RETRY
+# define HID_HOST_MAX_CONN_RETRY	3
+#endif
+
+#ifndef HID_HOST_MTU
+# define HID_HOST_MTU				640
+#endif
+
+#ifndef HID_HOST_FLUSH_TO
+# define HID_HOST_FLUSH_TO			0xffff
+#endif
+
+#ifndef HID_CONTROL_POOL_ID
+# define HID_CONTROL_POOL_ID		2
+#endif
+
+#ifndef HID_INTERRUPT_POOL_ID
+# define HID_INTERRUPT_POOL_ID		2
+#endif
+
+#ifndef HID_HOST_REPAGE_WIN
+# define HID_HOST_REPAGE_WIN		2
 #endif
 
 /*******************************************************************************

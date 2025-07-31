@@ -34,7 +34,11 @@
  * macros
  */
 
-#define L2CAP_CONN_OK	0
+#define L2CAP_CONN_OK				0
+#define L2CAP_CONN_PENDING			1
+#define L2CAP_CONN_SECURITY_BLOCK	3
+#define L2CAP_CONN_NO_RESOURCES		4
+
 
 #define L2CAP_CFG_OK	0
 

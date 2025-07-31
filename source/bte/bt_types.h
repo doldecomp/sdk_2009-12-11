@@ -144,6 +144,9 @@
 	} while (FALSE)
 // clang-format on
 
+#define HID_PSM_CONTROL		17
+#define HID_PSM_INTERRUPT	19
+
 /*******************************************************************************
  * types
  */
@@ -187,6 +190,8 @@ typedef UINT8 *PIN_CODE_PTR;
 
 #define BT_EVENT_MASK_LEN	8
 typedef UINT8 BT_EVENT_MASK[BT_EVENT_MASK_LEN];
+
+#define LEN_UUID_16			2
 
 #define MAX_UUID_SIZE		16
 typedef struct

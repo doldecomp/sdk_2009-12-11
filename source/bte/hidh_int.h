@@ -1,14 +1,14 @@
-#ifndef BTE_BTU_H
-#define BTE_BTU_H
+#ifndef BTE_HID_HOST_INT_H
+#define BTE_HID_HOST_INT_H
 
 /* Original source:
  * bluedroid <android.googlesource.com/platform/external/bluetooth/bluedroid>
- * stack/include/btu.h
+ * stack/hid/hidh_int.h
  */
 
 /******************************************************************************
  *
- *  Copyright (C) 1999-2012 Broadcom Corporation
+ *  Copyright (C) 2002-2012 Broadcom Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -30,42 +30,81 @@
  * headers
  */
 
+#include "bt_target.h"
 #include "bt_types.h"
 #include "data_types.h"
 
-#include "gki.h"
+#include "hid_conn.h"
+#include "hiddefs.h"
+#include "hidh_api.h"
+#include "l2c_api.h"
+#include "sdp_api.h"
 
 /*******************************************************************************
  * macros
  */
 
-#define BTU_TTYPE_HID_HOST_REPAGE_TO	66
+#define MAX_SERVICE_DB_SIZE	4000
 
 /*******************************************************************************
  * types
  */
 
-
 #ifdef __cplusplus
 	extern "C" {
 #endif
+
+enum
+{
+	HID_DEV_NO_CONN,
+	HID_DEV_CONNECTED,
+};
+
+typedef struct per_device_ctb
+{
+	BOOLEAN		in_use;			// size 0x01, offset 0x00
+	BD_ADDR		addr;			// size 0x06, offset 0x01
+	/* 1 byte padding */
+	UINT16		attr_mask;		// size 0x02, offset 0x08
+	UINT8		state;			// size 0x01, offset 0x0a
+	UINT8		conn_substate;	// size 0x01, offset 0x0b
+	UINT8		conn_tries;		// size 0x01, offset 0x0c
+	/* 3 bytes padding */
+	tHID_CONN	conn;			// size 0x24, offset 0x10
+} tHID_HOST_DEV_CTB; // size 0x34
+
+typedef struct host_ctb
+{
+	tHID_HOST_DEV_CTB		devices[HID_HOST_MAX_DEVICES];
+	tHID_HOST_DEV_CALLBACK	*callback;
+	tL2CAP_CFG_INFO			l2cap_cfg;
+	BOOLEAN					sdp_busy;
+	tHID_HOST_SDP_CALLBACK	*sdp_cback;
+	tSDP_DISCOVERY_DB		*p_sdp_db;
+	tHID_DEV_SDP_INFO		sdp_rec;
+	BOOLEAN					reg_flag;
+	UINT8					trace_level;
+} tHID_HOST_CTB;
 
 /*******************************************************************************
  * external globals
  */
 
-extern BD_ADDR const BT_BD_ANY;
+extern tHID_HOST_CTB hh_cb;
 
 /*******************************************************************************
  * functions
  */
 
-void btu_hcif_send_cmd(BT_HDR *p_msg);
-void btu_start_timer(TIMER_LIST_ENT *p_tle, UINT16 type, UINT32 timeout);
-void btu_stop_timer(TIMER_LIST_ENT *p_tle);
+tHID_STATUS hidh_conn_reg(void);
+void hidh_conn_dereg(void);
+tHID_STATUS hidh_conn_initiate(UINT8 dhandle);
+tHID_STATUS hidh_conn_snd_data(UINT8 dhandle, UINT8 trans_type, UINT8 param,
+                               UINT16 data, UINT8 rpt_id, BT_HDR *buf);
+tHID_STATUS hidh_conn_disconnect(UINT8 dhandle);
 
 #ifdef __cplusplus
 	}
 #endif
 
-#endif // BTE_BTU_H
+#endif // BTE_HID_HOST_INT_H

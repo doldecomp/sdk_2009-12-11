@@ -41,8 +41,26 @@
 
 #define HID_GET_TRANS_FROM_HDR(x)	(((x) >> 4) & 0x0f)
 #define HID_GET_PARAM_FROM_HDR(x)	( (x)       & 0x0f)
+#define HID_BUILD_HDR(t, p)			(UINT8)(((t) << 4) | ((p) & 0x0f))
 
 #define HID_PAR_REP_TYPE_MASK		0x03
+
+#define HID_TRANS_HANDSHAKE			0
+#define HID_TRANS_CONTROL			1
+#define HID_TRANS_GET_REPORT		4
+#define HID_TRANS_SET_REPORT		5
+#define HID_TRANS_GET_PROTOCOL		6
+#define HID_TRANS_SET_PROTOCOL		7
+#define HID_TRANS_GET_IDLE			8
+#define HID_TRANS_SET_IDLE			9
+#define HID_TRANS_DATA				10
+#define HID_TRANS_DATAC				11
+
+#define HID_PAR_CONTROL_VIRTUAL_CABLE_UNPLUG        (5)
+
+#define HID_L2CAP_CONN_FAIL	0x0100
+#define HID_L2CAP_REQ_FAIL	0x0200
+#define HID_L2CAP_CFG_FAIL	0x0400
 
 /*******************************************************************************
  * types

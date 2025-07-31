@@ -76,6 +76,14 @@
 
 #define BTM_CONNECTABLE	1
 
+#define BTM_SEC_SERVICE_HID_SEC_CTRL	32
+#define BTM_SEC_SERVICE_HID_NOSEC_CTRL	33
+#define BTM_SEC_SERVICE_HID_INTR		34
+
+#define BTM_SEC_PROTO_HID	6
+
+#define BTM_SEC_NONE	0
+
 /*******************************************************************************
  * types
  */
@@ -271,6 +279,7 @@ tBTM_INQ_INFO *BTM_InqDbFirst(void);
 tBTM_STATUS BTM_SetQoS(BD_ADDR bd, FLOW_SPEC *p_flow, tBTM_CMPL_CB *p_cb);
 tBTM_STATUS BTM_SetPowerMode(UINT8 pm_id, BD_ADDR remote_bda,
                                                  tBTM_PM_PWR_MD *p_mode);
+void BTM_SetOutService(BD_ADDR bd_addr, UINT8 service_id, UINT32 mx_chan_id);
 
 #ifdef __cplusplus
 	}

@@ -1,5 +1,5 @@
-#ifndef BTE_HIDD_INT_H
-#define BTE_HIDD_INT_H
+#ifndef BTE_HID_DEVICE_INT_H
+#define BTE_HID_DEVICE_INT_H
 
 /*******************************************************************************
  * headers
@@ -87,4 +87,4 @@ UINT8 hidd_pm_suspend_evt(void);
 	}
 #endif
 
-#endif // BTE_HIDD_INT_H
+#endif // BTE_HID_DEVICE_INT_H

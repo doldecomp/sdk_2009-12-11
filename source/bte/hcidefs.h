@@ -37,6 +37,16 @@
  * macros
  */
 
+#define HCI_SUCCESS                                     0x00
+#define HCI_ERR_AUTH_FAILURE                            0x05
+#define HCI_ERR_KEY_MISSING                             0x06
+#define HCI_ERR_HOST_REJECT_SECURITY                    0x0E
+#define HCI_ERR_PAIRING_NOT_ALLOWED                     0x18
+#define HCI_ERR_UNIT_KEY_USED                           0x26
+#define HCI_ERR_PAIRING_WITH_UNIT_KEY_NOT_SUPPORTED     0x29
+#define HCI_ERR_ENCRY_MODE_NOT_ACCEPTABLE               0x25
+#define HCI_ERR_REPEATED_ATTEMPTS                       0x17
+
 #define HCI_MAX_INQUIRY_LENGTH					0x30
 
 #define HCI_PER_INQ_MIN_MIN_PERIOD				0x0002

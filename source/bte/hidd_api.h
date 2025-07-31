@@ -1,5 +1,5 @@
-#ifndef BTE_HIDD_API_H
-#define BTE_HIDD_API_H
+#ifndef BTE_HID_DEVICE_API_H
+#define BTE_HID_DEVICE_API_H
 
 /*******************************************************************************
  * headers
@@ -124,4 +124,4 @@ tHID_STATUS HID_DevSetPowerMgmtParams(UINT8 conn_substate,
 	}
 #endif
 
-#endif // BTE_HIDD_API_H
+#endif // BTE_HID_DEVICE_API_H

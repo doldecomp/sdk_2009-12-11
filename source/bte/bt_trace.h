@@ -117,7 +117,7 @@ extern void LogMsg_6(UINT32 trace_set_mask, char const *fmt_str, UINT32 p1, UINT
 #define TRACE_LAYER_GAP				14
 #define TRACE_LAYER_GOEP			16
 #define TRACE_LAYER_XML				16
-#define TRACE_LAYER_HIDD			30
+#define TRACE_LAYER_HID				30
 #define TRACE_LAYER_MAX_NUM			49
 
 /* TRACE_ORIGINATOR					0x0000^^00 */
@@ -157,7 +157,8 @@ extern void LogMsg_6(UINT32 trace_set_mask, char const *fmt_str, UINT32 p1, UINT
 #define APPL_TRACE(type_, ...)	do { if (appl_trace_level >= BT_TRACE_LEVEL_ ## type_) BLUEDROID_LOG_TRACE(GENERAL, NONE, APPL, type_, __VA_ARGS__); } while (FALSE)
 #define GAP_TRACE(type_, ...)	do { if (gap_cb.trace_level >= BT_TRACE_LEVEL_ ## type_) BLUEDROID_LOG_TRACE(GENERAL, GAP, STACK, type_, __VA_ARGS__); } while (FALSE)
 #define GOEP_TRACE(type_, ...)	do { if (goep_cb.trace_level >= BT_TRACE_LEVEL_ ## type_) BLUEDROID_LOG_TRACE(GENERAL, GOEP, STACK, type_, __VA_ARGS__); } while (FALSE)
-#define HIDD_TRACE(type_, ...)	do { if (hd_cb.trace_level >= BT_TRACE_LEVEL_ ## type_) BLUEDROID_LOG_TRACE(GENERAL, HIDD, STACK, type_, __VA_ARGS__); } while (FALSE)
+#define HIDD_TRACE(type_, ...)	do { if (hd_cb.trace_level >= BT_TRACE_LEVEL_ ## type_) BLUEDROID_LOG_TRACE(GENERAL, HID, STACK, type_, __VA_ARGS__); } while (FALSE)
+#define HIDH_TRACE(type_, ...)	do { if (hh_cb.trace_level >= BT_TRACE_LEVEL_ ## type_) BLUEDROID_LOG_TRACE(GENERAL, HID, STACK, type_, __VA_ARGS__); } while (FALSE)
 #define XML_TRACE(type_, ...)	BLUEDROID_LOG_TRACE(GENERAL, XML, STACK, type_, __VA_ARGS__)
 
 // clang-format on
