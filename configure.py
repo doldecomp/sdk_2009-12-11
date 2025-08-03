@@ -451,7 +451,7 @@ config.libs = [
     RvlLib(
         "darch",
         [
-            Object(DebugNonMatching, ReleaseNonMatching, "darch/darch.c"),
+            Object(DebugMatching, ReleaseMatching, "darch/darch.c"),
         ],
     ),
     RvlLib(
