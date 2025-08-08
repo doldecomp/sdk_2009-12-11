@@ -98,6 +98,13 @@
 
 #define HCI_GET_CMD_BUF(paramlen)	((BT_HDR *)GKI_getpoolbuf(HCI_CMD_POOL_ID))
 
+#define HCI_DATA_EVENT_MASK   3
+#define HCI_DATA_EVENT_OFFSET 12
+#define HCID_GET_EVENT(u16)   (UINT8)(((u16) >> HCI_DATA_EVENT_OFFSET) & HCI_DATA_EVENT_MASK)
+
+#define HCI_DATA_HANDLE_MASK 0x0FFF
+#define HCID_GET_HANDLE(u16) (UINT16)((u16) & HCI_DATA_HANDLE_MASK)
+
 /*******************************************************************************
  * types
  */

@@ -43,6 +43,9 @@
 
 #define BTM_SEC_PROTO_RFCOMM	3
 
+#define GUARANTEED      2
+#define BEST_EFFORT     1
+
 // clang-format off
 #define UINT8_TO_STREAM(p, u8)										\
 	do																\
@@ -118,7 +121,7 @@
 		register int ijk;											\
 																	\
 		for (ijk = 0; ijk < len; ijk++)								\
-			*(p)++ = (UINT8) a[ijk];								\
+			*(p)++ = (UINT8)(a)[ijk];								\
 	} while (FALSE)
 
 #define STREAM_TO_UINT8(p, u8)										\
@@ -131,10 +134,24 @@
 #define STREAM_TO_UINT16(p, u16)									\
 	do																\
 	{																\
-		*(u16) = ((UINT16)(*(p)) + (((UINT16)(*((p) + 1))) << 8));	\
+		*(u16) =													\
+		  (((UINT32)(*((p) + 0))) << 0)								\
+		+ (((UINT16)(*((p) + 1))) << 8);							\
+																	\
 		(p) += 2;													\
 	} while (FALSE)
 
+#define STREAM_TO_UINT32(p, u32)									\
+	do																\
+	{																\
+		*(u32) =													\
+		  (((UINT32)(*((p) + 0))) <<  0)							\
+		+ (((UINT32)(*((p) + 1))) <<  8)							\
+		+ (((UINT32)(*((p) + 2))) << 16)							\
+		+ (((UINT32)(*((p) + 3))) << 24);							\
+																	\
+		(p) += 4;													\
+	} while (FALSE)
 
 #define UINT16_TO_BE_FIELD(p, u16)									\
 	do																\
@@ -190,6 +207,9 @@ typedef UINT8 *PIN_CODE_PTR;
 
 #define BT_EVENT_MASK_LEN	8
 typedef UINT8 BT_EVENT_MASK[BT_EVENT_MASK_LEN];
+
+#define BD_FEATURES_LEN		8
+typedef UINT8 BD_FEATURES[BD_FEATURES_LEN];
 
 #define LEN_UUID_16			2
 

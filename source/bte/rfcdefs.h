@@ -1,9 +1,9 @@
-#ifndef BTE_GKI_TARGET_H
-#define BTE_GKI_TARGET_H
+#ifndef BTE_RFC_DEFS_H
+#define BTE_RFC_DEFS_H
 
 /* Original source:
  * bluedroid <android.googlesource.com/platform/external/bluetooth/bluedroid>
- * include/gki_target.h
+ * stack/include/rfcdefs.h
  */
 
 /******************************************************************************
@@ -34,29 +34,7 @@
  * macros
  */
 
-#ifndef PPC_TASK
-# define PPC_TASK			2
-#endif
-
-#ifndef GKI_POOL_ID_2
-# define GKI_POOL_ID_2		2
-#endif
-
-#ifndef GKI_POOL_ID_3
-# define GKI_POOL_ID_3		3
-#endif
-
-#ifndef TICKS_PER_SEC
-# define TICKS_PER_SEC		100
-#endif
-
-#ifndef GKI_MS_TO_TICKS
-# define GKI_MS_TO_TICKS(x)	((x) / (1000 / TICKS_PER_SEC))
-#endif
-
-#ifndef GKI_BUF2_SIZE
-# define GKI_BUF2_SIZE		660
-#endif
+#define PORT_MAX_RFC_PORTS	31
 
 /*******************************************************************************
  * types
@@ -78,4 +56,4 @@
 	}
 #endif
 
-#endif // BTE_GKI_TARGET_H
+#endif // BTE_RFC_DEFS_H

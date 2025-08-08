@@ -36,107 +36,184 @@
 #include "gki_target.h"
 
 /*******************************************************************************
- * macros
+ * Configuration options
  */
 
+/* NOTE: confirmed to be 248 */
 #ifndef BTM_MAX_REM_BD_NAME_LEN
-# define BTM_MAX_REM_BD_NAME_LEN	248 /* NOTE: confirmed 248 */
+# define BTM_MAX_REM_BD_NAME_LEN		248
 #endif
 
 #ifndef HCI_CMD_POOL_ID
-# define HCI_CMD_POOL_ID			GKI_POOL_ID_2
+# define HCI_CMD_POOL_ID				GKI_POOL_ID_2
 #endif
 
 #ifndef GAP_DATA_POOL_ID
-# define GAP_DATA_POOL_ID			GKI_POOL_ID_3
+# define GAP_DATA_POOL_ID				GKI_POOL_ID_3
 #endif
 
 #ifndef L2CAP_MTU_SIZE
-# define L2CAP_MTU_SIZE				1691
+# define L2CAP_MTU_SIZE					1691
 #endif
 
 #ifndef SDP_MAX_PROTOCOL_PARAMS
-# define SDP_MAX_PROTOCOL_PARAMS	2
+# define SDP_MAX_PROTOCOL_PARAMS		2
 #endif
 
 void bte_hcisu_send(BT_HDR *p_msg, UINT16 event);
 #ifndef HCI_ACL_DATA_TO_LOWER
-#define HCI_ACL_DATA_TO_LOWER(p)	\
+#define HCI_ACL_DATA_TO_LOWER(p)		\
 	bte_hcisu_send((BT_HDR *)(p), BT_EVT_TO_LM_HCI_ACL);
 #endif
 
 #ifndef HID_MAX_SVC_NAME_LEN
-# define HID_MAX_SVC_NAME_LEN		32
+# define HID_MAX_SVC_NAME_LEN			32
 #endif
 
 #ifndef HID_MAX_SVC_DESCR_LEN
-# define HID_MAX_SVC_DESCR_LEN		32
+# define HID_MAX_SVC_DESCR_LEN			32
 #endif
 
 #ifndef HID_MAX_PROV_NAME_LEN
-# define HID_MAX_PROV_NAME_LEN		32
+# define HID_MAX_PROV_NAME_LEN			32
 #endif
 
-#define HID_HOST_MAX_DEVICES		16
+#define HID_HOST_MAX_DEVICES			16
 
 #ifndef HID_HOST_MAX_DEVICES
-# define HID_HOST_MAX_DEVICES		7
+# define HID_HOST_MAX_DEVICES			7
 #endif
 
-#define SDP_MAX_ATTR_FILTERS		12
+#define SDP_MAX_ATTR_FILTERS			12
 
 #ifndef SDP_MAX_ATTR_FILTERS
-# define SDP_MAX_ATTR_FILTERS		15
+# define SDP_MAX_ATTR_FILTERS			15
 #endif
 
 #ifndef SDP_MAX_UUID_FILTERS
-# define SDP_MAX_UUID_FILTERS		3
+# define SDP_MAX_UUID_FILTERS			3
 #endif
 
-#define HID_HOST_MAX_CONN_RETRY		0
+#define HID_HOST_MAX_CONN_RETRY			0
 
 #ifndef HID_HOST_MAX_CONN_RETRY
-# define HID_HOST_MAX_CONN_RETRY	3
+# define HID_HOST_MAX_CONN_RETRY		3
 #endif
 
 #ifndef HID_HOST_MTU
-# define HID_HOST_MTU				640
+# define HID_HOST_MTU					640
 #endif
 
 #ifndef HID_HOST_FLUSH_TO
-# define HID_HOST_FLUSH_TO			0xffff
+# define HID_HOST_FLUSH_TO				0xffff
 #endif
 
 #ifndef HID_CONTROL_POOL_ID
-# define HID_CONTROL_POOL_ID		2
+# define HID_CONTROL_POOL_ID			2
 #endif
 
 #ifndef HID_INTERRUPT_POOL_ID
-# define HID_INTERRUPT_POOL_ID		2
+# define HID_INTERRUPT_POOL_ID			2
 #endif
 
 #ifndef HID_HOST_REPAGE_WIN
-# define HID_HOST_REPAGE_WIN		2
+# define HID_HOST_REPAGE_WIN			2
 #endif
 
-/*******************************************************************************
- * types
- */
+#if 0
+#define MAX_ACL_CONNECTIONS				4
 
-#ifdef __cplusplus
-	extern "C" {
+#ifndef MAX_ACL_CONNECTIONS
+# define MAX_L2CAP_LINKS				7
+#else
+# define MAX_L2CAP_LINKS				MAX_ACL_CONNECTIONS
+#endif
+#else
+# define MAX_L2CAP_LINKS				4
 #endif
 
-/*******************************************************************************
- * external globals
- */
+#define MAX_L2CAP_CHANNELS				10
 
-/*******************************************************************************
- * functions
- */
+#ifndef MAX_L2CAP_CHANNELS
+# define MAX_L2CAP_CHANNELS				16
+#endif
 
-#ifdef __cplusplus
-	}
+#define MAX_L2CAP_CLIENTS				8
+
+#ifndef MAX_L2CAP_CLIENTS
+# define MAX_L2CAP_CLIENTS				15
+#endif
+
+#ifndef BTM_SEC_SERVICE_NAME_LEN
+# define BTM_SEC_SERVICE_NAME_LEN		BT_MAX_SERVICE_NAME_LEN
+#endif
+
+#ifndef BT_MAX_SERVICE_NAME_LEN
+# define BT_MAX_SERVICE_NAME_LEN		21
+#endif
+
+#ifndef L2CAP_LINK_STARTUP_TOUT
+# define L2CAP_LINK_STARTUP_TOUT		60
+#endif
+
+#ifndef BTM_MAX_PM_RECORDS
+# define BTM_MAX_PM_RECORDS				2
+#endif
+
+#define BTM_SEC_MAX_SERVICE_RECORDS		24
+
+#ifndef BTM_SEC_MAX_SERVICE_RECORDS
+# define BTM_SEC_MAX_SERVICE_RECORDS	32
+#endif
+
+#define BTM_SEC_MAX_DEVICE_RECORDS		16
+
+#ifndef BTM_SEC_MAX_DEVICE_RECORDS
+# define BTM_SEC_MAX_DEVICE_RECORDS		100
+#endif
+
+#define BTM_MAX_SCO_LINKS				3
+
+#ifndef BTM_MAX_SCO_LINKS
+# define BTM_MAX_SCO_LINKS				2
+#endif
+
+#define BTM_INQ_DB_SIZE					12
+
+#ifndef BTM_INQ_DB_SIZE
+# define BTM_INQ_DB_SIZE				40
+#endif
+
+#define BT_1SEC_TIMEOUT					1
+
+/* Use 2 seconds by default for low-resolution systems, override to 1 for
+ * high-resolution systems
+ */
+#ifndef BT_1SEC_TIMEOUT
+# define BT_1SEC_TIMEOUT				2
+#endif
+
+#define L2CAP_LINK_INACTIVITY_TOUT		2
+
+#ifndef L2CAP_LINK_INACTIVITY_TOUT
+# define L2CAP_LINK_INACTIVITY_TOUT		4
+#endif
+
+#ifndef L2CAP_CMD_POOL_ID
+# define L2CAP_CMD_POOL_ID				GKI_POOL_ID_2
+#endif
+
+#ifndef L2CAP_EXTFEA_SUPPORTED_MASK
+# define L2CAP_EXTFEA_SUPPORTED_MASK	(L2CAP_EXTFEA_ENH_RETRANS | L2CAP_EXTFEA_STREAM_MODE | L2CAP_EXTFEA_NO_CRC | L2CAP_EXTFEA_FIXED_CHNLS)
+#endif
+
+#define L2CAP_FEATURE_REQ_ID			73
+#define L2CAP_FEATURE_RSP_ID			173
+
+#define BTM_MAX_LOC_BD_NAME_LEN			31
+
+#ifndef BTM_MAX_LOC_BD_NAME_LEN
+# define BTM_MAX_LOC_BD_NAME_LEN		248
 #endif
 
 #endif // BTE_BT_TARGET_H

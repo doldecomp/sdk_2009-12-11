@@ -114,6 +114,7 @@ extern void LogMsg_6(UINT32 trace_set_mask, char const *fmt_str, UINT32 p1, UINT
 #define TRACE_LAYER(x)				((((UINT32)(x)) << 16) & TRACE_LAYER_MASK)
 
 #define TRACE_LAYER_NONE			0
+#define TRACE_LAYER_L2CAP			8
 #define TRACE_LAYER_GAP				14
 #define TRACE_LAYER_GOEP			16
 #define TRACE_LAYER_XML				16
@@ -159,6 +160,7 @@ extern void LogMsg_6(UINT32 trace_set_mask, char const *fmt_str, UINT32 p1, UINT
 #define GOEP_TRACE(type_, ...)	do { if (goep_cb.trace_level >= BT_TRACE_LEVEL_ ## type_) BLUEDROID_LOG_TRACE(GENERAL, GOEP, STACK, type_, __VA_ARGS__); } while (FALSE)
 #define HIDD_TRACE(type_, ...)	do { if (hd_cb.trace_level >= BT_TRACE_LEVEL_ ## type_) BLUEDROID_LOG_TRACE(GENERAL, HID, STACK, type_, __VA_ARGS__); } while (FALSE)
 #define HIDH_TRACE(type_, ...)	do { if (hh_cb.trace_level >= BT_TRACE_LEVEL_ ## type_) BLUEDROID_LOG_TRACE(GENERAL, HID, STACK, type_, __VA_ARGS__); } while (FALSE)
+#define L2CAP_TRACE(type_, ...)	do { if (l2cb.l2cap_trace_level >= BT_TRACE_LEVEL_ ## type_) BLUEDROID_LOG_TRACE(GENERAL, L2CAP, STACK, type_, __VA_ARGS__); } while (FALSE)
 #define XML_TRACE(type_, ...)	BLUEDROID_LOG_TRACE(GENERAL, XML, STACK, type_, __VA_ARGS__)
 
 // clang-format on

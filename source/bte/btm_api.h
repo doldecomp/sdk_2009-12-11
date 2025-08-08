@@ -30,10 +30,10 @@
  * headers
  */
 
-#include "bt_target.h"
 #include "bt_types.h"
 #include "data_types.h"
 
+#include "gki.h"
 #include "hcidefs.h"
 #include "sdp_api.h"
 
@@ -84,6 +84,22 @@
 
 #define BTM_SEC_NONE	0
 
+// 33 - 64, but definitely not 65
+#define BTM_SEC_MAX_SERVICES 64
+
+#ifndef BTM_SEC_MAX_SERVICES
+# define BTM_SEC_MAX_SERVICES            65
+#endif
+
+#define BTM_SEC_ARRAY_BITS          32
+#define BTM_SEC_SERVICE_ARRAY_SIZE  (((UINT32)BTM_SEC_MAX_SERVICES / BTM_SEC_ARRAY_BITS) + \
+                                    (((UINT32)BTM_SEC_MAX_SERVICES % BTM_SEC_ARRAY_BITS) ? 1 : 0))
+
+#define BTM_ACL_MODE_NORMAL	HCI_MODE_ACTIVE
+#define BTM_ACL_MODE_HOLD	HCI_MODE_HOLD
+#define BTM_ACL_MODE_SNIFF	HCI_MODE_SNIFF
+#define BTM_ACL_MODE_PARK	HCI_MODE_PARK
+
 /*******************************************************************************
  * types
  */
@@ -129,6 +145,13 @@ enum
 };
 typedef UINT8 tBTM_PM_STATUS;
 
+typedef UINT8 tBTM_SCO_TYPE;
+enum
+{
+	BTM_LINK_TYPE_SCO	= HCI_LINK_TYPE_SCO,
+	BTM_LINK_TYPE_ESCO	= HCI_LINK_TYPE_ESCO,
+};
+
 /* BTM Power manager modes */
 typedef UINT8 tBTM_PM_MODE;
 enum
@@ -160,6 +183,75 @@ typedef UINT8 tBTM_ABORT_CALLBACK(BD_ADDR bd_addr, DEV_CLASS dev_class,
 
 typedef void tBTM_SEC_CBACK(BD_ADDR bd_addr, void *p_ref_data,
                             tBTM_STATUS result);
+typedef void tBTM_MKEY_CALLBACK(BD_ADDR bd_addr, UINT8 status, UINT8 key_flag);
+typedef UINT8 tBTM_FILTER_CB(BD_ADDR bd_addr, DEV_CLASS dc);
+typedef void tBTM_RMT_NAME_CALLBACK(BD_ADDR bd_addr, DEV_CLASS dc,
+                                    tBTM_BD_NAME bd_name);
+typedef void tBTM_ACL_DB_CHANGE_CB(BD_ADDR p_bda, DEV_CLASS p_dc, BD_NAME p_bdn,
+                                   BD_FEATURES features, BOOLEAN is_new);
+typedef void tBTM_SCO_CB(UINT16 sco_inx);
+typedef void tBTM_INQ_DB_CHANGE_CB(void *p1, BOOLEAN is_new);
+
+typedef struct
+{
+    UINT16  rx_pkt_len;
+    UINT16  tx_pkt_len;
+    BD_ADDR bd_addr;
+    UINT8   link_type;  /* BTM_LINK_TYPE_SCO or BTM_LINK_TYPE_ESCO */
+    UINT8   tx_interval;
+    UINT8   retrans_window;
+    UINT8   air_mode;
+} tBTM_ESCO_DATA;
+
+#define BTM_ESCO_CHG_EVT        1
+#define BTM_ESCO_CONN_REQ_EVT   2
+typedef UINT8 tBTM_ESCO_EVT;
+
+typedef struct
+{
+    UINT16  sco_inx;
+    UINT16  rx_pkt_len;
+    UINT16  tx_pkt_len;
+    BD_ADDR bd_addr;
+    UINT8   hci_status;
+    UINT8   tx_interval;
+    UINT8   retrans_window;
+} tBTM_CHG_ESCO_EVT_DATA;
+
+typedef struct
+{
+    UINT16        sco_inx;
+    BD_ADDR       bd_addr;
+    DEV_CLASS     dev_class;
+    tBTM_SCO_TYPE link_type;
+} tBTM_ESCO_CONN_REQ_EVT_DATA;
+
+typedef union
+{
+    tBTM_CHG_ESCO_EVT_DATA      chg_evt;
+    tBTM_ESCO_CONN_REQ_EVT_DATA conn_evt;
+} tBTM_ESCO_EVT_DATA;
+
+typedef void tBTM_ESCO_CBACK(tBTM_ESCO_EVT event, tBTM_ESCO_EVT_DATA *p_data);
+
+typedef struct
+{
+    UINT32 tx_bw;
+    UINT32 rx_bw;
+    UINT16 max_latency;
+    UINT16 voice_contfmt;  /* Voice Settings or Content Format */
+    UINT16 packet_types;
+    UINT8  retrans_effort;
+} tBTM_ESCO_PARAMS;
+
+typedef struct
+{
+    UINT16  opcode;
+    UINT16  param_len;
+    UINT8   *p_param_buf;
+} tBTM_VSC_CMPL;
+
+typedef void tBTM_VSC_CMPL_CB(tBTM_VSC_CMPL *p1);
 
 typedef struct
 {
@@ -227,12 +319,84 @@ typedef struct
 
 typedef struct
 {
-    UINT16          max;
-    UINT16          min;
-    UINT16          attempt;
-    UINT16          timeout;
-    tBTM_PM_MODE    mode;
-} tBTM_PM_PWR_MD;
+	UINT16			max;		// size 0x02, offset 0x00
+	UINT16			min;		// size 0x02, offset 0x02
+	UINT16			attempt;	// size 0x02, offset 0x04
+	UINT16			timeout;	// size 0x02, offset 0x06
+	tBTM_PM_MODE	mode;		// size 0x01, offset 0x08
+	/* 1 byte padding */
+} tBTM_PM_PWR_MD; // size 0x0a
+
+typedef struct
+{
+	UINT8	hci_version;	// size 0x01, offset 0x00
+	/* 1 byte padding */
+	UINT16	hci_revision;	// size 0x02, offset 0x02
+	UINT8	lmp_version;	// size 0x01, offset 0x04
+	/* 1 byte padding */
+	UINT16	manufacturer;	// size 0x02, offset 0x06
+	UINT16	lmp_subversion;	// size 0x02, offset 0x08
+} tBTM_VERSION_INFO; // size 0x0a
+
+typedef struct
+{
+	UINT8	hci_status;		// size 0x01, offset 0x00
+	UINT8	role;			// size 0x01, offset 0x01
+	BD_ADDR	remote_bd_addr;	// size 0x06, offset 0x02
+} tBTM_ROLE_SWITCH_CMPL; // size 0x08
+
+typedef UINT8 tBTM_DEV_STATUS;
+enum
+{
+	BTM_DEV_STATUS_UP,
+	BTM_DEV_STATUS_DOWN,
+	BTM_DEV_STATUS_CMD_TOUT
+};
+
+typedef void tBTM_DEV_STATUS_CB(tBTM_DEV_STATUS status);
+typedef void tBTM_VS_EVT_CB(UINT8 len, UINT8 *p);
+
+typedef struct
+{
+	tBTM_DEV_STATUS_CB		*p_dev_status_cb;			// size 0x04, offset 0x00
+	tBTM_VS_EVT_CB			*p_vend_spec_cb;			// size 0x04, offset 0x04
+	tBTM_CMPL_CB			*p_stored_link_key_cmpl_cb;	// size 0x04, offset 0x08
+	TIMER_LIST_ENT			reset_timer;				// size 0x18, offset 0x0c
+	tBTM_CMPL_CB			*p_reset_cmpl_cb;			// size 0x04, offset 0x24
+	TIMER_LIST_ENT			rln_timer;					// size 0x18, offset 0x28
+	tBTM_CMPL_CB			*p_rln_cmpl_cb;				// size 0x04, offset 0x40
+	TIMER_LIST_ENT			rlinkp_timer;				// size 0x18, offset 0x44
+	tBTM_CMPL_CB			*p_rlinkp_cmpl_cb;			// size 0x04, offset 0x5c
+	TIMER_LIST_ENT			rssi_timer;					// size 0x18, offset 0x60
+	tBTM_CMPL_CB			*p_rssi_cmpl_cb;			// size 0x04, offset 0x78
+	TIMER_LIST_ENT			lnk_quality_timer;			// size 0x18, offset 0x7c
+	tBTM_CMPL_CB			*p_lnk_qual_cmpl_cb;		// size 0x04, offset 0x94
+	TIMER_LIST_ENT			qossu_timer;				// size 0x18, offset 0x98
+	tBTM_CMPL_CB			*p_qossu_cmpl_cb;			// size 0x04, offset 0xb0
+	tBTM_CMPL_CB			*p_vsc_cmpl_cb;				// size 0x04, offset 0xb4
+	tBTM_CMPL_CB			*p_reset_only_cmpl_cb;		// size 0x04, offset 0xb8
+	tBTM_ROLE_SWITCH_CMPL	switch_role_ref_data;		// size 0x08, offset 0xbc
+	tBTM_CMPL_CB			*p_switch_role_cb;			// size 0x04, offset 0xc4
+	BD_ADDR					local_addr;					// size 0x06, offset 0xc8
+	tBTM_VERSION_INFO		local_version;				// size 0x0a, offset 0xce
+	BD_FEATURES				local_features;				// size 0x08, offset 0xd8
+	DEV_CLASS				dev_class;					// size 0x03, offset 0xe0
+	/* 1 byte padding */
+	UINT16					page_timeout;				// size 0x02, offset 0xe4
+	UINT8					state;						// size 0x01, offset 0xe6
+	UINT8					retry_count;				// size 0x01, offset 0xe7
+	UINT8					vsc_busy;					// size 0x01, offset 0xe8
+	/* 3 bytes padding */
+} tBTM_DEVCB; // size 0xec
+
+typedef struct
+{
+	tBTM_ESCO_CBACK		*p_esco_cback;	// size 0x04, offset 0x00
+	tBTM_ESCO_PARAMS	setup;			// size 0x10, offset 0x04
+	tBTM_ESCO_DATA		data;			// size 0x0e, offset 0x14
+	UINT8				hci_status;		// size 0x01, offset 0x22
+	/* 1 byte padding */
+} tBTM_ESCO_INFO; // size 0x24
 
 /*******************************************************************************
  * external globals
@@ -280,6 +444,16 @@ tBTM_STATUS BTM_SetQoS(BD_ADDR bd, FLOW_SPEC *p_flow, tBTM_CMPL_CB *p_cb);
 tBTM_STATUS BTM_SetPowerMode(UINT8 pm_id, BD_ADDR remote_bda,
                                                  tBTM_PM_PWR_MD *p_mode);
 void BTM_SetOutService(BD_ADDR bd_addr, UINT8 service_id, UINT32 mx_chan_id);
+BOOLEAN BTM_IsDeviceUp(void);
+tBTM_STATUS BTM_ReadLocalVersion(tBTM_VERSION_INFO *p_vers);
+tBTM_STATUS BTM_VendorSpecificCommand(UINT16 opcode, UINT8 param_len,
+                                      UINT8 *p_param_buf,
+                                      tBTM_VSC_CMPL_CB *p_cb);
+tBTM_STATUS BTM_ReadPowerMode(BD_ADDR remote_bda, tBTM_PM_MODE *p_mode);
+tBTM_STATUS BTM_SwitchRole(BD_ADDR remote_bd_addr, UINT8 new_role,
+                           tBTM_CMPL_CB *p_cb);
+UINT8 *BTM_ReadLocalFeatures(void);
+tBTM_INQ_INFO *BTM_InqDbRead(BD_ADDR p_bda);
 
 #ifdef __cplusplus
 	}

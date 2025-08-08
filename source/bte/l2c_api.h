@@ -37,7 +37,27 @@
  * macros
  */
 
-#define L2CAP_MIN_OFFSET	9 // NOTE: not 13
+#define L2CAP_FCR_BASIC_MODE		0x00
+
+#define L2CAP_MIN_OFFSET			9 // NOTE: not 13
+
+#define L2C_INVALID_PSM(psm)		(((psm) & 0x0101) != 0x0001)
+
+#define L2CAP_FLUSHABLE_CH_BASED	0x0000
+
+#define L2CAP_DW_FAILED				0
+#define L2CAP_DW_SUCCESS			1
+#define L2CAP_DW_CONGESTED			2
+
+#define L2CAP_PRIORITY_HIGH         1
+
+#define L2CAP_PING_RESULT_OK        0       /* Ping reply received OK     */
+#define L2CAP_PING_RESULT_NO_LINK   1       /* Link could not be setup    */
+#define L2CAP_PING_RESULT_NO_RESP   2       /* Remote L2CAP did not reply */
+
+#define L2CAP_PRIORITY_NORMAL       0
+#define L2CAP_PRIORITY_HIGH         1
+
 
 /*******************************************************************************
  * types
@@ -46,6 +66,8 @@
 #ifdef __cplusplus
 	extern "C" {
 #endif
+
+typedef void tL2CA_ECHO_RSP_CB(UINT16);
 
 typedef struct
 {

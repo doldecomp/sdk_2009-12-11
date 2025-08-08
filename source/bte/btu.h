@@ -39,7 +39,14 @@
  * macros
  */
 
+#define BTU_TTYPE_L2CAP_LINK			2
+#define BTU_TTYPE_L2CAP_CHNL			3
+#define BTU_TTYPE_L2CAP_HOLD			4
 #define BTU_TTYPE_HID_HOST_REPAGE_TO	66
+#define BTU_TTYPE_73					73
+
+#define BTU_MAX_REG_TIMER				2
+#define BTU_MAX_REG_EVENT				6
 
 /*******************************************************************************
  * types
@@ -50,11 +57,43 @@
 	extern "C" {
 #endif
 
+typedef void (*tBTU_TIMER_CALLBACK)(TIMER_LIST_ENT *p_tle);
+typedef void (*tBTU_EVENT_CALLBACK)(BT_HDR *p_hdr);
+
+typedef struct
+{
+	TIMER_LIST_ENT		*p_tle;		// size 0x04, offset 0x00
+	tBTU_TIMER_CALLBACK	timer_cb;	// size 0x04, offset 0x04
+} tBTU_TIMER_REG; // size 0x08
+
+typedef struct
+{
+	UINT16				event_range;	// size 0x02, offset 0x00
+	/* 2 bytes padding */
+	tBTU_EVENT_CALLBACK	event_cb;		// size 0x04, offset 0x04
+} tBTU_EVENT_REG; // size 0x08
+
+typedef struct
+{
+	tBTU_TIMER_REG	timer_reg[BTU_MAX_REG_TIMER];	// size 0x10, offset 0x00
+	tBTU_EVENT_REG	event_reg[BTU_MAX_REG_EVENT];	// size 0x30, offset 0x10
+	TIMER_LIST_Q	timer_queue;					// size 0x0c, offset 0x40
+	TIMER_LIST_ENT	cmd_cmpl_timer;					// size 0x18, offset 0x4c
+	BUFFER_Q		cmd_xmit_q;						// size 0x0c, offset 0x64
+	BUFFER_Q		cmd_cmpl_q;						// size 0x0c, offset 0x70
+	UINT16			hcit_acl_data_size;				// size 0x02, offset 0x7c
+	UINT16			hcit_acl_pkt_size;				// size 0x02, offset 0x7e
+	UINT16			controller_cmd_window;			// size 0x02, offset 0x80
+	BOOLEAN			reset_complete;					// size 0x01, offset 0x82
+	/* 1 byte padding */
+} tBTU_CB; // size 0x84
+
 /*******************************************************************************
  * external globals
  */
 
 extern BD_ADDR const BT_BD_ANY;
+extern tBTU_CB btu_cb;
 
 /*******************************************************************************
  * functions

@@ -134,7 +134,7 @@ void bta_sys_stop_timer(TIMER_LIST_ENT *p_tle)
 	ptim_stop_timer(&bta_sys_cb.ptim_cb, p_tle);
 }
 
-void bta_sys_disable()
+void bta_sys_disable(void)
 {
 	int i;
 
