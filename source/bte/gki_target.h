@@ -42,6 +42,10 @@
 # define GKI_POOL_ID_2		2
 #endif
 
+#ifndef GKI_BUF3_SIZE
+# define GKI_BUF3_SIZE		(4096 + 16)
+#endif
+
 #ifndef GKI_POOL_ID_3
 # define GKI_POOL_ID_3		3
 #endif

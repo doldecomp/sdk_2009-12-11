@@ -38,6 +38,7 @@
  */
 
 #define HCI_SUCCESS									0x00
+#define HCI_ERR_PAGE_TIMEOUT						0x04
 #define HCI_ERR_AUTH_FAILURE						0x05
 #define HCI_ERR_KEY_MISSING							0x06
 #define HCI_ERR_CONNECTION_EXISTS					0x0B

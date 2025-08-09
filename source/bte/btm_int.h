@@ -362,6 +362,7 @@ void btm_remove_sco_links(BD_ADDR bda);
 void btm_acl_removed(BD_ADDR bda);
 tBTM_STATUS btm_sec_disconnect(UINT16 handle, UINT8 reason);
 BOOLEAN btm_is_sco_active_by_bdaddr(BD_ADDR remote_bda);
+UINT16 btm_get_max_packet_size(BD_ADDR addr);
 
 #ifdef __cplusplus
 	}

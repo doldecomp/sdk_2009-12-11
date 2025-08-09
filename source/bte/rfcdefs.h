@@ -34,7 +34,19 @@
  * macros
  */
 
-#define PORT_MAX_RFC_PORTS	31
+#define PORT_MAX_RFC_PORTS		31
+
+#define RFCOMM_DEFAULT_MTU		127
+
+#define RFCOMM_MAX_DLCI			61
+
+#define RFCOMM_MIN_OFFSET		5
+#define RFCOMM_DATA_OVERHEAD	(RFCOMM_MIN_OFFSET + 1)
+
+#define RFCOMM_PN_CONV_LAYER_TYPE_1 0
+#define RFCOMM_PN_CONV_LAYER_CBFC_R 0xE0
+
+#define RFCOMM_K_MAX                7 /* Max value of K for credit based flow control */
 
 /*******************************************************************************
  * types

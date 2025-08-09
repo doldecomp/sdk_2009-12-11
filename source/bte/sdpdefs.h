@@ -37,10 +37,13 @@
 #define UUID_PROTOCOL_L2CAP					0x0100
 
 #define UUID_SERVCLASS_PUBLIC_BROWSE_GROUP	0x1002
+#define UUID_SERVCLASS_SERIAL_PORT			0x1101
+#define UUID_SERVCLASS_LAN_ACCESS_USING_PPP	0x1102
+#define UUID_SERVCLASS_DIALUP_NETWORKING	0X1103
+#define UUID_SERVCLASS_FAX					0X1111
 #define UUID_SERVCLASS_HUMAN_INTERFACE		0x1124
 
 #define DI_VENDOR_ID_SOURCE_BTSIG			0x0001
-
 
 /*******************************************************************************
  * types

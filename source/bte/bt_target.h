@@ -216,4 +216,100 @@ void bte_hcisu_send(BT_HDR *p_msg, UINT16 event);
 # define BTM_MAX_LOC_BD_NAME_LEN		248
 #endif
 
+#define MAX_RFC_PORTS					5
+
+#ifndef MAX_RFC_PORTS
+# define MAX_RFC_PORTS					30
+#endif
+
+#if 0
+#ifndef MAX_ACL_CONNECTIONS
+# define MAX_BD_CONNECTIONS				7
+#else
+# define MAX_BD_CONNECTIONS				MAX_ACL_CONNECTIONS
+#endif
+#else
+# define MAX_BD_CONNECTIONS				1
+#endif
+
+#define PORT_TX_BUF_CRITICAL_WM			22
+
+#ifndef PORT_TX_BUF_CRITICAL_WM
+# define PORT_TX_BUF_CRITICAL_WM		15
+#endif
+
+#define PORT_TX_CRITICAL_WM				10000
+
+#ifndef PORT_TX_CRITICAL_WM
+# define PORT_TX_CRITICAL_WM			(BTA_RFC_MTU_SIZE * PORT_TX_BUF_CRITICAL_WM)
+#endif
+
+// L2CAP_MIN_OFFSET is in l2c_api.h
+// RFCOMM_DATA_OVERHEAD is in rfcdefs.h
+#ifndef BTA_RFC_MTU_SIZE
+# define BTA_RFC_MTU_SIZE				(L2CAP_MTU_SIZE - L2CAP_MIN_OFFSET - RFCOMM_DATA_OVERHEAD)
+#endif
+
+#ifndef RFCOMM_DATA_POOL_ID
+# define RFCOMM_DATA_POOL_ID			GKI_POOL_ID_3
+#endif
+
+#ifndef RFCOMM_DATA_POOL_BUF_SIZE
+# define RFCOMM_DATA_POOL_BUF_SIZE		GKI_BUF3_SIZE
+#endif
+
+#define PORT_TX_BUF_HIGH_WM				16
+
+#ifndef PORT_TX_BUF_HIGH_WM
+# define PORT_TX_BUF_HIGH_WM			10
+#endif
+
+#define PORT_TX_HIGH_WM					8000
+
+#ifndef PORT_TX_HIGH_WM
+# define PORT_TX_HIGH_WM				(BTA_RFC_MTU_SIZE * PORT_TX_BUF_HIGH_WM)
+#endif
+
+#ifndef RFCOMM_CMD_POOL_ID
+# define RFCOMM_CMD_POOL_ID				GKI_POOL_ID_2
+#endif
+
+#ifndef PORT_FC_DEFAULT
+# define PORT_FC_DEFAULT				PORT_FC_CREDIT
+#endif
+
+#ifndef PORT_RX_BUF_CRITICAL_WM
+# define PORT_RX_BUF_CRITICAL_WM		15
+#endif
+
+#define PORT_RX_CRITICAL_WM				12000
+
+#ifndef PORT_RX_CRITICAL_WM
+# define PORT_RX_CRITICAL_WM			(BTA_RFC_MTU_SIZE * PORT_RX_BUF_CRITICAL_WM)
+#endif
+
+#define PORT_RX_BUF_HIGH_WM				16
+
+#ifndef PORT_RX_BUF_HIGH_WM
+# define PORT_RX_BUF_HIGH_WM			10
+#endif
+
+#define PORT_RX_HIGH_WM					8000
+
+#ifndef PORT_RX_HIGH_WM
+# define PORT_RX_HIGH_WM				(BTA_RFC_MTU_SIZE * PORT_RX_BUF_HIGH_WM)
+#endif
+
+#define PORT_RX_BUF_LOW_WM				8
+
+#ifndef PORT_RX_BUF_LOW_WM
+# define PORT_RX_BUF_LOW_WM				4
+#endif
+
+#define PORT_RX_LOW_WM					5000
+
+#ifndef PORT_RX_LOW_WM
+# define PORT_RX_LOW_WM					(BTA_RFC_MTU_SIZE * PORT_RX_BUF_LOW_WM)
+#endif
+
 #endif // BTE_BT_TARGET_H
