@@ -477,7 +477,6 @@ static void l2c_csm_config(tL2C_CCB *p_ccb, UINT16 event, void *p_data)
 		break;
 
 	case L2CEVT_L2CAP_CONFIG_REQ:
-		// TODO: is l2cu_process_peer_cfg_req now BOOLEAN?
 		if (l2cu_process_peer_cfg_req(p_ccb, p_cfg) != 0)
 		{
 			L2CAP_TRACE(API, "L2CAP - Calling Config_Req_Cb(), CID: 0x%04x",

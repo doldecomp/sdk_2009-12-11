@@ -41,18 +41,48 @@
  * macros
  */
 
-#define RFCOMM_SUCCESS          0
-#define RFCOMM_ERROR            1
+#define RFCOMM_SUCCESS                  0
+#define RFCOMM_ERROR                    1
 
 #define RFC_STATE_CLOSED                0
 #define RFC_STATE_OPENED                4
 
-#define LINE_STATUS_OVERRUN        0x02  /* Receive Overrun Error   */
-#define LINE_STATUS_FAILED         0x10  /* Connection Failed       */
+#define LINE_STATUS_OVERRUN             0x02  /* Receive Overrun Error   */
+#define LINE_STATUS_FAILED              0x10  /* Connection Failed       */
 
-#define RFC_MX_STATE_IDLE           0
-#define RFC_MX_STATE_CONNECTED      5
-#define RFC_MX_STATE_DISC_WAIT_UA   6
+#define RFC_EVENT_SABME                 0
+#define RFC_EVENT_UA                    1
+#define RFC_EVENT_DM                    2
+#define RFC_EVENT_DISC                  3
+#define RFC_EVENT_UIH                   4
+#define RFC_EVENT_TIMEOUT               5
+#define RFC_EVENT_BAD_FRAME             50
+
+#define RFC_MX_STATE_IDLE               0
+#define RFC_MX_STATE_WAIT_CONN_CNF      1
+#define RFC_MX_STATE_CONFIGURE          2
+#define RFC_MX_STATE_SABME_WAIT_UA      3
+#define RFC_MX_STATE_WAIT_SABME         4
+#define RFC_MX_STATE_CONNECTED          5
+#define RFC_MX_STATE_DISC_WAIT_UA       6
+
+#define RFC_MX_EVENT_START_REQ          6
+#define RFC_MX_EVENT_START_RSP          7
+#define RFC_MX_EVENT_CLOSE_REQ          8
+#define RFC_MX_EVENT_CONN_CNF           9
+#define RFC_MX_EVENT_CONN_IND           10
+#define RFC_MX_EVENT_CONF_CNF           11
+#define RFC_MX_EVENT_CONF_IND           12
+#define RFC_MX_EVENT_QOS_VIOLATION_IND  13
+#define RFC_MX_EVENT_DISC_IND           14
+
+#define RFC_T1_TIMEOUT                  20   /* seconds to wait for reply with Poll bit */
+#define RFC_T2_TIMEOUT                  20   /* timeout to wait for Mx UIH */
+
+#define RFC_DISC_TIMEOUT                3   /* If something goes wrong and we send DISC we should not wait for min */
+#define RFCOMM_CONN_TIMEOUT             120 /* first connection to be established on Mx */
+
+#define RFC_MCB_INIT_INACT_TIMER        60  /* in seconds */
 
 /*******************************************************************************
  * types
@@ -182,6 +212,25 @@ void RFCOMM_PortNegRsp(tRFC_MCB *p_mcb, UINT8 dlci, tPORT_STATE *p_pars,
 void rfc_port_timer_stop(tPORT *p_port);
 void rfc_send_credit(tRFC_MCB *p_mcb, UINT8 dlci, UINT8 credit);
 void RFCOMM_FlowReq(tRFC_MCB *p_mcb, UINT8 dlci, UINT8 state);
+void rfc_timer_start(tRFC_MCB *p_rfc_mcb, UINT16 timeout);
+void rfc_save_lcid_mcb(tRFC_MCB *p_rfc_mcb, UINT16 lcid);
+void rfc_mx_sm_execute(tRFC_MCB *p_mcb, UINT16 event, void *p_data);
+tRFC_MCB *rfc_find_lcid_mcb(UINT16 lcid);
+UINT8 rfc_parse_data(tRFC_MCB *p_rfc_mcb, MX_FRAME *p_frame, BT_HDR *p_buf);
+void rfc_process_mx_message(tRFC_MCB *p_rfc_mcb, BT_HDR *p_buf);
+void rfc_port_sm_execute(tPORT *p_port, UINT16 event, void *p_data);
+void rfc_inc_credit(tPORT *p_port, UINT8 credit);
+void rfc_process_l2cap_congestion(tRFC_MCB *p_mcb, BOOLEAN is_congested);
+void rfc_send_ua(tRFC_MCB *p_rfc_mcb, UINT8 dlci);
+void rfc_send_sabme(tRFC_MCB *p_rfc_mcb, UINT8 dlci);
+
+// ---
+
+void rfcomm_l2cap_if_init(void);
+tRFC_MCB *rfc_find_lcid_mcb(UINT16 lcid);
+void rfc_save_lcid_mcb(tRFC_MCB *p_mcb, UINT16 lcid);
+
+void rfc_mx_sm_execute(tRFC_MCB *p_mcb, UINT16 event, void *p_data);
 
 #ifdef __cplusplus
 	}

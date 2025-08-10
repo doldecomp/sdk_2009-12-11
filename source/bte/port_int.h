@@ -54,7 +54,7 @@
 	extern "C" {
 #endif
 
-enum
+enum e_port_state /* given a tag to fully match rfc_mx_fsm.o */
 {
 	RFC_PORT_STATE_IDLE,
 	RFC_PORT_STATE_WAIT_START,
@@ -203,27 +203,6 @@ typedef struct
  * functions
  */
 
-tRFC_MCB *port_find_mcb(BD_ADDR bd_addr);
-tPORT *port_find_port(UINT8 dlci, BD_ADDR bd_addr);
-tPORT *port_allocate_port(UINT8 dlci, BD_ADDR bd_addr);
-int port_open_continue(tPORT *p_port);
-void port_start_close(tPORT *p_port);
-void port_start_par_neg(tPORT *p_port);
-void port_start_control(tPORT *p_port);
-void port_flow_control_peer(tPORT *p_port, BOOLEAN enable, UINT16 count);
-UINT32 port_flow_control_user(tPORT *p_port);
-void port_release_port(tPORT *p_port);
-void port_select_mtu(tPORT *p_port);
-UINT32 port_get_signal_changes(tPORT *p_port, UINT8 old_signals, UINT8 signal);
-tPORT *port_find_mcb_dlci_port(tRFC_MCB *p_mcb, UINT8 dlci);
-tPORT *port_find_dlci_port(UINT8 dlci);
-void port_get_credits(tPORT *p_port, UINT8 k);
-void port_rfc_closed(tPORT *p_port, UINT8 res);
-UINT32 port_rfc_send_tx_data(tPORT *p_port);
-void port_set_defaults(tPORT *p_port);
-
-// ---
-
 int port_open_continue(tPORT *p_port);
 void port_start_control(tPORT *p_port);
 void port_start_par_neg(tPORT *p_port);
@@ -250,6 +229,18 @@ void PORT_FlowInd(tRFC_MCB *p_mcb, UINT8 dlci, BOOLEAN enable_data);
 UINT32 port_rfc_send_tx_data(tPORT *p_port);
 void port_rfc_closed(tPORT *p_port, UINT8 res);
 void port_get_credits(tPORT *p_port, UINT8 k);
+
+tPORT *port_allocate_port(UINT8 dlci, BD_ADDR bd_addr);
+void port_set_defaults(tPORT *p_port);
+void port_select_mtu(tPORT *p_port);
+void port_release_port(tPORT *p_port);
+tRFC_MCB *port_find_mcb(BD_ADDR bd_addr);
+tPORT *port_find_mcb_dlci_port(tRFC_MCB *p_mcb, UINT8 dlci);
+tPORT *port_find_dlci_port(UINT8 dlci);
+tPORT *port_find_port(UINT8 dlci, BD_ADDR bd_addr);
+UINT32 port_flow_control_user(tPORT *p_port);
+UINT32 port_get_signal_changes(tPORT *p_port, UINT8 old_signals, UINT8 signal);
+void port_flow_control_peer(tPORT *p_port, BOOLEAN enable, UINT16 count);
 
 #ifdef __cplusplus
 	}

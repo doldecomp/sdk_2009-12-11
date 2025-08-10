@@ -48,6 +48,8 @@
 
 #define RFCOMM_K_MAX                7 /* Max value of K for credit based flow control */
 
+#define RFCOMM_MX_DLCI                  0
+
 /*******************************************************************************
  * types
  */

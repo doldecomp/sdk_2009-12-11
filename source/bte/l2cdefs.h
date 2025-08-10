@@ -34,18 +34,17 @@
  * macros
  */
 
-#define L2CAP_CMD_REJECT		1
-#define L2CAP_CMD_CONN_REQ		2
-#define L2CAP_CMD_CONN_RSP		3
-#define L2CAP_CMD_CONFIG_REQ	4
-#define L2CAP_CMD_CONFIG_RSP	5
-#define L2CAP_CMD_DISC_REQ		6
-#define L2CAP_CMD_DISC_RSP		7
-#define L2CAP_CMD_ECHO_REQ		8
-#define L2CAP_CMD_ECHO_RSP		9
-#define L2CAP_CMD_INFO_REQ		10
-#define L2CAP_CMD_INFO_RSP                  0x0B
-
+#define L2CAP_CMD_REJECT			1
+#define L2CAP_CMD_CONN_REQ			2
+#define L2CAP_CMD_CONN_RSP			3
+#define L2CAP_CMD_CONFIG_REQ		4
+#define L2CAP_CMD_CONFIG_RSP		5
+#define L2CAP_CMD_DISC_REQ			6
+#define L2CAP_CMD_DISC_RSP			7
+#define L2CAP_CMD_ECHO_REQ			8
+#define L2CAP_CMD_ECHO_RSP			9
+#define L2CAP_CMD_INFO_REQ			10
+#define L2CAP_CMD_INFO_RSP			11
 
 #define L2CAP_CONN_OK				0
 #define L2CAP_CONN_PENDING			1
@@ -125,6 +124,7 @@
 #define L2CAP_INFO_RESP_RESULT_SUCCESS          0
 #define L2CAP_INFO_RESP_RESULT_NOT_SUPPORTED    1
 
+#define L2CAP_DEFAULT_MTU	672
 
 /*******************************************************************************
  * types
