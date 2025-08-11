@@ -35,6 +35,7 @@
 #include "data_types.h"
 
 #include "l2c_api.h"
+#include "port_api.h"
 #include "port_int.h"
 
 /*******************************************************************************
@@ -43,9 +44,14 @@
 
 #define RFCOMM_SUCCESS                  0
 #define RFCOMM_ERROR                    1
+#define RFCOMM_SECURITY_ERR             112
 
 #define RFC_STATE_CLOSED                0
+#define RFC_STATE_SABME_WAIT_UA         1
+#define RFC_STATE_ORIG_WAIT_SEC_CHECK   2
+#define RFC_STATE_TERM_WAIT_SEC_CHECK   3
 #define RFC_STATE_OPENED                4
+#define RFC_STATE_DISC_WAIT_UA          5
 
 #define LINE_STATUS_OVERRUN             0x02  /* Receive Overrun Error   */
 #define LINE_STATUS_FAILED              0x10  /* Connection Failed       */
@@ -56,6 +62,11 @@
 #define RFC_EVENT_DISC                  3
 #define RFC_EVENT_UIH                   4
 #define RFC_EVENT_TIMEOUT               5
+#define RFC_EVENT_OPEN                  9
+#define RFC_EVENT_ESTABLISH_RSP         11
+#define RFC_EVENT_CLOSE                 12
+#define RFC_EVENT_CLEAR                 13
+#define RFC_EVENT_SEC_COMPLETE          15
 #define RFC_EVENT_BAD_FRAME             50
 
 #define RFC_MX_STATE_IDLE               0
@@ -77,12 +88,27 @@
 #define RFC_MX_EVENT_DISC_IND           14
 
 #define RFC_T1_TIMEOUT                  20   /* seconds to wait for reply with Poll bit */
-#define RFC_T2_TIMEOUT                  20   /* timeout to wait for Mx UIH */
+#define RFC_PORT_T1_TIMEOUT             60   /* seconds to wait for reply with Poll bit other than MX */
+#define RFC_T2_TIMEOUT                  60   /* timeout to wait for Mx UIH */
 
 #define RFC_DISC_TIMEOUT                3   /* If something goes wrong and we send DISC we should not wait for min */
 #define RFCOMM_CONN_TIMEOUT             120 /* first connection to be established on Mx */
 
 #define RFC_MCB_INIT_INACT_TIMER        60  /* in seconds */
+#define RFC_EVENT_DATA                  14
+
+UINT8 rfc_calc_fcs(UINT16 len, UINT8 *p);
+
+#define RFCOMM_SABME_FCS(p_data, cr, dlci)	rfc_calc_fcs(3, p_data)
+#define RFCOMM_UA_FCS(p_data, cr, dlci)		rfc_calc_fcs(3, p_data)
+#define RFCOMM_DM_FCS(p_data, cr, dlci)		rfc_calc_fcs(3, p_data)
+#define RFCOMM_DISC_FCS(p_data, cr, dlci)	rfc_calc_fcs(3, p_data)
+#define RFCOMM_UIH_FCS(p_data, dlci)		rfc_calc_fcs(2, p_data)
+
+#define RFCOMM_MIN_MTU          23
+#define RFCOMM_MAX_MTU          32767
+
+#define RFC_MCB_RELEASE_INACT_TIMER 2   /* in seconds */
 
 /*******************************************************************************
  * types
@@ -223,6 +249,22 @@ void rfc_inc_credit(tPORT *p_port, UINT8 credit);
 void rfc_process_l2cap_congestion(tRFC_MCB *p_mcb, BOOLEAN is_congested);
 void rfc_send_ua(tRFC_MCB *p_rfc_mcb, UINT8 dlci);
 void rfc_send_sabme(tRFC_MCB *p_rfc_mcb, UINT8 dlci);
+void rfc_sec_check_complete(BD_ADDR bd_addr, void *p_ref_data, UINT8 res);
+void rfc_port_timer_start(tPORT *p_port, UINT16 tout);
+void rfc_send_buf_uih(tRFC_MCB *p_rfc_mcb, UINT8 dlci, BT_HDR *p_buf);
+void rfc_dec_credit(tPORT *p_port);
+void rfc_send_rpn(tRFC_MCB *p_mcb, UINT8 dlci, BOOLEAN is_command,
+                  tPORT_STATE *p_pars, UINT16 mask);
+void rfc_send_msc(tRFC_MCB *p_mcb, UINT8 dlci, BOOLEAN is_command,
+                  tPORT_CTRL *p_pars);
+void rfc_send_rls(tRFC_MCB *p_mcb, UINT8 dlci, BOOLEAN is_command,
+                  UINT8 status);
+void rfc_send_fcon(tRFC_MCB *p_mcb, BOOLEAN is_command);
+void rfc_send_fcoff(tRFC_MCB *p_mcb, BOOLEAN is_command);
+void rfc_check_send_cmd(tRFC_MCB *p_mcb, BT_HDR *p_buf);
+void rfc_send_pn(tRFC_MCB *p_mcb, UINT8 dlci, BOOLEAN is_command, UINT16 mtu,
+                 UINT8 cl, UINT8 k);
+BOOLEAN rfc_check_fcs(UINT16 len, UINT8 *p, UINT8 received_fcs);
 
 // ---
 
@@ -231,6 +273,56 @@ tRFC_MCB *rfc_find_lcid_mcb(UINT16 lcid);
 void rfc_save_lcid_mcb(tRFC_MCB *p_mcb, UINT16 lcid);
 
 void rfc_mx_sm_execute(tRFC_MCB *p_mcb, UINT16 event, void *p_data);
+
+void rfc_port_sm_execute(tPORT *p_port, UINT16 event, void *p_data);
+/**/
+void rfc_process_pn(tRFC_MCB *p_mcb, BOOLEAN is_command, MX_FRAME *p_frame);
+void rfc_process_rpn(tRFC_MCB *p_mcb, BOOLEAN is_command, BOOLEAN is_request,
+                     MX_FRAME *p_frame);
+void rfc_process_msc(tRFC_MCB *p_mcb, BOOLEAN is_command, MX_FRAME *p_frame);
+void rfc_process_rls(tRFC_MCB *p_mcb, BOOLEAN is_command, MX_FRAME *p_frame);
+void rfc_process_nsc (tRFC_MCB *p_mcb, MX_FRAME *p_frame);
+void rfc_process_test_rsp(tRFC_MCB *p_mcb, BT_HDR *p_buf);
+void rfc_process_fcon(tRFC_MCB *p_mcb, BOOLEAN is_command);
+void rfc_process_fcoff(tRFC_MCB *p_mcb, BOOLEAN is_command);
+void rfc_process_l2cap_congestion(tRFC_MCB *p_mcb, BOOLEAN is_congested);
+
+void RFCOMM_StartReq(tRFC_MCB *p_mcb);
+void RFCOMM_StartRsp(tRFC_MCB *p_mcb, UINT16 result);
+void RFCOMM_DlcEstablishReq(tRFC_MCB *p_mcb, UINT8 dlci, UINT16 mtu);
+void RFCOMM_DlcEstablishRsp(tRFC_MCB *p_mcb, UINT8 dlci, UINT16 mtu,
+                            UINT16 result);
+void RFCOMM_ParNegReq(tRFC_MCB *p_mcb, UINT8 dlci, UINT16 mtu);
+void RFCOMM_ParNegRsp(tRFC_MCB *p_mcb, UINT8 dlci, UINT16 mtu, UINT8 cl,
+                      UINT8 k);
+void RFCOMM_PortNegReq(tRFC_MCB *p_mcb, UINT8 dlci, tPORT_STATE *p_pars);
+void RFCOMM_PortNegRsp(tRFC_MCB *p_mcb, UINT8 dlci, tPORT_STATE *p_pars,
+                       UINT16 param_mask);
+void RFCOMM_ControlReq(tRFC_MCB *p_mcb, UINT8 dlci, tPORT_CTRL *p_pars);
+void RFCOMM_FlowReq(tRFC_MCB *p_mcb, UINT8 dlci, UINT8 enable);
+void RFCOMM_LineStatusReq(tRFC_MCB *p_mcb, UINT8 dlci, UINT8 status);
+void RFCOMM_DlcReleaseReq(tRFC_MCB *p_mcb, UINT8 dlci);
+void RFCOMM_DataReq(tRFC_MCB *p_mcb, UINT8 dlci, BT_HDR *p_buf);
+
+void rfc_send_sabme(tRFC_MCB *p_mcb, UINT8 dlci);
+void rfc_send_ua(tRFC_MCB *p_mcb, UINT8 dlci);
+void rfc_send_dm(tRFC_MCB *p_mcb, UINT8 dlci, BOOLEAN pf);
+void rfc_send_disc(tRFC_MCB *p_mcb, UINT8 dlci);
+void rfc_send_buf_uih(tRFC_MCB *p_mcb, UINT8 dlci, BT_HDR *p_buf);
+void rfc_send_pn(tRFC_MCB *p_mcb, UINT8 dlci, BOOLEAN is_command, UINT16 mtu,
+                 UINT8 cl, UINT8 k);
+void rfc_send_fcon(tRFC_MCB *p_mcb, BOOLEAN is_command);
+void rfc_send_fcoff(tRFC_MCB *p_mcb, BOOLEAN is_command);
+void rfc_send_msc(tRFC_MCB *p_mcb, UINT8 dlci, BOOLEAN is_command,
+                  tPORT_CTRL *p_pars);
+void rfc_send_rls(tRFC_MCB *p_mcb, UINT8 dlci, BOOLEAN is_command, UINT8 status);
+void rfc_send_nsc(tRFC_MCB *p_mcb);
+void rfc_send_rpn(tRFC_MCB *p_mcb, UINT8 dlci, BOOLEAN is_command,
+                  tPORT_STATE *p_pars, UINT16 mask);
+void rfc_send_test(tRFC_MCB *p_mcb, BOOLEAN is_command, BT_HDR *p_buf);
+void rfc_send_credit(tRFC_MCB *p_mcb, UINT8 dlci, UINT8 credit);
+UINT8 rfc_parse_data(tRFC_MCB *p_mcb, MX_FRAME *p_frame, BT_HDR *p_buf);
+void rfc_process_mx_message(tRFC_MCB *p_mcb, BT_HDR *p_buf);
 
 #ifdef __cplusplus
 	}

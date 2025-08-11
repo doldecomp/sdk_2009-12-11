@@ -272,12 +272,12 @@ static void hidh_l2cif_connect_ind(BD_ADDR bd_addr, UINT16 l2cap_cid,
 
 void hidh_proc_repage_timeout(TIMER_LIST_ENT *p_tle)
 {
-	hidh_conn_initiate(p_tle->param);
+	hidh_conn_initiate((UINT8)p_tle->param);
 
-	++hh_cb.devices[p_tle->param].conn_tries;
+	++hh_cb.devices[(UINT8)p_tle->param].conn_tries;
 
-	(*hh_cb.callback)(p_tle->param, HID_HDEV_EVT_RETRYING,
-	                  hh_cb.devices[p_tle->param].conn_tries, NULL);
+	(*hh_cb.callback)((UINT8)p_tle->param, HID_HDEV_EVT_RETRYING,
+	                  hh_cb.devices[(UINT8)p_tle->param].conn_tries, NULL);
 }
 
 void hidh_sec_check_complete_orig(BD_ADDR bd_addr, void *p_ref_data, UINT8 res)

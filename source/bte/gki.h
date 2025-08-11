@@ -106,6 +106,7 @@ void GKI_enqueue_head(BUFFER_Q *, void *);
 void *GKI_remove_from_queue(BUFFER_Q *, void *);
 UINT16 GKI_get_pool_bufsize(UINT8);
 UINT32 GKI_get_tick_count(void);
+void GKI_init_q(BUFFER_Q *);
 
 #ifdef __cplusplus
 	}
