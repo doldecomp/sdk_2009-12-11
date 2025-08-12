@@ -312,4 +312,58 @@ void bte_hcisu_send(BT_HDR *p_msg, UINT16 event);
 # define PORT_RX_LOW_WM					(BTA_RFC_MTU_SIZE * PORT_RX_BUF_LOW_WM)
 #endif
 
+#ifndef SDP_MAX_REC_ATTR
+# define SDP_MAX_REC_ATTR				25
+#endif
+
+#define SDP_MAX_PAD_LEN					350
+
+#ifndef SDP_MAX_PAD_LEN
+# define SDP_MAX_PAD_LEN				600
+#endif
+
+#ifndef SDP_MAX_DISC_SERVER_RECS
+# define SDP_MAX_DISC_SERVER_RECS		21
+#endif
+
+#ifndef SDP_MAX_RECORDS
+# define SDP_MAX_RECORDS				20
+#endif
+
+#ifndef SDP_MAX_CONNECTIONS
+# define SDP_MAX_CONNECTIONS			4
+#endif
+
+#define SDP_POOL_ID						GKI_POOL_ID_2
+
+#ifndef SDP_POOL_ID
+# define SDP_POOL_ID					GKI_POOL_ID_3
+#endif
+
+#ifndef SDP_RAW_DATA_INCLUDED
+# define SDP_RAW_DATA_INCLUDED			TRUE
+#endif
+
+#define SDP_MAX_LIST_BYTE_COUNT			1000
+
+#ifndef SDP_MAX_LIST_BYTE_COUNT
+# define SDP_MAX_LIST_BYTE_COUNT		0x1000
+#endif
+
+#ifndef SDP_MTU_SIZE
+# define SDP_MTU_SIZE					256
+#endif
+
+#ifndef SDP_FLUSH_TO
+# define SDP_FLUSH_TO					0xffff
+#endif
+
+#ifndef SDP_SERVICE_NAME
+# define SDP_SERVICE_NAME				"Service Discovery"
+#endif
+
+#ifndef SDP_SECURITY_LEVEL
+# define SDP_SECURITY_LEVEL				BTM_SEC_NONE
+#endif
+
 #endif // BTE_BT_TARGET_H

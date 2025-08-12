@@ -211,63 +211,6 @@ extern tRFC_CB rfc_cb;
  * functions
  */
 
-void RFCOMM_LineStatusReq(tRFC_MCB *p_mcb, UINT8 dlci, UINT8 line_status);
-void RFCOMM_DataReq(tRFC_MCB *p_mcb, UINT8 dlci, BT_HDR *p_buf);
-void rfc_send_test(tRFC_MCB *p_rfc_mcb, BOOLEAN is_command, BT_HDR *p_buf);
-void rfcomm_l2cap_if_init(void);
-tRFC_MCB *rfc_alloc_multiplexer_channel(BD_ADDR bd_addr, BOOLEAN is_initiator);
-void RFCOMM_ParNegReq(tRFC_MCB *p_mcb, UINT8 dlci, UINT16 mtu);
-void RFCOMM_StartReq(tRFC_MCB *p_mcb);
-void RFCOMM_ControlReq(tRFC_MCB *p_mcb, UINT8 dlci, tPORT_CTRL *p_pars);
-void RFCOMM_PortNegReq(tRFC_MCB *p_mcb, UINT8 dlci, tPORT_STATE *p_pars);
-void RFCOMM_DlcReleaseReq(tRFC_MCB *p_mcb, UINT8 dlci);
-void rfc_release_multiplexer_channel(tRFC_MCB *p_rfc_mcb);
-void rfc_check_mcb_active(tRFC_MCB *p_mcb);
-void RFCOMM_StartRsp(tRFC_MCB *p_mcb, UINT16 result);
-void rfc_send_dm(tRFC_MCB *p_rfc_mcb, UINT8 dlci, BOOLEAN pf);
-void RFCOMM_ParNegRsp(tRFC_MCB *p_mcb, UINT8 dlci, UINT16 mtu, UINT8 cl,
-                      UINT8 k);
-void rfc_send_disc(tRFC_MCB *p_rfc_mcb, UINT8 dlci);
-void rfc_port_closed(tPORT *p_port);
-void RFCOMM_DlcEstablishReq(tRFC_MCB *p_mcb, UINT8 dlci, UINT16 mtu);
-void RFCOMM_DlcEstablishRsp(tRFC_MCB *p_mcb, UINT8 dlci, UINT16 mtu,
-                            UINT16 result);
-void rfc_timer_stop(tRFC_MCB *p_rfc_mcb);
-void RFCOMM_PortNegRsp(tRFC_MCB *p_mcb, UINT8 dlci, tPORT_STATE *p_pars,
-                       UINT16 param_mask);
-void rfc_port_timer_stop(tPORT *p_port);
-void rfc_send_credit(tRFC_MCB *p_mcb, UINT8 dlci, UINT8 credit);
-void RFCOMM_FlowReq(tRFC_MCB *p_mcb, UINT8 dlci, UINT8 state);
-void rfc_timer_start(tRFC_MCB *p_rfc_mcb, UINT16 timeout);
-void rfc_save_lcid_mcb(tRFC_MCB *p_rfc_mcb, UINT16 lcid);
-void rfc_mx_sm_execute(tRFC_MCB *p_mcb, UINT16 event, void *p_data);
-tRFC_MCB *rfc_find_lcid_mcb(UINT16 lcid);
-UINT8 rfc_parse_data(tRFC_MCB *p_rfc_mcb, MX_FRAME *p_frame, BT_HDR *p_buf);
-void rfc_process_mx_message(tRFC_MCB *p_rfc_mcb, BT_HDR *p_buf);
-void rfc_port_sm_execute(tPORT *p_port, UINT16 event, void *p_data);
-void rfc_inc_credit(tPORT *p_port, UINT8 credit);
-void rfc_process_l2cap_congestion(tRFC_MCB *p_mcb, BOOLEAN is_congested);
-void rfc_send_ua(tRFC_MCB *p_rfc_mcb, UINT8 dlci);
-void rfc_send_sabme(tRFC_MCB *p_rfc_mcb, UINT8 dlci);
-void rfc_sec_check_complete(BD_ADDR bd_addr, void *p_ref_data, UINT8 res);
-void rfc_port_timer_start(tPORT *p_port, UINT16 tout);
-void rfc_send_buf_uih(tRFC_MCB *p_rfc_mcb, UINT8 dlci, BT_HDR *p_buf);
-void rfc_dec_credit(tPORT *p_port);
-void rfc_send_rpn(tRFC_MCB *p_mcb, UINT8 dlci, BOOLEAN is_command,
-                  tPORT_STATE *p_pars, UINT16 mask);
-void rfc_send_msc(tRFC_MCB *p_mcb, UINT8 dlci, BOOLEAN is_command,
-                  tPORT_CTRL *p_pars);
-void rfc_send_rls(tRFC_MCB *p_mcb, UINT8 dlci, BOOLEAN is_command,
-                  UINT8 status);
-void rfc_send_fcon(tRFC_MCB *p_mcb, BOOLEAN is_command);
-void rfc_send_fcoff(tRFC_MCB *p_mcb, BOOLEAN is_command);
-void rfc_check_send_cmd(tRFC_MCB *p_mcb, BT_HDR *p_buf);
-void rfc_send_pn(tRFC_MCB *p_mcb, UINT8 dlci, BOOLEAN is_command, UINT16 mtu,
-                 UINT8 cl, UINT8 k);
-BOOLEAN rfc_check_fcs(UINT16 len, UINT8 *p, UINT8 received_fcs);
-
-// ---
-
 void rfcomm_l2cap_if_init(void);
 tRFC_MCB *rfc_find_lcid_mcb(UINT16 lcid);
 void rfc_save_lcid_mcb(tRFC_MCB *p_mcb, UINT16 lcid);
@@ -323,6 +266,22 @@ void rfc_send_test(tRFC_MCB *p_mcb, BOOLEAN is_command, BT_HDR *p_buf);
 void rfc_send_credit(tRFC_MCB *p_mcb, UINT8 dlci, UINT8 credit);
 UINT8 rfc_parse_data(tRFC_MCB *p_mcb, MX_FRAME *p_frame, BT_HDR *p_buf);
 void rfc_process_mx_message(tRFC_MCB *p_mcb, BT_HDR *p_buf);
+
+UINT8 rfc_calc_fcs(UINT16 len, UINT8 *p);
+BOOLEAN rfc_check_fcs(UINT16 len, UINT8 *p, UINT8 received_fcs);
+tRFC_MCB *rfc_alloc_multiplexer_channel(BD_ADDR bd_addr, BOOLEAN is_initiator);
+void rfc_release_multiplexer_channel(tRFC_MCB *p_mcb);
+void rfc_timer_start(tRFC_MCB *p_mcb, UINT16 timeout);
+void rfc_timer_stop(tRFC_MCB *p_mcb);
+void rfc_port_timer_start(tPORT *p_port, UINT16 timeout);
+void rfc_port_timer_stop(tPORT *p_port);
+void rfc_check_mcb_active(tRFC_MCB *p_mcb);
+void rfcomm_process_timeout(TIMER_LIST_ENT *p_tle);
+void rfc_sec_check_complete(BD_ADDR bd_addr, void *p_ref_data, UINT8 res);
+void rfc_port_closed(tPORT *p_port);
+void rfc_inc_credit(tPORT *p_port, UINT8 credit);
+void rfc_dec_credit(tPORT *p_port);
+void rfc_check_send_cmd(tRFC_MCB *p_mcb, BT_HDR *p_buf);
 
 #ifdef __cplusplus
 	}

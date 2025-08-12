@@ -100,6 +100,8 @@
 #define BTM_ACL_MODE_SNIFF	HCI_MODE_SNIFF
 #define BTM_ACL_MODE_PARK	HCI_MODE_PARK
 
+#define BTM_SEC_SERVICE_SDP_SERVER      0
+
 /*******************************************************************************
  * types
  */

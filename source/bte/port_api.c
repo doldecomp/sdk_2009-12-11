@@ -965,7 +965,7 @@ void RFCOMM_Init(void)
 
 	rfc_cb.rfc.last_mux = MAX_BD_CONNECTIONS;
 
-	rfc_cb.trace_level = RFCOMM_INITIAL_TRACE_LEVEL;
+	rfc_cb.trace_level = BT_TRACE_LEVEL_DEBUG;
 
 	rfcomm_l2cap_if_init();
 }

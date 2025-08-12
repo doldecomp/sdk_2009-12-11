@@ -38,6 +38,26 @@
  * macros
  */
 
+#define  SDP_DI_DISC_FAILED                 0x0008
+#define  SDP_NO_DI_RECORD_FOUND             0x0009
+#define  SDP_ERR_ATTR_NOT_PRESENT           0x000A
+#define  SDP_NO_RESOURCES                   0x0006
+#define  SDP_DI_REG_FAILED                  0x0007
+#define  SDP_GENERIC_ERROR                  0xFFF3
+#define  SDP_NO_RECS_MATCH                  0xFFF0
+#define  SDP_INVALID_CONT_STATE             0x0005
+#define  SDP_INVALID_PDU_SIZE               0x0004
+#define  SDP_DB_FULL                        0xFFF4
+#define  SDP_SECURITY_ERR                   0xFFF6
+#define  SDP_CONN_REJECTED                  0xFFF7
+#define  SDP_CONN_FAILED                    0xFFF1
+#define  SDP_CFG_FAILED                     0xFFF2
+#define  SDP_INVALID_REQ_SYNTAX             0x0003
+#define  SDP_INVALID_SERV_REC_HDL           0x0002
+
+#define SDP_PSM     0x0001
+
+
 #define SDP_MAX_LIST_ELEMS				3
 
 #define SDP_MAX_ATTR_LEN				80
@@ -61,9 +81,9 @@ enum
 	SDP_ILLEGAL_PARAMETER = 11,
 };
 
-typedef tBT_UUID tSDP_UUID;
-
 typedef void tSDP_DISC_CMPL_CB(UINT16 result);
+
+typedef tBT_UUID tSDP_UUID;
 
 typedef struct t_sdp_di_record
 {
@@ -167,15 +187,62 @@ BOOLEAN SDP_AddLanguageBaseAttrIDList(UINT32 handle, UINT16 lang,
                                       UINT16 char_enc, UINT16 base_id);
 BOOLEAN SDP_AddAdditionProtoLists(UINT32 handle, UINT16 num_elem,
                                   tSDP_PROTO_LIST_ELEM *p_proto_list);
+BOOLEAN SDP_DeleteAttribute(UINT32 handle, UINT16 attr_id);
+
+// ---
+
 BOOLEAN SDP_InitDiscoveryDb(tSDP_DISCOVERY_DB *p_db, UINT32 len,
                             UINT16 num_uuid, tSDP_UUID *p_uuid_list,
                             UINT16 num_attr, UINT16 *p_attr_list);
 BOOLEAN SDP_ServiceSearchRequest(UINT8 *p_bd_addr, tSDP_DISCOVERY_DB *p_db,
                                  tSDP_DISC_CMPL_CB *p_cb);
+BOOLEAN SDP_ServiceSearchAttributeRequest(UINT8 *p_bd_addr,
+                                          tSDP_DISCOVERY_DB *p_db,
+                                          tSDP_DISC_CMPL_CB *p_cb);
+tSDP_DISC_REC *SDP_FindAttributeInDb(tSDP_DISCOVERY_DB *p_db, UINT16 attr_id,
+                                     tSDP_DISC_REC *p_start_rec);
 tSDP_DISC_ATTR *SDP_FindAttributeInRec(tSDP_DISC_REC *p_rec, UINT16 attr_id);
+tSDP_DISC_REC *SDP_FindServiceInDb(tSDP_DISCOVERY_DB *p_db, UINT16 service_uuid,
+                                   tSDP_DISC_REC *p_start_rec);
 tSDP_DISC_REC *SDP_FindServiceUUIDInDb(tSDP_DISCOVERY_DB *p_db,
                                        tBT_UUID *p_uuid,
                                        tSDP_DISC_REC *p_start_rec);
+
+BOOLEAN SDP_FindProtocolListElemInRec(tSDP_DISC_REC *p_rec, UINT16 layer_uuid,
+                                      tSDP_PROTOCOL_ELEM *p_elem);
+BOOLEAN SDP_FindAddProtoListsElemInRec(tSDP_DISC_REC *p_rec, UINT16 layer_uuid,
+                                       tSDP_PROTOCOL_ELEM *p_elem);
+BOOLEAN SDP_FindProfileVersionInRec(tSDP_DISC_REC *p_rec, UINT16 profile_uuid,
+                                    UINT16 *p_version);
+UINT16 SDP_DiDiscover(BD_ADDR remote_device, tSDP_DISCOVERY_DB *p_db,
+                      UINT32 len, tSDP_DISC_CMPL_CB *p_cb);
+UINT8 SDP_GetNumDiRecords(tSDP_DISCOVERY_DB *p_db);
+UINT16 SDP_GetDiRecord(UINT8 get_record_index,
+                       tSDP_DI_GET_RECORD *p_device_info,
+                       tSDP_DISCOVERY_DB *p_db);
+UINT16 SDP_SetLocalDiRecord(tSDP_DI_RECORD *p_device_info, UINT32 *p_handle);
+UINT16 SDP_GetLocalDiRecord(tSDP_DI_GET_RECORD *p_device_info, UINT32 *p_handle);
+UINT8 SDP_SetTraceLevel(UINT8 new_level);
+
+UINT32 SDP_CreateRecord(void);
+BOOLEAN SDP_DeleteRecord(UINT32 handle);
+BOOLEAN SDP_AddAttribute(UINT32 handle, UINT16 attr_id, UINT8 attr_type,
+                         UINT32 attr_len, UINT8 *p_val);
+BOOLEAN SDP_AddSequence(UINT32 handle, UINT16 attr_id, UINT16 num_elem,
+                        UINT8 *type, UINT8 *len, UINT8 **p_val);
+BOOLEAN SDP_AddUuidSequence(UINT32 handle, UINT16 attr_id, UINT16 num_uuids,
+                            UINT16 *p_uuids);
+BOOLEAN SDP_AddProtocolList(UINT32 handle, UINT16 num_elem,
+                            tSDP_PROTOCOL_ELEM *p_elem_list);
+BOOLEAN SDP_AddAdditionProtoLists(UINT32 handle, UINT16 num_elem,
+                                  tSDP_PROTO_LIST_ELEM *p_proto_list);
+BOOLEAN SDP_AddProfileDescriptorList(UINT32 handle, UINT16 profile_uuid,
+                                     UINT16 version);
+BOOLEAN SDP_AddLanguageBaseAttrIDList(UINT32 handle, UINT16 lang,
+                                      UINT16 char_enc, UINT16 base_id);
+BOOLEAN SDP_AddServiceClassIdList(UINT32 handle, UINT16 num_services,
+                                  UINT16 *p_service_uuids);
+BOOLEAN SDP_DeleteAttribute(UINT32 handle, UINT16 attr_id);
 
 #ifdef __cplusplus
 	}
