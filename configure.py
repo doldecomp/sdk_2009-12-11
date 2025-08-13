@@ -378,7 +378,7 @@ config.libs = [
             Object(DebugMatching, ReleaseMatching, "bte/utl.c", mw_version = "GC/3.0a5"),
             Object(DebugMatching, ReleaseMatching, "bte/bta_prm_api.c", mw_version = "GC/3.0a5"),
             Object(DebugMatching, ReleaseMatching, "bte/bta_prm_main.c", mw_version = "GC/3.0a5"),
-            Object(DebugNonMatching, ReleaseNonMatching, "bte/bta_fs_ci.c"),
+            Object(DebugMatching, ReleaseMatching, "bte/bta_fs_ci.c", mw_version = "GC/3.0a5"),
             Object(DebugNonMatching, ReleaseNonMatching, "bte/bta_dm_act.c"),
             Object(DebugNonMatching, ReleaseNonMatching, "bte/bta_dm_api.c"),
             Object(DebugNonMatching, ReleaseNonMatching, "bte/bta_dm_main.c"),
