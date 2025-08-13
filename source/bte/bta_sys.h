@@ -37,6 +37,8 @@
  * macros
  */
 
+#define BTA_ID_PRM          22
+
 /*******************************************************************************
  * types
  */
@@ -70,6 +72,12 @@ typedef struct
 } tBTA_SYS_REG; // size 0x08
 
 /*******************************************************************************
+ * external globals
+ */
+
+extern UINT8 appl_trace_level;
+
+/*******************************************************************************
  * functions
  */
 
@@ -85,6 +93,7 @@ void bta_sys_sco_close(UINT8 id, UINT8 app_id, BD_ADDR peer_addr);
 void bta_sys_idle(UINT8 id, UINT8 app_id, BD_ADDR peer_addr);
 void bta_sys_busy(UINT8 id, UINT8 app_id, BD_ADDR peer_addr);
 void bta_sys_sendmsg(void *p_msg);
+void bta_sys_register(UINT8 id, tBTA_SYS_REG const *p_reg);
 
 #ifdef __cplusplus
 	}
