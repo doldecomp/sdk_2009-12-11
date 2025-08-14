@@ -32,6 +32,7 @@
 
 #include "bt_types.h"
 #include "data_types.h"
+#include "gki.h"
 
 /*******************************************************************************
  * macros
@@ -59,6 +60,8 @@ enum
 	BTA_SYS_CONN_IDLE,
 	BTA_SYS_CONN_BUSY,
 };
+
+typedef UINT8 tBTA_SYS_ID;
 
 typedef BOOLEAN tBTA_SYS_EVT_HDLR(BT_HDR *p_msg);
 typedef void tBTA_SYS_DISABLE(void);
@@ -94,6 +97,10 @@ void bta_sys_idle(UINT8 id, UINT8 app_id, BD_ADDR peer_addr);
 void bta_sys_busy(UINT8 id, UINT8 app_id, BD_ADDR peer_addr);
 void bta_sys_sendmsg(void *p_msg);
 void bta_sys_register(UINT8 id, tBTA_SYS_REG const *p_reg);
+void bta_sys_disable(void);
+void bta_sys_start_timer(TIMER_LIST_ENT *p_tle, UINT16 type, INT32 timeout);
+void bta_sys_remove_uuid(UINT16 uuid16);
+void bta_sys_stop_timer(TIMER_LIST_ENT *p_tle);
 
 #ifdef __cplusplus
 	}

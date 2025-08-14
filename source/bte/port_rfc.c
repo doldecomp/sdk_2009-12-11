@@ -389,7 +389,7 @@ void PORT_PortNegInd(tRFC_MCB *p_mcb, UINT8 dlci, tPORT_STATE *p_pars,
 		p_port = port_find_dlci_port(dlci);
 		if (!p_port)
 		{
-			p_port->peer_port_pars = *p_pars; // What the fuck? Why
+			p_port->peer_port_pars = *p_pars;
 			RFCOMM_PortNegRsp(p_mcb, dlci, p_pars, 0);
 			return;
 		}

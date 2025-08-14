@@ -363,6 +363,8 @@ void btm_acl_removed(BD_ADDR bda);
 tBTM_STATUS btm_sec_disconnect(UINT16 handle, UINT8 reason);
 BOOLEAN btm_is_sco_active_by_bdaddr(BD_ADDR remote_bda);
 UINT16 btm_get_max_packet_size(BD_ADDR addr);
+tBTM_STATUS btm_remove_acl(BD_ADDR bd_addr);
+UINT32 *btm_read_trusted_mask(BD_ADDR bd_addr);
 
 #ifdef __cplusplus
 	}

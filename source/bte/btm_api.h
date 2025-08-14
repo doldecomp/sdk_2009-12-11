@@ -74,6 +74,9 @@
 		(pd)[0] = (sv) >> 8;									\
 	} while (FALSE)
 
+#define BTM_NON_DISCOVERABLE        0
+
+#define BTM_NON_CONNECTABLE         0
 #define BTM_CONNECTABLE	1
 
 #define BTM_SEC_SERVICE_HID_SEC_CTRL	32
@@ -133,6 +136,15 @@ enum
 	BTM_SUCCESS_NO_SECURITY,
 	BTM_FAILED_ON_SECURITY,
 	BTM_REPEATED_ATTEMPTS,
+};
+
+typedef UINT8 tBTM_BL_EVENT;
+typedef UINT8 tBTA_PREF_ROLES;
+
+enum
+{
+    BTM_BL_COLLISION_EVT
+	 = 4,
 };
 
 enum
@@ -400,6 +412,22 @@ typedef struct
 	/* 1 byte padding */
 } tBTM_ESCO_INFO; // size 0x24
 
+typedef struct
+{
+    tBTM_STATUS status;
+    UINT8       hci_status;
+    INT8        rssi;
+    BD_ADDR     rem_bda;
+} tBTM_RSSI_RESULTS;
+
+typedef struct
+{
+    tBTM_STATUS status;
+    UINT8       hci_status;
+    UINT8       link_quality;
+    BD_ADDR     rem_bda;
+} tBTM_LINK_QUALITY_RESULTS;
+
 /*******************************************************************************
  * external globals
  */
@@ -456,6 +484,26 @@ tBTM_STATUS BTM_SwitchRole(BD_ADDR remote_bd_addr, UINT8 new_role,
                            tBTM_CMPL_CB *p_cb);
 UINT8 *BTM_ReadLocalFeatures(void);
 tBTM_INQ_INFO *BTM_InqDbRead(BD_ADDR p_bda);
+void BTM_SetDefaultLinkSuperTout(UINT16 timeout);
+tBTM_STATUS BTM_WritePageTimeout(UINT16 timeout);
+void BTM_SetDefaultLinkPolicy(UINT16 settings);
+tBTM_STATUS BTM_AclRegisterForChanges(tBTM_ACL_DB_CHANGE_CB *p_cb);
+tBTM_STATUS BTM_ReadLocalDeviceAddr(tBTM_CMPL_CB *p_cb);
+UINT16 BTM_GetNumAclLinks(void);
+tBTM_STATUS BTM_SetLocalDeviceName(char *p_name);
+tBTM_STATUS BTM_ClearInqDb(BD_ADDR p_bda);
+tBTM_STATUS BTM_StartInquiry(tBTM_INQ_PARMS *p_inqparms,
+                             tBTM_INQ_RESULTS_CB *p_results_cb,
+                             tBTM_CMPL_CB *p_cmpl_cb);
+UINT16 BTM_IsInquiryActive(void);
+tBTM_STATUS BTM_CancelRemoteDeviceName(void);
+BOOLEAN BTM_SecAddRmtNameNotifyCallback(tBTM_RMT_NAME_CALLBACK *p_callback);
+BOOLEAN BTM_IsAclConnectionUp(BD_ADDR remote_bda);
+BOOLEAN BTM_SecDeleteRmtNameNotifyCallback(tBTM_RMT_NAME_CALLBACK *p_callback);
+tBTM_STATUS BTM_ReadRSSI(BD_ADDR remote_bda, tBTM_CMPL_CB *p_cb);
+tBTM_STATUS BTM_ReadLinkQuality(BD_ADDR remote_bda, tBTM_CMPL_CB *p_cb);
+char *BTM_SecReadDevName(BD_ADDR bd_addr);
+void BTM_SendHciReset(tBTM_CMPL_CB * p_cb);
 
 #ifdef __cplusplus
 	}

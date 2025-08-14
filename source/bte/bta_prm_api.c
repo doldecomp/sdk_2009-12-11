@@ -21,7 +21,7 @@
 static tBTA_SYS_REG const bta_prm_reg =
 {
 	&bta_prm_hdl_event,
-	NULL,
+	NULL
 };
 
 /*******************************************************************************

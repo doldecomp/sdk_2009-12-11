@@ -366,4 +366,14 @@ void bte_hcisu_send(BT_HDR *p_msg, UINT16 event);
 # define SDP_SECURITY_LEVEL				BTM_SEC_NONE
 #endif
 
+#define BTA_DISABLE_DELAY				1000
+
+#ifndef BTA_DISABLE_DELAY
+# define BTA_DISABLE_DELAY				200
+#endif
+
+#ifndef L2CAP_DESIRED_LINK_ROLE
+# define L2CAP_DESIRED_LINK_ROLE		HCI_ROLE_SLAVE
+#endif
+
 #endif // BTE_BT_TARGET_H

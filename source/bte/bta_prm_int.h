@@ -34,8 +34,7 @@ typedef struct
 typedef struct
 {
 	BT_HDR	hdr;		// size 0x08, offset 0x00
-	UINT8	file_size;	// size 0x01, offset 0x08
-	/* 3 bytes padding */
+	UINT32	file_size;	// size 0x01, offset 0x08
 	int		fd;			// size 0x04, offset 0x0c
 	UINT16	status;		// size 0x02, offset 0x10
 	/* 2 bytes padding */

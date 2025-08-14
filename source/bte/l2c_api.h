@@ -129,6 +129,10 @@ typedef struct
 	tL2CA_CONGESTION_STATUS_CB	*pL2CA_CongestionStatus_Cb;	// size 0x04, offset 0x24
 } tL2CAP_APPL_INFO; // size 0x28
 
+typedef BOOLEAN tL2CA_COMPRESS_CB(BD_ADDR peer_addr, signed, signed, signed,
+                                  signed, signed, signed, UINT8 **p_mem_pool,
+                                  UINT32 *mem_pool_size);
+
 /*******************************************************************************
  * external globals
  */
@@ -137,19 +141,28 @@ typedef struct
  * functions
  */
 
-UINT8 L2CA_Register(UINT16 psm, tL2CAP_APPL_INFO *p_cb_info);
+BOOLEAN L2CA_Register(UINT16 psm, tL2CAP_APPL_INFO *p_cb_info);
+void L2CA_Deregister(UINT16 psm);
 UINT16 L2CA_ConnectReq(UINT16 psm, BD_ADDR p_bd_addr);
-BOOLEAN L2CA_DisconnectReq(UINT16 cid);
-UINT8 L2CA_DataWrite(UINT16 cid, BT_HDR *p_data);
-BOOLEAN L2CA_ConfigReq(UINT16 cid, tL2CAP_CFG_INFO *p_cfg);
-BOOLEAN L2CA_SetIdleTimeout(UINT16 cid, UINT16 timeout, BOOLEAN is_global);
-BOOLEAN L2CA_DisconnectReq(UINT16 cid);
-BOOLEAN L2CA_ConfigReq(UINT16 cid, tL2CAP_CFG_INFO *p_cfg);
 BOOLEAN L2CA_ConnectRsp(BD_ADDR p_bd_addr, UINT8 id, UINT16 lcid, UINT16 result,
                         UINT16 status);
+BOOLEAN L2CA_ConfigReq(UINT16 cid, tL2CAP_CFG_INFO *p_cfg);
 BOOLEAN L2CA_ConfigRsp(UINT16 cid, tL2CAP_CFG_INFO *p_cfg);
+BOOLEAN L2CA_DisconnectReq(UINT16 cid);
 BOOLEAN L2CA_DisconnectRsp(UINT16 cid);
-void L2CA_Deregister(UINT16 psm);
+UINT8 L2CA_DataWrite(UINT16 cid, BT_HDR *p_data);
+BOOLEAN L2CA_Ping(BD_ADDR p_bd_addr, tL2CA_ECHO_RSP_CB *p_callback);
+BOOLEAN L2CA_SetIdleTimeout(UINT16 cid, UINT16 timeout, BOOLEAN is_global);
+BOOLEAN L2CA_SetIdleTimeoutByBdAddr(BD_ADDR bd_addr, UINT16 timeout);
+UINT8 L2CA_SetTraceLevel(UINT8 new_level);
+UINT8 L2CA_SetDesireRole(UINT8 new_role);
+BOOLEAN L2CA_SetAclPriority(BD_ADDR bd_addr, UINT8 priority);
+void L2CA_SetCompression(UINT16 local_cid, UINT8 pe_type, UINT8 mem_level,
+                         UINT8 wbits, UINT8 direction, UINT8 param_6,
+                         UINT8 enable);
+void L2CA_RegisterCompression(tL2CA_COMPRESS_CB *, signed);
+UINT8 L2CA_Flush(UINT16 cid);
+UINT16 L2CA_GetNumQueuedBufs(UINT16 lcid);
 
 #ifdef __cplusplus
 	}

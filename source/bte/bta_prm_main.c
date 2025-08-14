@@ -115,7 +115,7 @@ UINT8 bta_prm_hdl_event(BT_HDR *p_msg)
 		if (p_open->status == 0)
 		{
 			bta_prm_cb.state = 3;
-			bta_prm_cb.file_length = *(UINT32 *)&p_open->file_size; // ?
+			bta_prm_cb.file_length = p_open->file_size;
 			bta_prm_cb.fd = p_open->fd;
 
 			BCM2045_PrmInit(&bta_lower_level_prm_cback, 0);
