@@ -37,6 +37,8 @@
  * macros
  */
 
+#define HCI_PROTO_VERSION_2_0 0x03      /* Version for BT spec 2.0          */
+
 #define HCI_SUCCESS									0x00
 #define HCI_ERR_PAGE_TIMEOUT						0x04
 #define HCI_ERR_AUTH_FAILURE						0x05

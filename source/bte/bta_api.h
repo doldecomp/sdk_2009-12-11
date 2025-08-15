@@ -66,6 +66,18 @@
 
 #define BTA_MASTER_ROLE_ONLY 2
 
+#define BTA_DM_PM_NUM_EVTS      9
+
+#define BTA_DM_PM_NO_ACTION    0x00       /* no change to the current pm setting */
+#define BTA_DM_PM_NO_PREF      0x01       /* service has no prefernce on power mode setting. eg. connection to service got closed */
+#define BTA_DM_PM_PARK         0x10       /* prefers park mode */
+#define BTA_DM_PM_SNIFF        0x20       /* prefers sniff mode */
+#define BTA_DM_PM_ACTIVE       0x40       /* prefers active mode */
+
+#ifndef BTA_DM_PM_PARK_IDX
+# define BTA_DM_PM_PARK_IDX 5
+#endif
+
 /*******************************************************************************
  * types
  */
@@ -222,6 +234,29 @@ typedef void tBTA_DM_SEC_CBACK(tBTA_DM_SEC_EVT event, tBTA_DM_SEC *p_data);
 /*******************************************************************************
  * functions
  */
+
+tBTA_STATUS BTA_EnableBluetooth(tBTA_DM_SEC_CBACK *p_cback);
+void BTA_DisableBluetooth(void);
+BOOLEAN BTA_DmIsDeviceUp(void);
+void BTA_DmSetDeviceName(char *p_name);
+void BTA_DmSetVisibility(tBTA_DM_DISC disc_mode, tBTA_DM_CONN conn_mode);
+void BTA_DmSearch(tBTA_DM_INQ *p_dm_inq, tBTA_SERVICE_MASK services,
+                  tBTA_DM_SEARCH_CBACK *p_cback);
+void BTA_DmSearchCancel(void);
+void BTA_DmDiscover(BD_ADDR bd_addr, tBTA_SERVICE_MASK services,
+                    tBTA_DM_SEARCH_CBACK *p_cback);
+void BTA_DmBond(BD_ADDR bd_addr, UINT8 pin_len, PIN_CODE p_pin);
+void BTA_DmPinReply(BD_ADDR bd_addr, BOOLEAN accept, UINT8 pin_len,
+                    PIN_CODE p_pin);
+tBTA_STATUS BTA_DmAddDevice(BD_ADDR bd_addr, LINK_KEY link_key,
+                            UINT32 trusted_mask, BOOLEAN is_trusted);
+tBTA_STATUS BTA_DmRemoveDevice(BD_ADDR bd_addr);
+void BTA_DmAuthorizeReply(BD_ADDR bd_addr, tBTA_SERVICE_ID service,
+                          tBTA_AUTH_RESP response);
+void BTA_DmSignalStrength(tBTA_SIG_STRENGTH_MASK mask, UINT16 period,
+                          BOOLEAN start);
+void BTA_KeepACLLinksOnShutDown(BOOLEAN keep);
+void BTA_DmSendHciReset(void);
 
 #ifdef __cplusplus
 	}

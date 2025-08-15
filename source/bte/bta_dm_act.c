@@ -1044,7 +1044,7 @@ static void bta_dm_remote_name_request_cmd_failed(UINT8 *bd_addr)
 	}
 }
 
-void bta_dm_cancel_rmt_name(void)
+void bta_dm_cancel_rmt_name(tBTA_DM_MSG *p_data)
 {
 	BTM_CancelRemoteDeviceName();
 }
@@ -1653,9 +1653,9 @@ void bta_dm_reset_complete(void *p1)
 	/* ... */
 }
 
-void bta_dm_send_hci_reset(void)
+void bta_dm_send_hci_reset(tBTA_DM_MSG *p_data)
 {
-	void *p_buf; // r31
+	void *p_buf;
 
 	bta_sys_cb.events_disabled = TRUE;
 

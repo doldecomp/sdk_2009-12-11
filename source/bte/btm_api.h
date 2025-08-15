@@ -105,6 +105,10 @@
 
 #define BTM_SEC_SERVICE_SDP_SERVER      0
 
+#define BTM_PM_REG_SET      1 /* The module wants to set the desired power mode */
+#define BTM_PM_REG_NOTIF    2 /* The module wants to receive mode change event */
+#define BTM_PM_DEREG        4 /* The module does not want to involve with PM anymore */
+
 /*******************************************************************************
  * types
  */
@@ -428,6 +432,9 @@ typedef struct
     BD_ADDR     rem_bda;
 } tBTM_LINK_QUALITY_RESULTS;
 
+typedef void tBTM_PM_STATUS_CBACK(BD_ADDR p_bda, tBTM_PM_STATUS status,
+                                  UINT16 value, UINT8 hci_status);
+
 /*******************************************************************************
  * external globals
  */
@@ -504,6 +511,13 @@ tBTM_STATUS BTM_ReadRSSI(BD_ADDR remote_bda, tBTM_CMPL_CB *p_cb);
 tBTM_STATUS BTM_ReadLinkQuality(BD_ADDR remote_bda, tBTM_CMPL_CB *p_cb);
 char *BTM_SecReadDevName(BD_ADDR bd_addr);
 void BTM_SendHciReset(tBTM_CMPL_CB * p_cb);
+BOOLEAN BTM_SecAddDevice(BD_ADDR bd_addr, DEV_CLASS dev_class, BD_NAME bd_name,
+                         BD_FEATURES features, UINT32 *trusted_mask,
+                         LINK_KEY link_key);
+BOOLEAN BTM_SecDeleteDevice(BD_ADDR bd_addr);
+tBTM_STATUS BTM_PmRegister(UINT8 mask, UINT8 *p_pm_id,
+                           tBTM_PM_STATUS_CBACK *p_cb);
+tBTM_STATUS BTM_SetLinkPolicy(BD_ADDR remote_bda, UINT16 *settings);
 
 #ifdef __cplusplus
 	}

@@ -38,6 +38,9 @@
  * macros
  */
 
+#define BTA_ID_DM           1            /* device manager */
+#define BTA_ID_DM_SEARCH    2            /* device manager search */
+
 #define BTA_ID_PRM          22
 
 /*******************************************************************************

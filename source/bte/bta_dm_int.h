@@ -49,6 +49,9 @@
 #define BTA_DM_NUM_CONN_SRVS 5
 #define BTA_DM_NUM_PEER_DEVICE 7
 
+#define BTA_ALL_APP_ID 0xff
+
+
 #define BTA_COPY_DEVICE_CLASS(coddst, codsrc)				\
 	do														\
 	{														\
@@ -69,17 +72,32 @@ typedef UINT8 tBTA_DM_CONN_STATE;
 
 enum
 {
+    BTA_DM_API_ENABLE_EVT = 256,
+    BTA_DM_API_DISABLE_EVT = 257,
+    BTA_DM_API_SET_NAME_EVT = 258,
+    BTA_DM_API_SET_VISIBILITY_EVT = 259,
+    BTA_DM_API_SIG_STRENGTH_EVT = 260, // was 261
+    BTA_DM_ACL_CHANGE_EVT = 261, // was 264
+    BTA_DM_API_BOND_EVT = 262, // was 266
+    BTA_DM_API_PIN_REPLY_EVT = 263, // was 268
+    BTA_DM_API_AUTH_REPLY_EVT = 264, // was 270
+    BTA_DM_PM_BTM_STATUS_EVT = 265, // was 271
+    BTA_DM_PM_TIMER_EVT = 266, // was 272
+    BTA_DM_API_KEEP_ACL_LINKS = 267, // did not exist
+    BTA_DM_API_RESET_HCI = 268, // did not exist
+
+};
+
+enum
+{
+    BTA_DM_API_SEARCH_EVT = 512,
+    BTA_DM_API_SEARCH_CANCEL_EVT = 513,
     BTA_DM_API_DISCOVER_EVT = 514,
     BTA_DM_SEARCH_CMPL_EVT = 519, // was 518
     BTA_DM_DISCOVERY_RESULT_EVT = 520,
     BTA_DM_SDP_RESULT_EVT = 518, // was 517
     BTA_DM_INQUIRY_CMPL_EVT = 515,
     BTA_DM_REMT_NAME_EVT = 516,
-};
-
-enum
-{
-    BTA_DM_ACL_CHANGE_EVT = 261, // was 264
 };
 
 typedef struct
@@ -319,6 +337,26 @@ typedef struct
     BOOLEAN                     keep_acl_on_shut_down;
 } tBTA_DM_CB;
 
+typedef struct
+{
+  UINT8  id;
+  UINT8  app_id;
+  UINT8  spec_idx;  /* index of spec table to use */
+} tBTA_DM_PM_CFG;
+
+
+typedef struct
+{
+  tBTA_DM_PM_ACTION  power_mode;
+  UINT16              timeout;
+} tBTA_DM_PM_ACTN;
+
+typedef struct
+{
+    UINT8  allow_mask;         /* mask of sniff/hold/park modes to allow */
+    tBTA_DM_PM_ACTN actn_tbl[BTA_DM_PM_NUM_EVTS][2];
+} tBTA_DM_PM_SPEC;
+
 /*******************************************************************************
  * external globals
  */
@@ -330,6 +368,9 @@ extern tBTA_DM_RM *p_bta_dm_rm_cfg;
 extern tBTA_DM_COMPRESS *p_bta_dm_compress_cfg;
 extern tBTA_DM_CB bta_dm_cb;
 extern UINT32 const bta_service_id_to_btm_srv_id_lkup_tbl[BTA_MAX_SERVICE_ID];
+extern tBTA_DM_PM_CFG *p_bta_dm_pm_cfg;
+extern tBTA_DM_PM_SPEC *p_bta_dm_pm_spec;
+extern tBTM_PM_PWR_MD *p_bta_dm_pm_md;
 
 /*******************************************************************************
  * functions
@@ -340,6 +381,11 @@ void bta_dm_init_pm(void);
 void bta_dm_disable_pm(void);
 void bta_dm_search_cancel(tBTA_DM_MSG *p_data);
 void bta_dm_search_cancel_notify(tBTA_DM_MSG *p_data);
+BOOLEAN bta_dm_sm_execute(BT_HDR *p_msg);
+BOOLEAN bta_dm_search_sm_execute(BT_HDR *p_msg);
+void bta_dm_pm_btm_status(tBTA_DM_MSG *p_data);
+void bta_dm_pm_timer(tBTA_DM_MSG *p_data);
+tBTA_DM_PEER_DEVICE *bta_dm_find_peer_device(BD_ADDR peer_addr);
 
 // ---
 
@@ -370,7 +416,7 @@ void bta_dm_search_cancel_cmpl(tBTA_DM_MSG *p_data);
 void bta_dm_search_cancel_transac_cmpl(tBTA_DM_MSG *p_data);
 void bta_dm_search_cancel_notify(tBTA_DM_MSG *p_data);
 /**/
-void bta_dm_cancel_rmt_name(void);
+void bta_dm_cancel_rmt_name(tBTA_DM_MSG *p_data);
 /**/
 void bta_dm_signal_strength(tBTA_DM_MSG *p_data);
 /**/
@@ -381,7 +427,18 @@ BOOLEAN bta_sys_check_compress(signed, UINT8 app_id, BD_ADDR peer_addr);
 void bta_dm_keep_acl(tBTA_DM_MSG *p_data);
 void bta_dm_immediate_disable(void);
 void bta_dm_reset_complete(void *p1);
-void bta_dm_send_hci_reset(void);
+void bta_dm_send_hci_reset(tBTA_DM_MSG *p_data);
+
+BOOLEAN bta_dm_sm_execute(BT_HDR *p_msg);
+BOOLEAN bta_dm_search_sm_execute(BT_HDR *p_msg);
+
+void bta_dm_init_pm(void);
+void bta_dm_disable_pm(void);
+/**/
+void bta_dm_pm_active(BD_ADDR peer_addr);
+/**/
+void bta_dm_pm_btm_status(tBTA_DM_MSG *p_data);
+void bta_dm_pm_timer(tBTA_DM_MSG *p_data);
 
 #ifdef __cplusplus
 	}
