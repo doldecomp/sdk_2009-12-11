@@ -109,6 +109,7 @@ UINT32 GKI_get_tick_count(void);
 void GKI_init_q(BUFFER_Q *);
 void GKI_sched_lock(void);
 void GKI_sched_unlock(void);
+BOOLEAN GKI_queue_is_empty(BUFFER_Q *);
 
 #ifdef __cplusplus
 	}

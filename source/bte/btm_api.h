@@ -518,6 +518,7 @@ BOOLEAN BTM_SecDeleteDevice(BD_ADDR bd_addr);
 tBTM_STATUS BTM_PmRegister(UINT8 mask, UINT8 *p_pm_id,
                            tBTM_PM_STATUS_CBACK *p_cb);
 tBTM_STATUS BTM_SetLinkPolicy(BD_ADDR remote_bda, UINT16 *settings);
+UINT8 BTM_SecClrService(UINT8 service_id);
 
 #ifdef __cplusplus
 	}

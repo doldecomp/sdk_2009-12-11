@@ -169,7 +169,7 @@ tBTA_DM_ST const * const bta_dm_search_st_tbl[] =
 	bta_dm_search_idle_st_table,
 	bta_dm_search_search_active_st_table,
 	bta_dm_search_search_cancelling_st_table,
-	bta_dm_search_disc_active_st_table,
+	bta_dm_search_disc_active_st_table
 };
 
 // .bss
