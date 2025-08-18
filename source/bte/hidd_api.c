@@ -357,23 +357,13 @@ tHID_STATUS HID_DevSetSecurityLevel(char *serv_name, UINT8 sec_lvl)
 	return HID_SUCCESS;
 }
 
-#if defined(__MWERKS__)
-# pragma cplusplus on
-# define REF	bitand
-# define GET(x)	x
-extern "C"
-#else
-# define REF	*
-# define GET(x)	(*(x))
-#endif
-
 tHID_STATUS HID_DevSetPowerMgmtParams(UINT8 conn_substate,
-                                      tHID_DEV_PWR_MD REF pm_params)
+                                      tHID_DEV_PWR_MD pm_params)
 {
 	if (conn_substate > (int)ARRAY_LENGTH(hd_cb.pm_params) - 1)
 		return HID_ERR_INVALID_PARAM;
 
-	memcpy(&hd_cb.pm_params[conn_substate], &GET(pm_params),
+	memcpy(&hd_cb.pm_params[conn_substate], &pm_params,
 	       sizeof hd_cb.pm_params[conn_substate]);
 
 	if (conn_substate == hd_cb.conn_substate)
@@ -381,6 +371,3 @@ tHID_STATUS HID_DevSetPowerMgmtParams(UINT8 conn_substate,
 
 	return HID_SUCCESS;
 }
-
-#undef REF
-#undef GET

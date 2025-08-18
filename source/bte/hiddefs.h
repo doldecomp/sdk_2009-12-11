@@ -43,6 +43,8 @@
 #define HID_GET_PARAM_FROM_HDR(x)	( (x)       & 0x0f)
 #define HID_BUILD_HDR(t, p)			(UINT8)(((t) << 4) | ((p) & 0x0f))
 
+#define HID_PAR_PROTOCOL_BOOT_MODE	0x00
+#define HID_PAR_PROTOCOL_REPORT		0x01
 #define HID_PAR_REP_TYPE_MASK		0x03
 
 #define HID_TRANS_HANDSHAKE			0
@@ -61,6 +63,15 @@
 #define HID_L2CAP_CONN_FAIL	0x0100
 #define HID_L2CAP_REQ_FAIL	0x0200
 #define HID_L2CAP_CFG_FAIL	0x0400
+
+#define HID_PAR_HANDSHAKE_RSP_SUCCESS               (0)
+#define HID_PAR_HANDSHAKE_RSP_NOT_READY             (1)
+#define HID_PAR_HANDSHAKE_RSP_ERR_INVALID_REP_ID    (2)
+#define HID_PAR_HANDSHAKE_RSP_ERR_UNSUPPORTED_REQ   (3)
+#define HID_PAR_HANDSHAKE_RSP_ERR_INVALID_PARAM     (4)
+#define HID_PAR_HANDSHAKE_RSP_ERR_UNKNOWN           (14)
+#define HID_PAR_HANDSHAKE_RSP_ERR_FATAL             (15)
+
 
 /*******************************************************************************
  * types

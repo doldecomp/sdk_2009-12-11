@@ -42,6 +42,7 @@
 #define BTA_ID_DM_SEARCH    2            /* device manager search */
 
 #define BTA_ID_PRM          22
+#define BTA_ID_HH           23           /* Human Interface Device Host */
 
 /*******************************************************************************
  * types

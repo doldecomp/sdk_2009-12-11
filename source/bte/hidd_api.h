@@ -101,24 +101,8 @@ tHID_STATUS HID_DevHandShake(UINT8 res_code);
 tHID_STATUS HID_DevVirtualUnplug(void);
 tHID_STATUS HID_DevSendData(UINT8 control_ch, UINT8 rep_type, BT_HDR *data_buf);
 tHID_STATUS HID_DevSetSecurityLevel(char *serv_name, UINT8 sec_lvl);
-
-#if defined(__MWERKS__)
-# pragma cplusplus on
-# define REF	&
-extern "C"
-#else
-# define REF	*
-#endif
-
-// What the actual fuck lol
 tHID_STATUS HID_DevSetPowerMgmtParams(UINT8 conn_substate,
-                                      tHID_DEV_PWR_MD REF pm_params);
-
-#undef REF
-
-#if defined(__MWERKS__)
-# pragma cplusplus reset
-#endif
+                                      tHID_DEV_PWR_MD pm_params);
 
 #ifdef __cplusplus
 	}

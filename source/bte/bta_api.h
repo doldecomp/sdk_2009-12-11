@@ -78,6 +78,8 @@
 # define BTA_DM_PM_PARK_IDX 5
 #endif
 
+#define BTA_SERVICE_NAME_LEN    35
+
 /*******************************************************************************
  * types
  */
@@ -101,6 +103,7 @@ typedef UINT8 tBTA_DM_CONN;
 typedef UINT8 tBTA_DM_SEARCH_EVT;
 typedef UINT8 tBTA_AUTH_RESP;
 typedef UINT8 tBTA_DM_PM_ACTION;
+typedef UINT8 tBTA_SEC;
 
 enum
 {
