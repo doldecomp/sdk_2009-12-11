@@ -83,6 +83,11 @@ void hidd_pm_init(void);
 UINT8 hidd_pm_start(void);
 UINT8 hidd_pm_suspend_evt(void);
 
+// ---
+
+void hidd_pm_proc_mode_change(UINT8 hci_status, UINT8 mode, UINT16 interval);
+
+
 #ifdef __cplusplus
 	}
 #endif

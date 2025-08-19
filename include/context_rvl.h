@@ -5,7 +5,10 @@
 
 #include <revolution/types.h>
 
-#include <context_bte.h>
+// TODO: migrate all code using this context into using normal bte headers
+#if !defined(IS_BTE)
+# include <context_bte.h>
+#endif
 
 /* Contains the context of the other Revolution SDK libraries that the WPAD
  * library needs to compile.
@@ -607,6 +610,7 @@ enum SCSensorBarPos_et
 	SC_SENSOR_BAR_TOP,
 };
 
+#if !defined(IS_BTE) // irrelevant, and causes errors right now
 typedef struct SCBtDeviceInfo // basic dev info?
 {
 	BD_ADDR					devAddr;	// size 0x06, offset 0x00
@@ -648,6 +652,7 @@ void SCGetBtDeviceInfoArray(SCBtDeviceInfoArray *array);
 BOOL SCSetBtDeviceInfoArray(SCBtDeviceInfoArray const *array);
 void SCGetBtCmpDevInfoArray(SCBtCmpDevInfoArray *array);
 BOOL SCSetBtCmpDevInfoArray(SCBtCmpDevInfoArray const *array);
+#endif
 u32 SCGetBtDpdSensibility(void);
 BOOL SCSetBtDpdSensibility(u8 sens);
 u8 SCGetWpadMotorMode(void);

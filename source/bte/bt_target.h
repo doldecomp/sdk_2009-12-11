@@ -376,4 +376,10 @@ void bte_hcisu_send(BT_HDR *p_msg, UINT16 event);
 # define L2CAP_DESIRED_LINK_ROLE		HCI_ROLE_SLAVE
 #endif
 
+#define HCI_GET_CMD_BUF(paramlen)    ((BT_HDR *)GKI_getpoolbuf (HCI_CMD_POOL_ID))
+
+#ifndef BTU_CMD_CMPL_TIMEOUT
+# define BTU_CMD_CMPL_TIMEOUT			8
+#endif
+
 #endif // BTE_BT_TARGET_H

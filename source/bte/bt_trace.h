@@ -117,6 +117,7 @@ extern void LogMsg_6(UINT32 trace_mask, char const *fmt_str, UINT32 p1, UINT32 p
 #define TRACE_GET_LAYER(x)			(((UINT32)(x) & 0x00ff0000) >> 16)
 
 #define TRACE_LAYER_NONE			0
+#define TRACE_LAYER_HCI				7
 #define TRACE_LAYER_L2CAP			8
 #define TRACE_LAYER_RFCOMM			9
 #define TRACE_LAYER_SDP				10
@@ -166,15 +167,16 @@ extern void LogMsg_6(UINT32 trace_mask, char const *fmt_str, UINT32 p1, UINT32 p
 			BDLT_TRACE(ctrl_, layer_, origin_, type_, __VA_ARGS__);		\
 	} while (FALSE)
 
-#define   APPL_TRACE(type_, ...)	BDLT_TRACE_COND(         appl_trace_level, GENERAL,   NONE,  APPL, type_, __VA_ARGS__)
-#define    GAP_TRACE(type_, ...)	BDLT_TRACE_COND( gap_cb.      trace_level, GENERAL,    GAP, STACK, type_, __VA_ARGS__)
-#define   GOEP_TRACE(type_, ...)	BDLT_TRACE_COND(goep_cb.      trace_level, GENERAL,   GOEP, STACK, type_, __VA_ARGS__)
-#define   HIDD_TRACE(type_, ...)	BDLT_TRACE_COND(  hd_cb.      trace_level, GENERAL,    HID, STACK, type_, __VA_ARGS__)
-#define   HIDH_TRACE(type_, ...)	BDLT_TRACE_COND(  hh_cb.      trace_level, GENERAL,    HID, STACK, type_, __VA_ARGS__)
-#define  L2CAP_TRACE(type_, ...)	BDLT_TRACE_COND(   l2cb.l2cap_trace_level, GENERAL,  L2CAP, STACK, type_, __VA_ARGS__)
-#define RFCOMM_TRACE(type_, ...)	BDLT_TRACE_COND( rfc_cb.      trace_level, GENERAL, RFCOMM, STACK, type_, __VA_ARGS__)
-#define    SDP_TRACE(type_, ...)	BDLT_TRACE_COND( sdp_cb.      trace_level, GENERAL,    SDP, STACK, type_, __VA_ARGS__)
-#define    XML_TRACE(type_, ...)	BDLT_TRACE_COND(       BT_MAX_TRACE_LEVEL, GENERAL,    XML, STACK, type_, __VA_ARGS__)
+#define   APPL_TRACE(        type_, ...)	BDLT_TRACE_COND(         appl_trace_level, GENERAL,   NONE,  APPL, type_, __VA_ARGS__)
+#define     BT_TRACE(layer_, type_, ...)	BDLT_TRACE     (                           GENERAL, layer_, STACK, type_, __VA_ARGS__)
+#define    GAP_TRACE(        type_, ...)	BDLT_TRACE_COND( gap_cb.      trace_level, GENERAL,    GAP, STACK, type_, __VA_ARGS__)
+#define   GOEP_TRACE(        type_, ...)	BDLT_TRACE_COND(goep_cb.      trace_level, GENERAL,   GOEP, STACK, type_, __VA_ARGS__)
+#define   HIDD_TRACE(        type_, ...)	BDLT_TRACE_COND(  hd_cb.      trace_level, GENERAL,    HID, STACK, type_, __VA_ARGS__)
+#define   HIDH_TRACE(        type_, ...)	BDLT_TRACE_COND(  hh_cb.      trace_level, GENERAL,    HID, STACK, type_, __VA_ARGS__)
+#define  L2CAP_TRACE(        type_, ...)	BDLT_TRACE_COND(   l2cb.l2cap_trace_level, GENERAL,  L2CAP, STACK, type_, __VA_ARGS__)
+#define RFCOMM_TRACE(        type_, ...)	BDLT_TRACE_COND( rfc_cb.      trace_level, GENERAL, RFCOMM, STACK, type_, __VA_ARGS__)
+#define    SDP_TRACE(        type_, ...)	BDLT_TRACE_COND( sdp_cb.      trace_level, GENERAL,    SDP, STACK, type_, __VA_ARGS__)
+#define    XML_TRACE(        type_, ...)	BDLT_TRACE     (                           GENERAL,    XML, STACK, type_, __VA_ARGS__)
 
 // clang-format on
 

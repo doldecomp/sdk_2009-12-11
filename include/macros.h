@@ -54,5 +54,4 @@
 #define DEG_TO_RAD(x)							((x) * DEG_TO_RAD_MULT_CONSTANT)
 #define RAD_TO_DEG(x)							((x) * RAD_TO_DEG_MULT_CONSTANT)
 
-
 #endif // MACROS_H

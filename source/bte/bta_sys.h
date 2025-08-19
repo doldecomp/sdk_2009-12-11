@@ -106,6 +106,12 @@ void bta_sys_start_timer(TIMER_LIST_ENT *p_tle, UINT16 type, INT32 timeout);
 void bta_sys_remove_uuid(UINT16 uuid16);
 void bta_sys_stop_timer(TIMER_LIST_ENT *p_tle);
 
+// ---
+
+void bta_sys_init(void);
+void bta_sys_timer_update(void);
+void bta_sys_event(BT_HDR *p_msg);
+
 #ifdef __cplusplus
 	}
 #endif

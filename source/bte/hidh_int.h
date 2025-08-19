@@ -34,6 +34,7 @@
 #include "bt_types.h"
 #include "data_types.h"
 
+#include "gki.h"
 #include "hid_conn.h"
 #include "hiddefs.h"
 #include "hidh_api.h"
@@ -102,6 +103,7 @@ tHID_STATUS hidh_conn_initiate(UINT8 dhandle);
 tHID_STATUS hidh_conn_snd_data(UINT8 dhandle, UINT8 trans_type, UINT8 param,
                                UINT16 data, UINT8 rpt_id, BT_HDR *buf);
 tHID_STATUS hidh_conn_disconnect(UINT8 dhandle);
+void hidh_proc_repage_timeout(TIMER_LIST_ENT *p_tle);
 
 #ifdef __cplusplus
 	}

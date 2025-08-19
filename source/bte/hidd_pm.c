@@ -137,9 +137,7 @@ UINT8 hidd_pm_set_power_mode(tHID_DEV_PWR_MD *p_req_mode)
 	return hidd_pm_set_now(p_req_mode);
 }
 
-void hidd_pm_proc_mode_change(UINT8 hci_status /* r1+0x8 */,
-                              UINT8 mode /* r31 */,
-                              UINT16 interval /* r1+0xA */)
+void hidd_pm_proc_mode_change(UINT8 hci_status, UINT8 mode, UINT16 interval)
 {
 	if (!hd_cb.reg_flag)
 		return;

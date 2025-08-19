@@ -51,6 +51,7 @@
 #define HCI_ERR_PEER_USER							0x13
 #define HCI_ERR_REPEATED_ATTEMPTS					0x17
 #define HCI_ERR_PAIRING_NOT_ALLOWED					0x18
+#define HCI_ERR_UNSPECIFIED							0x1F
 #define HCI_ERR_ENCRY_MODE_NOT_ACCEPTABLE			0x25
 #define HCI_ERR_UNIT_KEY_USED						0x26
 #define HCI_ERR_PAIRING_WITH_UNIT_KEY_NOT_SUPPORTED	0x29
@@ -240,6 +241,61 @@
 
 #define HCI_PKT_TYPES_MASK_DM1              0x0008
 #define HCI_PKT_TYPES_MASK_DH1              0x0010
+
+#define HCI_GRP_VENDOR_SPECIFIC         (0x3F << 10)            /* 0xFC00 */
+
+#define HCI_INQUIRY_COMP_EVT                0x01
+#define HCI_INQUIRY_RESULT_EVT              0x02
+#define HCI_CONNECTION_COMP_EVT             0x03
+#define HCI_CONNECTION_REQUEST_EVT          0x04
+#define HCI_DISCONNECTION_COMP_EVT          0x05
+#define HCI_AUTHENTICATION_COMP_EVT         0x06
+#define HCI_RMT_NAME_REQUEST_COMP_EVT       0x07
+#define HCI_ENCRYPTION_CHANGE_EVT           0x08
+#define HCI_CHANGE_CONN_LINK_KEY_EVT        0x09
+#define HCI_MASTER_LINK_KEY_COMP_EVT        0x0A
+#define HCI_READ_RMT_FEATURES_COMP_EVT      0x0B
+#define HCI_READ_RMT_VERSION_COMP_EVT       0x0C
+#define HCI_QOS_SETUP_COMP_EVT              0x0D
+#define HCI_COMMAND_COMPLETE_EVT            0x0E
+#define HCI_COMMAND_STATUS_EVT              0x0F
+#define HCI_HARDWARE_ERROR_EVT              0x10
+#define HCI_FLUSH_OCCURED_EVT               0x11
+#define HCI_ROLE_CHANGE_EVT                 0x12
+#define HCI_NUM_COMPL_DATA_PKTS_EVT         0x13
+#define HCI_MODE_CHANGE_EVT                 0x14
+#define HCI_RETURN_LINK_KEYS_EVT            0x15
+#define HCI_PIN_CODE_REQUEST_EVT            0x16
+#define HCI_LINK_KEY_REQUEST_EVT            0x17
+#define HCI_LINK_KEY_NOTIFICATION_EVT       0x18
+#define HCI_LOOPBACK_COMMAND_EVT            0x19
+#define HCI_DATA_BUF_OVERFLOW_EVT           0x1A
+#define HCI_MAX_SLOTS_CHANGED_EVT           0x1B
+#define HCI_READ_CLOCK_OFF_COMP_EVT         0x1C
+#define HCI_CONN_PKT_TYPE_CHANGE_EVT        0x1D
+#define HCI_QOS_VIOLATION_EVT               0x1E
+#define HCI_PAGE_SCAN_MODE_CHANGE_EVT       0x1F
+#define HCI_PAGE_SCAN_REP_MODE_CHNG_EVT     0x20
+#define HCI_FLOW_SPECIFICATION_COMP_EVT     0x21
+#define HCI_INQUIRY_RSSI_RESULT_EVT         0x22
+#define HCI_READ_RMT_EXT_FEATURES_COMP_EVT  0x23
+#define HCI_ESCO_CONNECTION_COMP_EVT        0x2C
+#define HCI_ESCO_CONNECTION_CHANGED_EVT     0x2D
+#define HCI_SNIFF_SUB_RATE_EVT              0x2E
+#define HCI_EXTENDED_INQUIRY_RESULT_EVT     0x2F
+#define HCI_ENCRYPTION_KEY_REFRESH_COMP_EVT 0x30
+#define HCI_IO_CAPABILITY_REQUEST_EVT       0x31
+#define HCI_IO_CAPABILITY_RESPONSE_EVT      0x32
+#define HCI_USER_CONFIRMATION_REQUEST_EVT   0x33
+#define HCI_USER_PASSKEY_REQUEST_EVT        0x34
+#define HCI_REMOTE_OOB_DATA_REQUEST_EVT     0x35
+#define HCI_SIMPLE_PAIRING_COMPLETE_EVT     0x36
+#define HCI_LINK_SUPER_TOUT_CHANGED_EVT     0x38
+#define HCI_ENHANCED_FLUSH_COMPLETE_EVT     0x39
+#define HCI_USER_PASSKEY_NOTIFY_EVT         0x3B
+#define HCI_KEYPRESS_NOTIFY_EVT             0x3C
+#define HCI_RMT_HOST_SUP_FEAT_NOTIFY_EVT    0x3D
+#define HCI_VENDOR_SPECIFIC_EVT             0xFF  /* Vendor specific events */
 
 /*******************************************************************************
  * functions

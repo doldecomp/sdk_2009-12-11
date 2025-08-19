@@ -36,6 +36,8 @@
  * macros
  */
 
+#define TIMER_0		0
+
 #define TASK_MBOX_0	0
 
 /*******************************************************************************
@@ -110,6 +112,7 @@ void GKI_init_q(BUFFER_Q *);
 void GKI_sched_lock(void);
 void GKI_sched_unlock(void);
 BOOLEAN GKI_queue_is_empty(BUFFER_Q *);
+void *GKI_read_mbox(UINT8);
 
 #ifdef __cplusplus
 	}

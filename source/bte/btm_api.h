@@ -109,6 +109,15 @@
 #define BTM_PM_REG_NOTIF    2 /* The module wants to receive mode change event */
 #define BTM_PM_DEREG        4 /* The module does not want to involve with PM anymore */
 
+#define BTM_BR_INQUIRY_MASK         0x0f
+
+#define BTM_INQ_RESULT_STANDARD     0
+#define BTM_INQ_RESULT_WITH_RSSI    1
+
+#define BTM_ROLE_UNDEFINED      0xff     /* undefined value (error status) */
+
+#define BTM_CB_EVT_RETURN_LINK_KEYS         1
+
 /*******************************************************************************
  * types
  */
@@ -435,6 +444,13 @@ typedef struct
 typedef void tBTM_PM_STATUS_CBACK(BD_ADDR p_bda, tBTM_PM_STATUS status,
                                   UINT16 value, UINT8 hci_status);
 
+typedef struct
+{
+    UINT8          event;
+    UINT8          num_keys;
+
+} tBTM_RETURN_LINK_KEYS_EVT;
+
 /*******************************************************************************
  * external globals
  */
@@ -519,6 +535,7 @@ tBTM_STATUS BTM_PmRegister(UINT8 mask, UINT8 *p_pm_id,
                            tBTM_PM_STATUS_CBACK *p_cb);
 tBTM_STATUS BTM_SetLinkPolicy(BD_ADDR remote_bda, UINT16 *settings);
 UINT8 BTM_SecClrService(UINT8 service_id);
+void BTM_DeviceReset(tBTM_CMPL_CB *p_cb);
 
 #ifdef __cplusplus
 	}

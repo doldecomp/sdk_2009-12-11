@@ -45,11 +45,14 @@
 #define BTU_TTYPE_SDP					5
 #define BTU_TTYPE_RFCOMM_MFC			11
 #define BTU_TTYPE_RFCOMM_PORT			12
+#define BTU_TTYPE_BTU_CMD_CMPL			60
 #define BTU_TTYPE_HID_HOST_REPAGE_TO	66
 #define BTU_TTYPE_73					73
 
 #define BTU_MAX_REG_TIMER				2
 #define BTU_MAX_REG_EVENT				6
+
+#define BTU_DEFAULT_DATA_SIZE			0x2a0
 
 /*******************************************************************************
  * types
@@ -60,20 +63,20 @@
 	extern "C" {
 #endif
 
-typedef void (*tBTU_TIMER_CALLBACK)(TIMER_LIST_ENT *p_tle);
-typedef void (*tBTU_EVENT_CALLBACK)(BT_HDR *p_hdr);
+typedef void tBTU_TIMER_CALLBACK(TIMER_LIST_ENT *p_tle);
+typedef void tBTU_EVENT_CALLBACK(BT_HDR *p_hdr);
 
 typedef struct
 {
 	TIMER_LIST_ENT		*p_tle;		// size 0x04, offset 0x00
-	tBTU_TIMER_CALLBACK	timer_cb;	// size 0x04, offset 0x04
+	tBTU_TIMER_CALLBACK	*timer_cb;	// size 0x04, offset 0x04
 } tBTU_TIMER_REG; // size 0x08
 
 typedef struct
 {
 	UINT16				event_range;	// size 0x02, offset 0x00
 	/* 2 bytes padding */
-	tBTU_EVENT_CALLBACK	event_cb;		// size 0x04, offset 0x04
+	tBTU_EVENT_CALLBACK	*event_cb;		// size 0x04, offset 0x04
 } tBTU_EVENT_REG; // size 0x08
 
 typedef struct
@@ -105,6 +108,18 @@ extern tBTU_CB btu_cb;
 void btu_hcif_send_cmd(BT_HDR *p_msg);
 void btu_start_timer(TIMER_LIST_ENT *p_tle, UINT16 type, UINT32 timeout);
 void btu_stop_timer(TIMER_LIST_ENT *p_tle);
+
+// ---
+
+void btu_hcif_process_event(BT_HDR *p_msg);
+void btu_hcif_send_cmd(BT_HDR *p_buf);
+void btu_hcif_send_host_rdy_for_data(void);
+/**/
+void btu_hcif_cmd_timeout(void);
+
+void btu_init_core(void);
+void BTE_Init(void);
+UINT16 BTU_AclPktSize(void);
 
 #ifdef __cplusplus
 	}
