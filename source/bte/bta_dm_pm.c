@@ -51,7 +51,7 @@ static void bta_dm_pm_cback(tBTA_SYS_CONN_STATUS status, UINT8 id, UINT8 app_id,
 static void bta_dm_pm_set_mode(BD_ADDR peer_addr, BOOLEAN timed_out);
 static BOOLEAN bta_dm_pm_park(BD_ADDR peer_addr);
 static BOOLEAN bta_dm_pm_sniff(BD_ADDR peer_addr);
-
+static void bta_dm_pm_active(BD_ADDR peer_addr);
 static void bta_dm_pm_btm_cback(BD_ADDR bd_addr, tBTM_PM_STATUS status,
                                 UINT16 value, UINT8 hci_status);
 static void bta_dm_pm_timer_cback(void *p_tle);
@@ -382,7 +382,7 @@ static BOOLEAN bta_dm_pm_sniff(BD_ADDR peer_addr)
 	return TRUE;
 }
 
-void bta_dm_pm_active(BD_ADDR peer_addr)
+static void bta_dm_pm_active(BD_ADDR peer_addr)
 {
 	tBTM_PM_PWR_MD pm;
 	pm.mode = BTM_PM_MD_ACTIVE;
@@ -457,38 +457,39 @@ void bta_dm_pm_btm_status(tBTA_DM_MSG *p_data)
 		break;
 	}
 
-	if (p_data->pm_status.status != 0)
+	switch (p_data->pm_status.status)
 	{
-		(void)0;
-		return;
-	}
-
-	if (p_data->pm_status.hci_status != 0)
-	{
-		for (i = 0; i < bta_dm_cb.device_list.count; ++i)
+	case 0:
+		if (p_data->pm_status.hci_status != 0)
 		{
-			if (bdcmp(bta_dm_cb.device_list.peer_device[i].peer_bdaddr,
-			          p_data->pm_status.bd_addr)
-			    != 0)
+			for (i = 0; i < bta_dm_cb.device_list.count; ++i)
 			{
-				continue;
-			}
+				if (bdcmp(bta_dm_cb.device_list.peer_device[i].peer_bdaddr,
+				          p_data->pm_status.bd_addr)
+				    != 0)
+				{
+					continue;
+				}
 
-			if (bta_dm_cb.device_list.peer_device[i].pm_mode_attempted & 3)
-			{
+				if (!(bta_dm_cb.device_list.peer_device[i].pm_mode_attempted
+				      & 3))
+				{
+					return;
+				}
+
 				bta_dm_cb.device_list.peer_device[i].pm_mode_failed |=
 					bta_dm_cb.device_list.peer_device[i].pm_mode_attempted & 3;
 
 				bta_dm_pm_set_mode(p_data->pm_status.bd_addr, FALSE);
+
+				return;
 			}
 
-			break;
+			return;
 		}
 
-		return;
+		bta_dm_pm_set_mode(p_data->pm_status.bd_addr, FALSE);
 	}
-
-	bta_dm_pm_set_mode(p_data->pm_status.bd_addr, FALSE);
 }
 
 void bta_dm_pm_timer(tBTA_DM_MSG *p_data)

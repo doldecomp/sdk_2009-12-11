@@ -80,7 +80,7 @@ static void bta_dm_search_timer_cback(TIMER_LIST_ENT *p_tle);
 static void bta_dm_find_services(BD_ADDR bd_addr);
 static void bta_dm_discover_next_device(void);
 static void bta_dm_sdp_callback(UINT16 sdp_status);
-static void bta_dm_inq_results_cb(tBTM_INQ_RESULTS *p_inq, UINT8 *p_eir);
+static void bta_dm_inq_results_cb(tBTM_INQ_RESULTS *p_inq);
 static void bta_dm_inq_cmpl_cb(void *p_result);
 static void bta_dm_service_search_remname_cback(BD_ADDR bd_addr, DEV_CLASS dc,
                                                 tBTM_BD_NAME bd_name);
@@ -160,7 +160,7 @@ UINT16 const bta_service_id_to_uuid_lkup_tbl[BTA_MAX_SERVICE_ID] =
 	0x112f,
 };
 
-UINT32 const bta_service_id_to_btm_srv_id_lkup_tbl [BTA_MAX_SERVICE_ID] =
+UINT32 const bta_service_id_to_btm_srv_id_lkup_tbl[BTA_MAX_SERVICE_ID] =
 {
 	0x0000,
 	0x0001,
@@ -189,7 +189,12 @@ UINT32 const bta_service_id_to_btm_srv_id_lkup_tbl [BTA_MAX_SERVICE_ID] =
 
 tBTM_APPL_INFO const bta_security =
 {
-	0,
+	&bta_dm_authorize_cback,
+	&bta_dm_pin_cback,
+	&bta_dm_new_link_key_cback,
+	&bta_dm_link_key_request_cback,
+	&bta_dm_authentication_complete_cback,
+	NULL
 };
 
 // .bss
@@ -375,7 +380,8 @@ void bta_dm_search_start(tBTA_DM_MSG *p_data)
 	bta_dm_search_cb.services = p_data->search.services;
 
 	BTM_StartInquiry((tBTM_INQ_PARMS *)&p_data->search.inq_params,
-	                 &bta_dm_inq_results_cb, &bta_dm_inq_cmpl_cb);
+	                 (tBTM_INQ_RESULTS_CB *)&bta_dm_inq_results_cb,
+	                 &bta_dm_inq_cmpl_cb);
 }
 
 void bta_dm_search_cancel(tBTA_DM_MSG *p_data)
@@ -943,7 +949,7 @@ static void bta_dm_sdp_callback(UINT16 sdp_status)
 	}
 }
 
-static void bta_dm_inq_results_cb(tBTM_INQ_RESULTS *p_inq, UINT8 *p_eir)
+static void bta_dm_inq_results_cb(tBTM_INQ_RESULTS *p_inq)
 {
 	tBTA_DM_SEARCH result;
 	tBTM_INQ_INFO *p_inq_info;

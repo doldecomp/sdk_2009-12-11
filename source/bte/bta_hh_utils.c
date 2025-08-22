@@ -257,17 +257,18 @@ void bta_hh_parse_keybd_rpt(tBTA_HH_BOOT_RPT *p_kb_data, UINT8 *p_report,
 			continue;
 		}
 
+		/* Explicitly not compound addition operators for these next three */
 		if (0x04 <= this_char && this_char <= 0x1d)
 		{
-			this_char += 0x3d;
+			this_char = this_char + 0x3d;
 		}
 		else if (0x1e <= this_char && this_char <= 0x26)
 		{
-			this_char += 0x13;
+			this_char = this_char + 0x13;
 		}
 		else if (0x3a <= this_char && this_char <= 0x45)
 		{
-			this_char += 0x36;
+			this_char = this_char + 0x36;
 		}
 		else if (0x27 <= this_char && this_char <= 0x38)
 		{
@@ -294,7 +295,7 @@ void bta_hh_parse_keybd_rpt(tBTA_HH_BOOT_RPT *p_kb_data, UINT8 *p_report,
 				else if (this_char == 0x63)
 					this_char = 0xbe;
 				else
-					this_char -= 0x28;
+					this_char = this_char - 0x28;
 			}
 		}
 		else

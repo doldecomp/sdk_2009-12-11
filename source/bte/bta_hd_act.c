@@ -47,6 +47,15 @@ static UINT8 bta_hd_flush_data(tBTA_HD_CB *p_cb);
  * variables
  */
 
+// NOTE: before .data objects to match DWARF order
+// .sdata2
+UINT8 const bta_hd_buf_len[] =
+{
+	9,
+	9,
+	5,
+};
+
 // .data
 char const *bta_hd_ctrl_str[] =
 {
@@ -84,14 +93,6 @@ char const *bta_hd_evt_str[] =
 	"DATA",
 	"DATC",
 	"L2C_CONG",
-};
-
-// .sdata2
-UINT8 const bta_hd_buf_len[] =
-{
-	9,
-	9,
-	5,
 };
 
 /*******************************************************************************

@@ -842,13 +842,8 @@ int PORT_WriteData(UINT16 handle, char *p_data, UINT16 max_len, UINT16 *p_len)
 		return PORT_UNKNOWN_ERROR;
 	}
 
-	// TODO: how to derive constant
-#if 0
-	length = RFCOMM_DATA_POOL_BUF_SIZE
-	       - (UINT16)(sizeof(BT_HDR) + L2CAP_MIN_OFFSET + RFCOMM_DATA_OVERHEAD);
-#else
-	length = 1777;
-#endif
+	length = RFCOMM_DATA_POOL_BUF_SIZE - sizeof(BT_HDR) - L2CAP_MIN_OFFSET
+	       - RFCOMM_DATA_OVERHEAD;
 
 	GKI_disable();
 

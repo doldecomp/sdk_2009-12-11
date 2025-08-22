@@ -64,7 +64,7 @@
 tBTA_SYS_CB bta_sys_cb;
 
 // .sbss
-UINT8 appl_trace_level = BT_TRACE_LEVEL_NONE;
+UINT8 appl_trace_level;
 
 /*******************************************************************************
  * functions

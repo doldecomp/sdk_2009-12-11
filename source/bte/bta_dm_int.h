@@ -361,13 +361,17 @@ typedef struct
  * external globals
  */
 
+/* NOTE: bta_service_id_to_btm_srv_id_lkup_tbl is noted in DWARF info as being
+ * an incomplete array type for those units without its definition.
+ */
+
 extern tBTA_DM_SEARCH_CB bta_dm_search_cb;
 extern tBTA_DM_CONNECTED_SRVCS bta_dm_conn_srvcs;
 extern tBTA_DM_CFG const bta_dm_cfg;
 extern tBTA_DM_RM *p_bta_dm_rm_cfg;
 extern tBTA_DM_COMPRESS *p_bta_dm_compress_cfg;
 extern tBTA_DM_CB bta_dm_cb;
-extern UINT32 const bta_service_id_to_btm_srv_id_lkup_tbl[BTA_MAX_SERVICE_ID];
+extern UINT32 const bta_service_id_to_btm_srv_id_lkup_tbl[];
 extern tBTA_DM_PM_CFG *p_bta_dm_pm_cfg;
 extern tBTA_DM_PM_SPEC *p_bta_dm_pm_spec;
 extern tBTM_PM_PWR_MD *p_bta_dm_pm_md;
@@ -434,8 +438,6 @@ BOOLEAN bta_dm_search_sm_execute(BT_HDR *p_msg);
 
 void bta_dm_init_pm(void);
 void bta_dm_disable_pm(void);
-/**/
-void bta_dm_pm_active(BD_ADDR peer_addr);
 /**/
 void bta_dm_pm_btm_status(tBTA_DM_MSG *p_data);
 void bta_dm_pm_timer(tBTA_DM_MSG *p_data);
