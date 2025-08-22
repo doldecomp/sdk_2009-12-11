@@ -361,7 +361,7 @@ typedef struct
  * external globals
  */
 
-/* NOTE: bta_service_id_to_btm_srv_id_lkup_tbl is noted in DWARF info as being
+/* NOTE: bta_service_id_to_btm_srv_id_lkup_tbl is listed in DWARF info as being
  * an incomplete array type for those units without its definition.
  */
 

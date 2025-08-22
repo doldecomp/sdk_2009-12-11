@@ -1,9 +1,8 @@
-#ifndef BTE_H
-#define BTE_H
+#include "bte.h"
 
 /* Original source:
  * bluedroid <android.googlesource.com/platform/external/bluetooth/bluedroid>
- * include/bte.h
+ * main/bte_version.c
  */
 
 /******************************************************************************
@@ -27,56 +26,8 @@
 /* Includes changes by muff1n1634 */
 
 /*******************************************************************************
- * headers
+ * variables
  */
 
-#include <decomp.h>
-
-#include "data_types.h"
-
-#include "hci.h"
-
-/*******************************************************************************
- * macros
- */
-
-/*******************************************************************************
- * types
- */
-
-#ifdef __cplusplus
-	extern "C" {
-#endif
-
-/*******************************************************************************
- * external globals
- */
-
-extern tHCI_IF *p_hcisu_if;
-extern tHCI_CFG *p_hcisu_cfg;
-extern UINT8 bte_target_mode;
-extern char const bte_version_string[];
-
-/*******************************************************************************
- * functions
- */
-
-void BTE_InitStack(void);
-
-// ---
-
-void bte_hcisu_send(HC_BT_HDR *p_msg, UINT16 event);
-void bte_hcisu_task(unk_t);
-void bte_hcisu_close(void);
-void bta_ci_hci_msg_handler(void *p_data);
-
-void BTE_InitStack(void);
-
-void BTE_LoadStack(void);
-void BTE_UnloadStack(void);
-
-#ifdef __cplusplus
-	}
-#endif
-
-#endif // BTE_H
+// .rodata
+char const bte_version_string[] = "BCM1200_MI_10.2.2.55";

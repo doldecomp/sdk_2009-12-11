@@ -1,14 +1,14 @@
-#ifndef BTE_H
-#define BTE_H
+#ifndef BTE_HCI_H
+#define BTE_HCI_H
 
 /* Original source:
  * bluedroid <android.googlesource.com/platform/external/bluetooth/bluedroid>
- * include/bte.h
+ * hci/include/hci.h
  */
 
 /******************************************************************************
  *
- *  Copyright (C) 2001-2012 Broadcom Corporation
+ *  Copyright (C) 2009-2012 Broadcom Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -32,13 +32,14 @@
 
 #include <decomp.h>
 
+#include "bt_types.h"
 #include "data_types.h"
-
-#include "hci.h"
 
 /*******************************************************************************
  * macros
  */
+
+typedef BT_HDR HC_BT_HDR;
 
 /*******************************************************************************
  * types
@@ -48,35 +49,41 @@
 	extern "C" {
 #endif
 
+typedef struct
+{
+	UINT8	at_0x00;
+	UINT8	at_0x01;
+	UINT8	at_0x02;
+	UINT8	at_0x03;
+} tHCI_CFG;
+
+typedef unk_t tHCI_INIT(UINT8, UINT8, UINT16);
+typedef unk_t tHCI_OPEN(tHCI_CFG *p_cfg);
+typedef unk_t tHCI_CLOSE(void);
+typedef void tHCI_SEND(HC_BT_HDR *p_msg);
+typedef unk_t tHCI_HANDLE_EVENT();
+
+typedef struct
+{
+	tHCI_INIT			*init;
+	tHCI_OPEN			*open;
+	tHCI_CLOSE			*close;
+	tHCI_SEND			*send;
+	tHCI_HANDLE_EVENT	*handle_event;
+} tHCI_IF;
+
 /*******************************************************************************
  * external globals
  */
 
-extern tHCI_IF *p_hcisu_if;
-extern tHCI_CFG *p_hcisu_cfg;
-extern UINT8 bte_target_mode;
-extern char const bte_version_string[];
+extern tHCI_IF const hcisu_h2;
 
 /*******************************************************************************
  * functions
  */
 
-void BTE_InitStack(void);
-
-// ---
-
-void bte_hcisu_send(HC_BT_HDR *p_msg, UINT16 event);
-void bte_hcisu_task(unk_t);
-void bte_hcisu_close(void);
-void bta_ci_hci_msg_handler(void *p_data);
-
-void BTE_InitStack(void);
-
-void BTE_LoadStack(void);
-void BTE_UnloadStack(void);
-
 #ifdef __cplusplus
 	}
 #endif
 
-#endif // BTE_H
+#endif // BTE_HCI_H

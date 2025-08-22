@@ -113,6 +113,12 @@ void GKI_sched_lock(void);
 void GKI_sched_unlock(void);
 BOOLEAN GKI_queue_is_empty(BUFFER_Q *);
 void *GKI_read_mbox(UINT8);
+void *GKI_os_malloc(UINT32);
+void GKI_os_free(void *);
+void GKI_delay(UINT32);
+void GKI_init(void);
+void GKI_run(void *);
+void GKI_shutdown(void);
 
 #ifdef __cplusplus
 	}

@@ -1,14 +1,13 @@
-#ifndef BTE_H
-#define BTE_H
+#include "bte.h"
 
 /* Original source:
  * bluedroid <android.googlesource.com/platform/external/bluetooth/bluedroid>
- * include/bte.h
+ * main/bte_init.c
  */
 
 /******************************************************************************
  *
- *  Copyright (C) 2001-2012 Broadcom Corporation
+ *  Copyright (C) 2000-2012 Broadcom Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -30,53 +29,19 @@
  * headers
  */
 
-#include <decomp.h>
-
-#include "data_types.h"
-
-#include "hci.h"
-
-/*******************************************************************************
- * macros
- */
-
-/*******************************************************************************
- * types
- */
-
-#ifdef __cplusplus
-	extern "C" {
-#endif
-
-/*******************************************************************************
- * external globals
- */
-
-extern tHCI_IF *p_hcisu_if;
-extern tHCI_CFG *p_hcisu_cfg;
-extern UINT8 bte_target_mode;
-extern char const bte_version_string[];
+#include "gap_api.h"
+#include "hidd_api.h"
+#include "hidh_api.h"
+#include "port_api.h"
 
 /*******************************************************************************
  * functions
  */
 
-void BTE_InitStack(void);
-
-// ---
-
-void bte_hcisu_send(HC_BT_HDR *p_msg, UINT16 event);
-void bte_hcisu_task(unk_t);
-void bte_hcisu_close(void);
-void bta_ci_hci_msg_handler(void *p_data);
-
-void BTE_InitStack(void);
-
-void BTE_LoadStack(void);
-void BTE_UnloadStack(void);
-
-#ifdef __cplusplus
-	}
-#endif
-
-#endif // BTE_H
+void BTE_InitStack(void)
+{
+	RFCOMM_Init();
+	GAP_Init();
+	HID_DevInit();
+	HID_HostInit();
+}

@@ -153,6 +153,8 @@ typedef struct
  * functions
  */
 
+void GAP_Init(void);
+
 #ifdef __cplusplus
 	}
 #endif

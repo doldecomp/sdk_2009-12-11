@@ -261,6 +261,9 @@ void BTA_DmSignalStrength(tBTA_SIG_STRENGTH_MASK mask, UINT16 period,
 void BTA_KeepACLLinksOnShutDown(BOOLEAN keep);
 void BTA_DmSendHciReset(void);
 
+tBTA_STATUS BTA_Init(void);
+void BTA_CleanUp(void (*p_cb)(tBTA_STATUS status)); // TODO: typedef
+
 #ifdef __cplusplus
 	}
 #endif

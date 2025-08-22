@@ -111,6 +111,8 @@ extern tBTU_CB btu_cb;
 void btu_hcif_send_cmd(BT_HDR *p_msg);
 void btu_start_timer(TIMER_LIST_ENT *p_tle, UINT16 type, UINT32 timeout);
 void btu_stop_timer(TIMER_LIST_ENT *p_tle);
+void btu_task_msg_handler(void);
+void btu_task_init(void);
 
 // ---
 

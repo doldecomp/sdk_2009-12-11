@@ -122,6 +122,7 @@ struct OSContext
 	f64			psf[32];			// size 0x100, offset 0x1c8
 }; // size 0x2c8
 
+void OSSwitchFiber(OSFiber *fiber, void *stack);
 void OSSwitchFiberEx(register_t arg0, register_t arg1, register_t arg2,
                      register_t arg3, OSFiber *fiber, void *stack);
 
