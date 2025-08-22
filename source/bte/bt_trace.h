@@ -71,16 +71,16 @@ extern void LogMsg_6(UINT32 trace_mask, char const *fmt_str, UINT32 p1, UINT32 p
 #define BDLT_CAST_ARGS_(x)	BDLT_CAST_ARGS_ ## x
 #define BDLT_CAST_ARGS(...)	BDLT_VA_APPLY(BDLT_CAST_ARGS_, __VA_ARGS__)(__VA_ARGS__, _)
 
-/* in an effort to make it O(1) over O(n) at the slight cost of kind of
- * duplicated macros (but a lot less than the original!)
+/* in an effort to make it O(1) over O(n) at the slight cost of some duplicated
+ * macros (but a lot less than the original!)
  */
 #define BDLT_CAST_ARGS_0(m, ...)							m
-#define BDLT_CAST_ARGS_1(m, _1, ...)						m, ((UINT32)(_1))
-#define BDLT_CAST_ARGS_2(m, _1, _2, ...)					m, ((UINT32)(_1)), ((UINT32)(_2))
-#define BDLT_CAST_ARGS_3(m, _1, _2, _3, ...)				m, ((UINT32)(_1)), ((UINT32)(_2)), ((UINT32)(_3))
-#define BDLT_CAST_ARGS_4(m, _1, _2, _3, _4, ...)			m, ((UINT32)(_1)), ((UINT32)(_2)), ((UINT32)(_3)), ((UINT32)(_4))
-#define BDLT_CAST_ARGS_5(m, _1, _2, _3, _4, _5, ...)		m, ((UINT32)(_1)), ((UINT32)(_2)), ((UINT32)(_3)), ((UINT32)(_4)), ((UINT32)(_5))
-#define BDLT_CAST_ARGS_6(m, _1, _2, _3, _4, _5, _6, ...)	m, ((UINT32)(_1)), ((UINT32)(_2)), ((UINT32)(_3)), ((UINT32)(_4)), ((UINT32)(_5)), ((UINT32)(_6))
+#define BDLT_CAST_ARGS_1(m, _1, ...)						m, (UINT32)(_1)
+#define BDLT_CAST_ARGS_2(m, _1, _2, ...)					m, (UINT32)(_1), (UINT32)(_2)
+#define BDLT_CAST_ARGS_3(m, _1, _2, _3, ...)				m, (UINT32)(_1), (UINT32)(_2), (UINT32)(_3)
+#define BDLT_CAST_ARGS_4(m, _1, _2, _3, _4, ...)			m, (UINT32)(_1), (UINT32)(_2), (UINT32)(_3), (UINT32)(_4)
+#define BDLT_CAST_ARGS_5(m, _1, _2, _3, _4, _5, ...)		m, (UINT32)(_1), (UINT32)(_2), (UINT32)(_3), (UINT32)(_4), (UINT32)(_5)
+#define BDLT_CAST_ARGS_6(m, _1, _2, _3, _4, _5, _6, ...)	m, (UINT32)(_1), (UINT32)(_2), (UINT32)(_3), (UINT32)(_4), (UINT32)(_5), (UINT32)(_6)
 
 #define BDLT_TRACE(ctrl_, layer_, org_, type_, ...)	\
 	BDLT_LOG_MSG(__VA_ARGS__)									\
@@ -121,6 +121,7 @@ extern void LogMsg_6(UINT32 trace_mask, char const *fmt_str, UINT32 p1, UINT32 p
 #define TRACE_LAYER_L2CAP			8
 #define TRACE_LAYER_RFCOMM			9
 #define TRACE_LAYER_SDP				10
+#define TRACE_LAYER_BTM				13
 #define TRACE_LAYER_GAP				14
 #define TRACE_LAYER_GOEP			16
 #define TRACE_LAYER_XML				16 // ?
@@ -169,6 +170,7 @@ extern void LogMsg_6(UINT32 trace_mask, char const *fmt_str, UINT32 p1, UINT32 p
 
 #define   APPL_TRACE(        type_, ...)	BDLT_TRACE_COND(         appl_trace_level, GENERAL,   NONE,  APPL, type_, __VA_ARGS__)
 #define     BT_TRACE(layer_, type_, ...)	BDLT_TRACE     (                           GENERAL, layer_, STACK, type_, __VA_ARGS__)
+#define    BTM_TRACE(        type_, ...)	BDLT_TRACE_COND( btm_cb.      trace_level, GENERAL,    BTM, STACK, type_, __VA_ARGS__)
 #define    GAP_TRACE(        type_, ...)	BDLT_TRACE_COND( gap_cb.      trace_level, GENERAL,    GAP, STACK, type_, __VA_ARGS__)
 #define   GOEP_TRACE(        type_, ...)	BDLT_TRACE_COND(goep_cb.      trace_level, GENERAL,   GOEP, STACK, type_, __VA_ARGS__)
 #define   HIDD_TRACE(        type_, ...)	BDLT_TRACE_COND(  hd_cb.      trace_level, GENERAL,    HID, STACK, type_, __VA_ARGS__)

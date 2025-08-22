@@ -138,7 +138,7 @@ void gap_btm_cback1(void *p1)
 	btm_cback(1, p1);
 }
 
-void gap_inq_results_cb(tBTM_INQ_RESULTS *p_results, UINT8 *p_eir)
+void gap_inq_results_cb(tBTM_INQ_RESULTS *p_results)
 {
 	tGAP_INFO *p_cb;
 	UINT8 index;

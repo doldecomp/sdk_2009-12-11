@@ -105,6 +105,11 @@
 
 #define HCI_LINK_TYPE_ACL               0x01
 
+#define HCI_HOST_FLOW_CTRL_ACL_ON       1
+
+#define HCI_ENCRYPT_MODE_DISABLED       0x00
+#define HCI_ENCRYPT_MODE_POINT_TO_POINT 0x01
+
 /*******************************************************************************
  * types
  */

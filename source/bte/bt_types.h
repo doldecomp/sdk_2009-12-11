@@ -40,6 +40,7 @@
 #define BT_EVT_TO_LM_HCI_ACL	0x2100
 #define BT_EVT_TO_START_TIMER	0x3e00
 
+#define BT_PSM_SDP				1
 #define BT_PSM_RFCOMM			3
 
 #define BTM_SEC_PROTO_RFCOMM	3
@@ -182,6 +183,16 @@
 		register UINT8 *_pa = (UINT8 *)(a) + DEV_CLASS_LEN - 1;	\
 																\
 		for (ijk = 0; ijk < DEV_CLASS_LEN; ++ijk)				\
+			*_pa-- = *(p)++;									\
+	} while (FALSE)
+
+#define REVERSE_STREAM_TO_ARRAY(p, a, len)						\
+	do															\
+	{															\
+		register int ijk;										\
+		register UINT8 *_pa = (UINT8 *)(a) + len - 1;			\
+																\
+		for (ijk = 0; ijk < len; ++ijk)							\
 			*_pa-- = *(p)++;									\
 	} while (FALSE)
 

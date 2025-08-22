@@ -39,10 +39,13 @@
  * macros
  */
 
+#define BTU_TTYPE_BTM_DEV_CTL			1
 #define BTU_TTYPE_L2CAP_LINK			2
 #define BTU_TTYPE_L2CAP_CHNL			3
 #define BTU_TTYPE_L2CAP_HOLD			4
 #define BTU_TTYPE_SDP					5
+#define BTU_TTYPE_BTM_ACL				9
+#define BTU_TTYPE_BTM_RMT_NAME			10
 #define BTU_TTYPE_RFCOMM_MFC			11
 #define BTU_TTYPE_RFCOMM_PORT			12
 #define BTU_TTYPE_BTU_CMD_CMPL			60

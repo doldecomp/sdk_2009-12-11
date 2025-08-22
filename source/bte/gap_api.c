@@ -178,8 +178,9 @@ UINT16 GAP_StartInquiry(tGAP_INQ_PARMS *p_inq_parms,
 		p_cb->gap_inq_rslt_cback = p_results_cb;
 		p_cb->event = GAP_EVT_INQUIRY_COMPLETE;
 
-		btm_status = BTM_StartInquiry(p_inq_parms, &gap_inq_results_cb,
-		                              gap_cb.btm_cback[p_cb->index]);
+		btm_status = BTM_StartInquiry(
+			p_inq_parms, (tBTM_INQ_RESULTS_CB *)&gap_inq_results_cb,
+			gap_cb.btm_cback[p_cb->index]);
 
 		if ((retval = gap_convert_btm_status(btm_status)) != GAP_CMD_INITIATED)
 			gap_free_cb(p_cb);
@@ -221,8 +222,9 @@ UINT16 GAP_StartPeriodicInquiry(tGAP_INQ_PARMS *p_inq_parms, UINT16 min_time,
 		p_cb->gap_inq_rslt_cback = p_results_cb;
 		p_cb->event = GAP_EVT_INQUIRY_COMPLETE;
 
-		btm_status = BTM_SetPeriodicInquiryMode(p_inq_parms, max_time, min_time,
-		                                        &gap_inq_results_cb);
+		btm_status = BTM_SetPeriodicInquiryMode(
+			p_inq_parms, max_time, min_time,
+			(tBTM_INQ_RESULTS_CB *)&gap_inq_results_cb);
 
 		if ((retval = gap_convert_btm_status(btm_status)) != GAP_CMD_INITIATED)
 			gap_free_cb(p_cb);

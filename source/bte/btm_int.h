@@ -55,6 +55,61 @@
 
 #define BTM_MAX_SCN					PORT_MAX_RFC_PORTS
 
+#define BTM_SEC_ENCRYPTED			BTM_SEC_FLAG_ENCRYPTED
+
+#define TT_DEV_RESET     1
+#define TT_DEV_RLN       2
+#define TT_DEV_RLNKP     4              /* Read Link Policy Settings */
+
+#define BTM_ACL_SUPPORTED_PKTS_MASK      (HCI_PKT_TYPES_MASK_DM1        | \
+                                          HCI_PKT_TYPES_MASK_DH1        | \
+                                          HCI_PKT_TYPES_MASK_DM3        | \
+                                          HCI_PKT_TYPES_MASK_DH3        | \
+                                          HCI_PKT_TYPES_MASK_DM5        | \
+                                          HCI_PKT_TYPES_MASK_DH5)
+#define BTM_ACL_EXCEPTION_PKTS_MASK      (HCI_PKT_TYPES_MASK_NO_2_DH1   | \
+                                          HCI_PKT_TYPES_MASK_NO_3_DH1   | \
+                                          HCI_PKT_TYPES_MASK_NO_2_DH3   | \
+                                          HCI_PKT_TYPES_MASK_NO_3_DH3   | \
+                                          HCI_PKT_TYPES_MASK_NO_2_DH5   | \
+                                          HCI_PKT_TYPES_MASK_NO_3_DH5)
+
+#define BTM_SCO_SUPPORTED_PKTS_MASK      (HCI_ESCO_PKT_TYPES_MASK_HV1       | \
+                                          HCI_ESCO_PKT_TYPES_MASK_HV2       | \
+                                          HCI_ESCO_PKT_TYPES_MASK_HV3       | \
+                                          HCI_ESCO_PKT_TYPES_MASK_EV3       | \
+                                          HCI_ESCO_PKT_TYPES_MASK_EV4       | \
+                                          HCI_ESCO_PKT_TYPES_MASK_EV5)
+
+#define BTM_SCO_EXCEPTION_PKTS_MASK      (HCI_ESCO_PKT_TYPES_MASK_NO_2_EV3  | \
+                                          HCI_ESCO_PKT_TYPES_MASK_NO_3_EV3  | \
+                                          HCI_ESCO_PKT_TYPES_MASK_NO_2_EV5  | \
+                                          HCI_ESCO_PKT_TYPES_MASK_NO_3_EV5)
+
+#define BTM_SEC_NAME_KNOWN      0x08
+#define BTM_SEC_LINK_KEY_KNOWN  BTM_SEC_FLAG_LKEY_KNOWN
+#define BTM_SEC_IN_USE          0x80
+
+#define BTM_DEV_STATE_WAIT_RESET_CMPLT  0
+#define BTM_DEV_STATE_WAIT_AFTER_RESET  1
+#define BTM_DEV_STATE_READY             2
+
+#define BTM_CLOCK_OFFSET_VALID      0x8000
+#define BTM_PM_REC_NOT_USED 0
+
+#define BTM_ESCO_PKT_TYPE_MASK  (   HCI_ESCO_PKT_TYPES_MASK_HV1 \
+                                 |  HCI_ESCO_PKT_TYPES_MASK_HV2 \
+                                 |  HCI_ESCO_PKT_TYPES_MASK_HV3)
+
+#define BTM_ESCO_2_SCO(escotype) ((UINT16)(((escotype) & BTM_ESCO_PKT_TYPE_MASK) << 5))
+
+#define BTM_SEC_AUTHORIZED      BTM_SEC_FLAG_AUTHORIZED
+#define BTM_SEC_AUTHENTICATED   BTM_SEC_FLAG_AUTHENTICATED
+#define BTM_SEC_INVALID_HANDLE  0xFFFF
+#define BTM_SEC_ROLE_SWITCHED   0x40
+#define BTM_SEC_LINK_KEY_AUTHED 0x20
+#define BTM_SEC_STATE_AUTHENTICATING    1
+
 /*******************************************************************************
  * types
  */
@@ -62,6 +117,11 @@
 #ifdef __cplusplus
 	extern "C" {
 #endif
+
+enum
+{
+    BTM_PM_ST_PENDING = BTM_PM_STS_PENDING,
+};
 
 typedef char tBTM_LOC_BD_NAME[BTM_MAX_LOC_BD_NAME_LEN + 1];
 
@@ -319,15 +379,15 @@ typedef struct
 	PIN_CODE				pin_code;												// size 0x0010, offset 0x1980
 	tBTM_SEC_SERV_REC		sec_serv_rec[BTM_SEC_MAX_SERVICE_RECORDS];				// size 0x0600, offset 0x1990
 	tBTM_SEC_DEV_REC		sec_dev_rec[BTM_SEC_MAX_DEVICE_RECORDS];				// size 0x0880, offset 0x1f90
-	tBTM_MKEY_CALLBACK		*mkey_cback;											// size 0x0004, offset 0x2810
-	BD_ADDR					connecting_bda;											// size 0x0006, offset 0x2814
-	DEV_CLASS				connecting_dc;											// size 0x0003, offset 0x281a
-	UINT8					first_disabled_channel;									// size 0x0001, offset 0x281d
-	UINT8					last_disabled_channel;									// size 0x0001, offset 0x281e
-	UINT8					acl_disc_reason;										// size 0x0001, offset 0x281f
-	UINT8					trace_level;											// size 0x0001, offset 0x2820
+	tBTM_MKEY_CALLBACK		*mkey_cback;											// size 0x0004, offset 0x27b0
+	BD_ADDR					connecting_bda;											// size 0x0006, offset 0x27b4
+	DEV_CLASS				connecting_dc;											// size 0x0003, offset 0x27ba
+	UINT8					first_disabled_channel;									// size 0x0001, offset 0x27bd
+	UINT8					last_disabled_channel;									// size 0x0001, offset 0x27be
+	UINT8					acl_disc_reason;										// size 0x0001, offset 0x27bf
+	UINT8					trace_level;											// size 0x0001, offset 0x27c0
 	/* 3 bytes padding */
-} tBTM_CB;
+} tBTM_CB; // size 0x27c4
 
 /*******************************************************************************
  * external globals
@@ -339,11 +399,10 @@ extern tBTM_CB btm_cb;
  * functions
  */
 
-tBTM_STATUS btm_sec_mx_access_request(BD_ADDR bd_addr, UINT16 psm,
-                                      BOOLEAN is_originator, UINT32 mx_proto_id,
-                                      UINT32 mx_chan_id,
-                                      tBTM_SEC_CALLBACK *p_callback,
-                                      void *p_ref_data);
+void btm_sec_mx_access_request(BD_ADDR bd_addr, UINT16 psm,
+                               BOOLEAN is_originator, UINT32 mx_proto_id,
+                               UINT32 mx_chan_id, tBTM_SEC_CALLBACK *p_callback,
+                               void *p_ref_data);
 UINT16 btm_get_acl_disc_reason_code(void);
 BOOLEAN btm_acl_notif_conn_collision(BD_ADDR bda);
 unsigned char btm_sec_l2cap_access_req(
@@ -422,6 +481,177 @@ void btm_dev_timeout(TIMER_LIST_ENT *p_tle);
 void btm_acl_timeout(TIMER_LIST_ENT *p_tle);
 void btm_inq_rmt_name_failed(void);
 void btm_discovery_timeout(void);
+tBTM_SEC_DEV_REC *btm_find_dev_by_handle(UINT16 handle);
+void btm_pm_sm_alloc(UINT8 ind);
+tBTM_STATUS btm_set_packet_types(tACL_CONN *p, UINT16 pkt_types);
+tBTM_SEC_DEV_REC *btm_sec_alloc_dev(BD_ADDR bd_addr);
+void btm_sec_free_dev(tBTM_SEC_DEV_REC *p_dev_rec);
+void btm_inq_db_reset(void);
+void btm_discovery_db_reset(void);
+void btm_pm_reset(void);
+void btm_sec_dev_reset(void);
+tBTM_STATUS btm_initiate_rem_name(BD_ADDR remote_bda, tBTM_INQ_INFO *p_cur,
+                                  UINT8 origin, UINT32 timeout,
+                                  tBTM_CMPL_CB *p_cb);
+void btm_clr_inq_db(BD_ADDR p_bda);
+void btm_sec_init(UINT8 sec_mode);
+void btm_sco_init(void);
+UINT8 btm_num_sco_links_active(void);
+void btm_sco_flush_sco_data(UINT16 sco_inx);
+
+// ---
+
+void btm_acl_init(void);
+tACL_CONN *btm_bda_to_acl(BD_ADDR bda);
+UINT8 btm_handle_to_acl_index(UINT16 hci_handle);
+void btm_acl_created(BD_ADDR bda, DEV_CLASS dc, BD_NAME bdn, UINT16 hci_handle,
+                     UINT8 link_role);
+void btm_acl_removed(BD_ADDR bda);
+void btm_acl_device_down(void);
+/**/
+void btm_acl_encrypt_change(UINT16 handle, UINT8 status, BOOLEAN encr_enable);
+/**/
+void btm_read_link_policy_complete(UINT8 *p);
+void btm_read_remote_version_complete(UINT8 *p);
+void btm_read_remote_features_complete(UINT8 *p);
+/**/
+UINT16 btm_get_acl_disc_reason_code(void);
+/**/
+void btm_process_clk_off_comp_evt(UINT16 hci_handle, UINT16 clock_offset);
+void btm_acl_role_changed(UINT8 hci_status, BD_ADDR bd_addr, UINT8 new_role);
+/**/
+void btm_acl_timeout(TIMER_LIST_ENT *p_tle);
+tBTM_STATUS btm_set_packet_types(tACL_CONN *p, UINT16 pkt_types);
+UINT16 btm_get_max_packet_size(BD_ADDR addr);
+/**/
+void btm_qos_setup_complete(UINT8 status, UINT16 handle, FLOW_SPEC *p_flow);
+/**/
+void btm_read_rssi_complete(UINT8 *p);
+void btm_read_link_quality_complete(UINT8 *p);
+tBTM_STATUS btm_remove_acl(BD_ADDR bd_addr);
+/**/
+void btm_chg_all_acl_pkt_types(BOOLEAN entering_sco);
+
+tBTM_SEC_DEV_REC *btm_sec_alloc_dev(BD_ADDR bd_addr);
+void btm_sec_free_dev(tBTM_SEC_DEV_REC *p_dev_rec);
+tBTM_SEC_DEV_REC *btm_find_dev_by_handle(UINT16 handle);
+tBTM_SEC_DEV_REC *btm_find_dev(BD_ADDR bd_addr);
+
+void btm_dev_init(void);
+/**/
+void btm_dev_absent(void);
+/**/
+void btm_get_hci_buf_size(void);
+void btm_get_local_version(void);
+void btm_get_local_features(void);
+void btm_dev_timeout(TIMER_LIST_ENT *p_tle);
+void btm_reset_complete(void);
+/**/
+void btm_read_hci_buf_size_complete(UINT8 *p, UINT16 evt_len);
+void btm_read_local_version_complete(UINT8 *p, UINT16 evt_len);
+void btm_read_local_features_complete(UINT8 *p, UINT16 evt_len);
+UINT8 btm_get_voice_coding_support(void);
+/**/
+void btm_read_local_name_complete(UINT8 *p, UINT16 evt_len);
+/**/
+void btm_read_local_addr_complete(UINT8 *p, UINT16 evt_len);
+/**/
+void btm_vsc_complete(UINT8 *p, UINT16 opcode, UINT16 evt_len);
+/**/
+void btm_vendor_specific_evt(UINT8 *p, UINT8 evt_len);
+/**/
+UINT8 btm_get_hci_version(void);
+/**/
+void btm_read_stored_link_key_complete(UINT8 *p);
+void btm_write_stored_link_key_complete(UINT8 *p);
+void btm_delete_stored_link_key_complete(UINT8 *p);
+void btm_return_link_keys_evt(tBTM_RETURN_LINK_KEYS_EVT *result);
+void btm_report_device_status(tBTM_DEV_STATUS status);
+
+void btm_discovery_db_init(void);
+void btm_discovery_db_reset(void);
+void btm_discovery_timeout(void);
+
+void btm_inq_db_reset(void);
+void btm_inq_db_init(void);
+void btm_clr_inq_db(BD_ADDR p_bda);
+/**/
+void btm_event_filter_complete(UINT8 *p);
+/**/
+void btm_process_inq_results(UINT8 *p, BOOLEAN with_rssi);
+void btm_process_inq_complete(UINT8 status);
+void btm_inq_check_ageing(void);
+tBTM_STATUS btm_initiate_rem_name(BD_ADDR remote_bda, tBTM_INQ_INFO *p_cur,
+                                  UINT8 origin, UINT32 timeout,
+                                  tBTM_CMPL_CB *p_cb);
+void btm_process_remote_name(BD_ADDR bda, BD_NAME bdn, UINT16 evt_len,
+                             UINT8 hci_status);
+void btm_inq_rmt_name_failed(void);
+
+void btm_pm_reset(void);
+void btm_pm_sm_alloc(UINT8 ind);
+/**/
+void btm_pm_proc_cmd_status(UINT8 status);
+void btm_pm_proc_mode_change(UINT8 hci_status,
+                             UINT16 hci_handle, UINT8 mode,
+                             UINT16 interval);
+
+void btm_sco_init(void);
+/**/
+void btm_set_sco_ind_cback(tBTM_SCO_IND_CBACK *sco_ind_cb);
+void btm_accept_sco_link(UINT16 sco_inx, tBTM_ESCO_PARAMS *p_setup,
+                         tBTM_SCO_CB *p_conn_cb, tBTM_SCO_CB *p_disc_cb);
+void btm_reject_sco_link(UINT16 sco_inx);
+/**/
+void btm_sco_chk_pend_unpark(UINT8 hci_status, UINT16 hci_handle, UINT8 mode);
+void btm_sco_conn_req(BD_ADDR bda, DEV_CLASS dev_class, UINT8 link_type);
+void btm_sco_connected(UINT8 hci_status, BD_ADDR bda, UINT16 hci_handle,
+                       tBTM_ESCO_DATA *p_esco_data);
+/**/
+void btm_remove_sco_links(BD_ADDR bda);
+void btm_sco_removed(UINT16 hci_handle, UINT8 reason);
+void btm_sco_acl_removed(BD_ADDR bda);
+/**/
+void btm_route_sco_data(BT_HDR *p_msg);
+/**/
+tBTM_SCO_TYPE btm_read_def_esco_mode(tBTM_ESCO_PARAMS *p_parms);
+void btm_esco_proc_conn_chg(UINT8 status, UINT16 handle, UINT8 tx_interval,
+                            UINT8 retrans_window, UINT16 rx_pkt_len,
+                            UINT16 tx_pkt_len);
+BOOLEAN btm_is_sco_active(UINT16 handle);
+UINT8 btm_num_sco_links_active(void);
+BOOLEAN btm_is_any_sco_active(void);
+BOOLEAN btm_is_sco_active_by_bdaddr(BD_ADDR remote_bda);
+
+tBTM_STATUS btm_sec_l2cap_access_req(BD_ADDR bd_addr, UINT16 psm, UINT16 handle,
+                                     BOOLEAN is_originator,
+                                     tBTM_SEC_CALLBACK *p_callback);
+void btm_sec_mx_access_request(BD_ADDR bd_addr, UINT16 psm,
+                               BOOLEAN is_originator, UINT32 mx_proto_id,
+                               UINT32 mx_chan_id, tBTM_SEC_CALLBACK *p_callback,
+                               void *p_ref_data);
+void btm_sec_change_link_key(UINT16 handle);
+void btm_sec_conn_req(BD_ADDR bda, DEV_CLASS dc);
+void btm_sec_init(UINT8 sec_mode);
+void btm_sec_dev_reset(void);
+void btm_sec_abort_access_req(BD_ADDR bd_addr);
+void btm_sec_rmt_name_request_complete(BD_ADDR_PTR p_bd_addr,
+                                       BD_NAME_PTR p_bd_name, UINT8 status);
+void btm_sec_auth_complete(UINT16 handle, UINT8 status);
+void btm_sec_mkey_comp_event(UINT16 handle, UINT8 status, UINT8 key_flg);
+void btm_sec_encrypt_change(UINT16 handle, UINT8 status, UINT8 encr_enable);
+BOOLEAN btm_sec_is_bonding(UINT16 handle);
+void btm_sec_connected(BD_ADDR bda, UINT16 handle, UINT8 status, UINT8 enc_mode);
+tBTM_STATUS btm_sec_disconnect(UINT16 handle, UINT8 reason);
+void btm_sec_disconnected(UINT16 handle, UINT8 reason);
+void btm_sec_link_key_notification(BD_ADDR_PTR p_bda, UINT8 *p_link_key,
+                                   UINT8 key_type);
+void btm_sec_link_key_request(BD_ADDR_PTR p_bda);
+void btm_sec_pin_code_request_timeout(void);
+void btm_sec_pin_code_request(BD_ADDR_PTR p_bda);
+void btm_sec_update_clock_offset(UINT16 handle, UINT16 clock_offset);
+/**/
+UINT32 *btm_read_trusted_mask(BD_ADDR bd_addr);
 
 #ifdef __cplusplus
 	}

@@ -142,7 +142,7 @@ void gap_btm_cback0(void *p1);
 void gap_btm_cback1(void *p1);
 void gap_conn_init(void);
 tGAP_INFO *gap_allocate_cb(void);
-void gap_inq_results_cb(tBTM_INQ_RESULTS *p_results, UINT8 *p_eir);
+void gap_inq_results_cb(tBTM_INQ_RESULTS *p_results);
 void gap_free_cb(tGAP_INFO *p_cb);
 UINT16 gap_find_local_addr_by_name(tBTM_BD_NAME const devname, BD_ADDR bd_addr);
 void gap_find_addr_inq_cb(tBTM_INQUIRY_CMPL *p);

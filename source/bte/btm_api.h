@@ -74,10 +74,26 @@
 		(pd)[0] = (sv) >> 8;									\
 	} while (FALSE)
 
+#define BTM_SEC_COPY_TRUSTED_DEVICE(p_src, p_dst)					\
+	do																\
+	{																\
+		register int trst;											\
+																	\
+		for (trst = 0; trst < BTM_SEC_SERVICE_ARRAY_SIZE; ++trst)	\
+			((UINT32 *)(p_dst))[trst] = ((UINT32 *)(p_src))[trst];	\
+	} while (FALSE)
+
+#define BTM_COD_SERVICE_LMTD_DISCOVER       0x0020
+
 #define BTM_NON_DISCOVERABLE        0
+#define BTM_LIMITED_DISCOVERABLE    1
+#define BTM_GENERAL_DISCOVERABLE    2
+#define BTM_MAX_DISCOVERABLE        BTM_GENERAL_DISCOVERABLE
+#define BTM_DISCOVERABLE_MASK       (BTM_LIMITED_DISCOVERABLE|BTM_GENERAL_DISCOVERABLE)
 
 #define BTM_NON_CONNECTABLE         0
 #define BTM_CONNECTABLE	1
+#define BTM_CONNECTABLE_MASK        (BTM_NON_CONNECTABLE | BTM_CONNECTABLE)
 
 #define BTM_SEC_SERVICE_HID_SEC_CTRL	32
 #define BTM_SEC_SERVICE_HID_NOSEC_CTRL	33
@@ -86,9 +102,22 @@
 #define BTM_SEC_PROTO_HID	6
 
 #define BTM_SEC_NONE	0
+#define BTM_SEC_OUT_AUTHORIZE      0x0008 /* Outbound call requires authorization */
+#define BTM_SEC_OUT_ENCRYPT        0x0020 /* Outbound call requires encryption */
+#define BTM_SEC_OUT_AUTHENTICATE   0x0010 /* Outbound call requires authentication */
+#define BTM_SEC_OUT_MITM           0x2000 /* outbound Do man in the middle protection */
+#define BTM_SEC_FORCE_MASTER       0x0100 /* Need to switch connection to be master */
+#define BTM_SEC_ATTEMPT_MASTER     0x0200 /* Try to switch connection to be master */
+#define BTM_SEC_FORCE_SLAVE        0x0400 /* Need to switch connection to be master */
+#define BTM_SEC_ATTEMPT_SLAVE      0x0800 /* Try to switch connection to be slave */
+#define BTM_SEC_IN_AUTHORIZE       0x0001 /* Inbound call requires authorization */
+#define BTM_SEC_IN_ENCRYPT         0x0004 /* Inbound call requires encryption */
+#define BTM_SEC_IN_AUTHENTICATE    0x0002 /* Inbound call requires authentication */
+#define BTM_SEC_IN_MITM            0x1000 /* inbound Do man in the middle protection */
 
-// 33 - 64, but definitely not 65
-#define BTM_SEC_MAX_SERVICES 64
+#define BTM_SEC_FLAG_AUTHORIZED     0x01
+
+#define BTM_SEC_MAX_SERVICES 46
 
 #ifndef BTM_SEC_MAX_SERVICES
 # define BTM_SEC_MAX_SERVICES            65
@@ -109,6 +138,8 @@
 #define BTM_PM_REG_NOTIF    2 /* The module wants to receive mode change event */
 #define BTM_PM_DEREG        4 /* The module does not want to involve with PM anymore */
 
+#define BTM_GENERAL_INQUIRY         0
+#define BTM_LIMITED_INQUIRY         1
 #define BTM_BR_INQUIRY_MASK         0x0f
 
 #define BTM_INQ_RESULT_STANDARD     0
@@ -117,6 +148,102 @@
 #define BTM_ROLE_UNDEFINED      0xff     /* undefined value (error status) */
 
 #define BTM_CB_EVT_RETURN_LINK_KEYS         1
+
+#define BTM_SEC_MODE_SP             4
+
+#define BTM_ROLE_UNDEFINED      0xff     /* undefined value (error status) */
+
+#define BTM_SEC_FLAG_ENCRYPTED      0x04
+
+#define BTM_ROLE_MASTER         HCI_ROLE_MASTER
+
+#define BTM_ACL_PKT_TYPES_MASK_DM1      HCI_PKT_TYPES_MASK_DM1
+#define BTM_ACL_PKT_TYPES_MASK_DH1      HCI_PKT_TYPES_MASK_DH1
+#define BTM_ACL_PKT_TYPES_MASK_DM3      HCI_PKT_TYPES_MASK_DM3
+#define BTM_ACL_PKT_TYPES_MASK_DH3      HCI_PKT_TYPES_MASK_DH3
+#define BTM_ACL_PKT_TYPES_MASK_DM5      HCI_PKT_TYPES_MASK_DM5
+#define BTM_ACL_PKT_TYPES_MASK_DH5      HCI_PKT_TYPES_MASK_DH5
+#define BTM_ACL_PKT_TYPES_MASK_NO_2_DH1 HCI_PKT_TYPES_MASK_NO_2_DH1
+#define BTM_ACL_PKT_TYPES_MASK_NO_3_DH1 HCI_PKT_TYPES_MASK_NO_3_DH1
+#define BTM_ACL_PKT_TYPES_MASK_NO_2_DH3 HCI_PKT_TYPES_MASK_NO_2_DH3
+#define BTM_ACL_PKT_TYPES_MASK_NO_3_DH3 HCI_PKT_TYPES_MASK_NO_3_DH3
+#define BTM_ACL_PKT_TYPES_MASK_NO_2_DH5 HCI_PKT_TYPES_MASK_NO_2_DH5
+#define BTM_ACL_PKT_TYPES_MASK_NO_3_DH5 HCI_PKT_TYPES_MASK_NO_3_DH5
+
+#define BTM_SEC_FLAG_LKEY_KNOWN     0x10
+
+#define BTM_SCO_PKT_TYPES_MASK_HV1  HCI_ESCO_PKT_TYPES_MASK_HV1
+#define BTM_SCO_PKT_TYPES_MASK_HV2  HCI_ESCO_PKT_TYPES_MASK_HV2
+#define BTM_SCO_PKT_TYPES_MASK_HV3  HCI_ESCO_PKT_TYPES_MASK_HV3
+#define BTM_SCO_PKT_TYPES_MASK_EV3  HCI_ESCO_PKT_TYPES_MASK_EV3
+#define BTM_SCO_PKT_TYPES_MASK_EV4  HCI_ESCO_PKT_TYPES_MASK_EV4
+#define BTM_SCO_PKT_TYPES_MASK_EV5  HCI_ESCO_PKT_TYPES_MASK_EV5
+
+#define BTM_ESCO_LINK_ONLY_MASK (BTM_SCO_PKT_TYPES_MASK_EV3 | \
+                                 BTM_SCO_PKT_TYPES_MASK_EV4 | \
+                                 BTM_SCO_PKT_TYPES_MASK_EV5)
+#define BTM_SCO_PKT_TYPES_MASK_NO_2_EV3  HCI_ESCO_PKT_TYPES_MASK_NO_2_EV3
+#define BTM_SCO_PKT_TYPES_MASK_NO_2_EV5  HCI_ESCO_PKT_TYPES_MASK_NO_2_EV5
+#define BTM_SCO_PKT_TYPES_MASK_NO_3_EV5  HCI_ESCO_PKT_TYPES_MASK_NO_3_EV5
+#define BTM_SCO_PKT_TYPES_MASK_NO_3_EV3  HCI_ESCO_PKT_TYPES_MASK_NO_3_EV3
+
+#define BTM_SCAN_TYPE_STANDARD      0
+#define BTM_SCAN_TYPE_INTERLACED    1       /* 1.2 devices only */
+
+#define BTM_CB_EVT_READ_STORED_LINK_KEYS    2
+#define BTM_CB_EVT_WRITE_STORED_LINK_KEYS   3
+#define BTM_CB_EVT_DELETE_STORED_LINK_KEYS  4
+
+#define BTM_LIMITED_INQUIRY_ACTIVE  0x1     /* a limited inquiry is in progress */
+#define BTM_GENERAL_INQUIRY_ACTIVE  0x2     /* a general inquiry is in progress */
+#define BTM_PERIODIC_INQUIRY_ACTIVE 0x4     /* a periodic inquiry is active */
+
+#define BTM_CLR_INQUIRY_FILTER          0                   /* Inquiry Filtering is turned off */
+#define BTM_INQUIRY_INACTIVE        0x0     /* no inquiry in progress */
+
+#define BTM_FILTER_COND_DEVICE_CLASS    HCI_FILTER_COND_DEVICE_CLASS /* Filter on device class */
+#define BTM_FILTER_COND_BD_ADDR         HCI_FILTER_COND_BD_ADDR /* Filter on device addr */
+
+#define BTM_INQ_RES_IGNORE_RSSI     0x7f    /* RSSI value not supplied (ignore it) */
+
+#define BTM_64KBITS_RATE            0x00001f40  /* 64 kbits/sec data rate */
+
+#define BTM_ESCO_RETRANS_POWER      1
+
+#define BTM_INVALID_SCO_DISC_REASON 0xFFFF
+
+#define BTM_SCO_LINK_ONLY_MASK  (BTM_SCO_PKT_TYPES_MASK_HV1 | \
+                                 BTM_SCO_PKT_TYPES_MASK_HV2 | \
+                                 BTM_SCO_PKT_TYPES_MASK_HV3)
+
+#define BTM_INVALID_SCO_INDEX       0xFFFF
+#define BTM_INVALID_HCI_HANDLE      0xFFFF
+
+#define BTM_IGNORE_SCO_PKT_TYPE     0
+
+#define BTM_SEC_MODE_NONE           1
+#define BTM_SEC_MODE_SERVICE        2
+#define BTM_SEC_MODE_LINK           3
+#define BTM_SEC_MODE_SP_DEBUG       5
+#define BTM_SEC_MODE_SP             4
+
+#define BTM_SEC_STATE_AUTHORIZING       4
+#define BTM_SEC_STATE_IDLE              0
+#define BTM_SEC_STATE_GETTING_NAME      3
+#define BTM_SEC_STATE_ENCRYPTING        2
+
+#define BTM_SEC_FLAG_AUTHENTICATED  0x02
+
+#define BTM_COD_MAJOR_PERIPHERAL            0x05
+#define BTM_COD_MINOR_KEYBOARD              0x40
+
+#define BTM_SEC_IS_SERVICE_TRUSTED(p, service)                               \
+	(((((UINT32 *)(p))[(((UINT32)(service)) / BTM_SEC_ARRAY_BITS)])          \
+	  & (UINT32)(((UINT32)1 << (((UINT32)(service)) % BTM_SEC_ARRAY_BITS)))) \
+	     ? TRUE                                                              \
+	     : FALSE)
+
+#define BTM_SEC_TRUST_ALL               0xFFFFFFFF  /* for each array element */
 
 /*******************************************************************************
  * types
@@ -167,10 +294,15 @@ enum
     BTM_PM_STS_SNIFF  = HCI_MODE_SNIFF,
     BTM_PM_STS_PARK   = HCI_MODE_PARK,
     BTM_PM_STS_SSR,     /* report the SSR parameters in HCI_SNIFF_SUB_RATE_EVT */
-    BTM_PM_STS_PENDING,   /* when waiting for status from controller */
-    BTM_PM_STS_ERROR   /* when HCI command status returns error */
+    BTM_PM_STS_PENDING = 4,   /* when waiting for status from controller */
+    BTM_PM_STS_ERROR = 5,   /* when HCI command status returns error */
 };
 typedef UINT8 tBTM_PM_STATUS;
+
+enum
+{
+    BTM_PM_ST_ACTIVE  = BTM_PM_STS_ACTIVE,
+};
 
 typedef UINT8 tBTM_SCO_TYPE;
 enum
@@ -189,6 +321,8 @@ enum
     BTM_PM_MD_PARK   = BTM_PM_STS_PARK,
     BTM_PM_MD_FORCE  = 0x10 /* OR this to force ACL link to a certain mode */
 };
+
+#define BTM_PM_SET_ONLY_ID  0x80
 
 // NOTE: does not seem to be BTM_MAX_REM_BD_NAME_LEN + 1
 typedef UINT8 tBTM_BD_NAME[64 + 1];
@@ -273,9 +407,16 @@ typedef struct
 
 typedef struct
 {
+    UINT16 max_latency;
+    UINT16 packet_types;
+    UINT8  retrans_effort;
+} tBTM_CHG_ESCO_PARAMS;
+
+typedef struct
+{
     UINT16  opcode;
     UINT16  param_len;
-    UINT8   *p_param_buf;
+    UINT8   param_buf[255];
 } tBTM_VSC_CMPL;
 
 typedef void tBTM_VSC_CMPL_CB(tBTM_VSC_CMPL *p1);
@@ -318,7 +459,7 @@ typedef struct
 	INT8		rssi;				// size 0x01, offset 0x0e
 } tBTM_INQ_RESULTS; // size 0x10
 
-typedef void tBTM_INQ_RESULTS_CB(tBTM_INQ_RESULTS *p_inq_results, UINT8 *p_eir);
+typedef void tBTM_INQ_RESULTS_CB(void *);
 
 typedef struct
 {
@@ -448,8 +589,48 @@ typedef struct
 {
     UINT8          event;
     UINT8          num_keys;
-
 } tBTM_RETURN_LINK_KEYS_EVT;
+
+typedef struct
+{
+    tBTM_STATUS status;
+    UINT8       hci_status;
+    BD_ADDR     rem_bda;
+    UINT16      settings;
+} tBTM_LINK_POLICY_RESULTS;
+
+#if defined(__clang__)
+typedef tBTM_LINK_POLICY_RESULTS tBTM_LNK_POLICY_RESULTS __attribute__((deprecated("", "tBTM_LINK_POLICY_RESULTS")));
+#endif
+
+typedef struct
+{
+    FLOW_SPEC flow;
+    UINT16 handle;
+    UINT8 status;
+} tBTM_QOS_SETUP_CMPL;
+
+typedef struct
+{
+    UINT8          event;
+    UINT8          status;
+    UINT16         max_keys;
+    UINT16         read_keys;
+} tBTM_READ_STORED_LINK_KEY_COMPLETE;
+
+typedef struct
+{
+    UINT8          event;
+    UINT8          status;
+    UINT8          num_keys;
+} tBTM_WRITE_STORED_LINK_KEY_COMPLETE;
+
+typedef struct
+{
+    UINT8          event;
+    UINT8          status;
+    UINT16         num_keys;
+} tBTM_DELETE_STORED_LINK_KEY_COMPLETE;
 
 /*******************************************************************************
  * external globals
@@ -459,83 +640,164 @@ typedef struct
  * functions
  */
 
-UINT8 *BTM_ReadDeviceClass(void);
-tBTM_STATUS BTM_SetDeviceClass(DEV_CLASS_PTR dev_class);
-tBTM_STATUS BTM_SetDiscoverability(UINT16 inq_mode, UINT16 window,
-                                   UINT16 interval);
-UINT16 BTM_ReadDiscoverability(UINT16 *p_window, UINT16 *p_interval);
-tBTM_STATUS BTM_SetConnectability(UINT16 page_mode, UINT16 window,
-                                  UINT16 interval);
-tBTM_STATUS BTM_StartInquiry(tBTM_INQ_PARMS *p_inqparms,
-                             tBTM_INQ_RESULTS_CB *p_results_cb,
-                             tBTM_CMPL_CB *p_cmpl_cb);
-UINT16 BTM_ReadConnectability(UINT16 *p_window, UINT16 *p_interval);
-void BTM_SetSecurityMode(UINT8 sec_mode);
-tBTM_STATUS BTM_SecBond(BD_ADDR bd_addr, UINT8 pin_len, UINT8 *p_pin,
-                        UINT32 *trusted_mask);
-BOOLEAN BTM_SecRegister(tBTM_APPL_INFO *p_cb_info);
-void BTM_PINCodeReply(BD_ADDR bd_addr, UINT8 res, UINT8 pin_len, UINT8 *p_pin,
-                      UINT32 *trusted_mask);
-void BTM_DeviceAuthorized(BD_ADDR bd_addr, UINT8 res, UINT32 *trusted_mask);
-void BTM_SetPairableMode(BOOLEAN allow_pairing, BOOLEAN connect_only_paired);
-tBTM_STATUS BTM_SetPeriodicInquiryMode(tBTM_INQ_PARMS *p_inqparms,
-                                       UINT16 max_delay, UINT16 min_delay,
-                                       tBTM_INQ_RESULTS_CB *p_results_cb);
-tBTM_STATUS BTM_CancelInquiry(void);
-tBTM_STATUS BTM_CancelPeriodicInquiry(void);
-tBTM_INQ_INFO *BTM_InqFirstResult(void);
-tBTM_INQ_INFO *BTM_InqNextResult(tBTM_INQ_INFO *p_cur);
-tBTM_STATUS BTM_ReadRemoteDeviceName(BD_ADDR remote_bda, tBTM_CMPL_CB *p_cb);
-void BTM_SetDiscoveryParams(UINT16 num_uuid, tSDP_UUID *p_uuid_list,
-                            UINT16 num_attr, UINT16 *p_attr_list);
-BOOLEAN BTM_SetSecurityLevel(BOOLEAN is_originator, char *p_name,
-                             UINT8 service_id, UINT8 sec_level, UINT16 psm,
-                             UINT32 mx_proto_id, UINT32 mx_chan_id);
-tBTM_INQ_INFO *BTM_InqDbNext(tBTM_INQ_INFO *p_cur);
-tBTM_INQ_INFO *BTM_InqDbFirst(void);
-tBTM_STATUS BTM_SetQoS(BD_ADDR bd, FLOW_SPEC *p_flow, tBTM_CMPL_CB *p_cb);
-tBTM_STATUS BTM_SetPowerMode(UINT8 pm_id, BD_ADDR remote_bda,
-                                                 tBTM_PM_PWR_MD *p_mode);
-void BTM_SetOutService(BD_ADDR bd_addr, UINT8 service_id, UINT32 mx_chan_id);
-BOOLEAN BTM_IsDeviceUp(void);
-tBTM_STATUS BTM_ReadLocalVersion(tBTM_VERSION_INFO *p_vers);
-tBTM_STATUS BTM_VendorSpecificCommand(UINT16 opcode, UINT8 param_len,
-                                      UINT8 *p_param_buf,
-                                      tBTM_VSC_CMPL_CB *p_cb);
-tBTM_STATUS BTM_ReadPowerMode(BD_ADDR remote_bda, tBTM_PM_MODE *p_mode);
+tBTM_STATUS BTM_GetRole(BD_ADDR remote_bd_addr, UINT8 *p_role);
 tBTM_STATUS BTM_SwitchRole(BD_ADDR remote_bd_addr, UINT8 new_role,
                            tBTM_CMPL_CB *p_cb);
-UINT8 *BTM_ReadLocalFeatures(void);
-tBTM_INQ_INFO *BTM_InqDbRead(BD_ADDR p_bda);
-void BTM_SetDefaultLinkSuperTout(UINT16 timeout);
-tBTM_STATUS BTM_WritePageTimeout(UINT16 timeout);
+/**/
+tBTM_STATUS BTM_SetLinkPolicy(BD_ADDR remote_bda, UINT16 *settings);
 void BTM_SetDefaultLinkPolicy(UINT16 settings);
-tBTM_STATUS BTM_AclRegisterForChanges(tBTM_ACL_DB_CHANGE_CB *p_cb);
-tBTM_STATUS BTM_ReadLocalDeviceAddr(tBTM_CMPL_CB *p_cb);
-UINT16 BTM_GetNumAclLinks(void);
-tBTM_STATUS BTM_SetLocalDeviceName(char *p_name);
-tBTM_STATUS BTM_ClearInqDb(BD_ADDR p_bda);
-tBTM_STATUS BTM_StartInquiry(tBTM_INQ_PARMS *p_inqparms,
-                             tBTM_INQ_RESULTS_CB *p_results_cb,
-                             tBTM_CMPL_CB *p_cmpl_cb);
-UINT16 BTM_IsInquiryActive(void);
-tBTM_STATUS BTM_CancelRemoteDeviceName(void);
-BOOLEAN BTM_SecAddRmtNameNotifyCallback(tBTM_RMT_NAME_CALLBACK *p_callback);
+tBTM_STATUS BTM_ReadLinkPolicy(BD_ADDR remote_bda, tBTM_CMPL_CB *p_cb);
+/**/
+void BTM_SetDefaultLinkSuperTout(UINT16 timeout);
+tBTM_STATUS BTM_SetLinkSuperTout(BD_ADDR remote_bda, UINT16 timeout);
+tBTM_STATUS BTM_SetPacketTypes(BD_ADDR remote_bda, UINT16 pkt_types);
+UINT16 BTM_ReadPacketTypes(BD_ADDR remote_bda);
+UINT16 BTM_ReadClockOffset(BD_ADDR remote_bda);
 BOOLEAN BTM_IsAclConnectionUp(BD_ADDR remote_bda);
-BOOLEAN BTM_SecDeleteRmtNameNotifyCallback(tBTM_RMT_NAME_CALLBACK *p_callback);
+UINT16 BTM_GetNumAclLinks(void);
+/**/
+UINT16 BTM_GetHCIConnHandle(BD_ADDR remote_bda);
+/**/
+UINT8 BTM_AllocateSCN(void);
+BOOLEAN BTM_FreeSCN(UINT8 scn);
+/**/
+tBTM_STATUS BTM_ReadRemoteVersion(BD_ADDR addr, UINT8 *lmp_version,
+                                  UINT16 *manufacturer, UINT16 *lmp_sub_version);
+tBTM_STATUS BTM_AclRegisterForChanges(tBTM_ACL_DB_CHANGE_CB *p_cb);
+tBTM_STATUS BTM_SetQoS(BD_ADDR bd, FLOW_SPEC *p_flow, tBTM_CMPL_CB *p_cb);
+/**/
 tBTM_STATUS BTM_ReadRSSI(BD_ADDR remote_bda, tBTM_CMPL_CB *p_cb);
 tBTM_STATUS BTM_ReadLinkQuality(BD_ADDR remote_bda, tBTM_CMPL_CB *p_cb);
-char *BTM_SecReadDevName(BD_ADDR bd_addr);
-void BTM_SendHciReset(tBTM_CMPL_CB * p_cb);
+/**/
+UINT8 BTM_SetTraceLevel(UINT8 new_level);
+/**/
+void BTM_GetAclBufInfo(UINT16 *p_num_avail, UINT16 *p_num_bufs,
+                       UINT16 *p_num_queued);
+
 BOOLEAN BTM_SecAddDevice(BD_ADDR bd_addr, DEV_CLASS dev_class, BD_NAME bd_name,
                          BD_FEATURES features, UINT32 *trusted_mask,
                          LINK_KEY link_key);
 BOOLEAN BTM_SecDeleteDevice(BD_ADDR bd_addr);
+char *BTM_SecReadDevName(BD_ADDR bd_addr);
+
+void BTM_DeviceReset(tBTM_CMPL_CB *p_cb);
+void BTM_SendHciReset(tBTM_CMPL_CB *p_cb);
+BOOLEAN BTM_IsDeviceUp(void);
+tBTM_STATUS BTM_SetAfhChannels(UINT8 first, UINT8 last);
+tBTM_STATUS BTM_SetAfhChannelAssessment(BOOLEAN enable_or_disable);
+void BTM_ContinueReset(void);
+/**/
+tBTM_STATUS BTM_SetLocalDeviceName(char *p_name);
+tBTM_STATUS BTM_ReadLocalDeviceName(tBTM_CMPL_CB *p_cb);
+/**/
+tBTM_STATUS BTM_ReadLocalDeviceAddr(tBTM_CMPL_CB *p_cb);
+/**/
+tBTM_STATUS BTM_ReadLocalVersion(tBTM_VERSION_INFO *p_vers);
+tBTM_STATUS BTM_SetDeviceClass(DEV_CLASS dev_class);
+DEV_CLASS_PTR BTM_ReadDeviceClass(void);
+UINT8 *BTM_ReadLocalFeatures(void);
+tBTM_DEV_STATUS_CB *BTM_RegisterForDeviceStatusNotif(tBTM_DEV_STATUS_CB *p_cb);
+tBTM_STATUS BTM_VendorSpecificCommand(UINT16 opcode, UINT8 param_len,
+                                      UINT8 *p_param_buf, tBTM_CMPL_CB *p_cb);
+/**/
+tBTM_STATUS BTM_RegisterForVSEvents(tBTM_VS_EVT_CB *p_cb);
+tBTM_STATUS BTM_WritePageTimeout(UINT16 timeout);
+tBTM_STATUS BTM_WriteVoiceSettings(UINT16 settings);
+tBTM_STATUS BTM_EnableTestMode(void);
+/**/
+tBTM_STATUS BTM_ReadStoredLinkKey(BD_ADDR bd_addr, tBTM_CMPL_CB *p_cb);
+tBTM_STATUS BTM_WriteStoredLinkKey(UINT8 num_keys, BD_ADDR *bd_addr,
+                                   LINK_KEY *link_key, tBTM_CMPL_CB *p_cb);
+tBTM_STATUS BTM_DeleteStoredLinkKey(BD_ADDR bd_addr, tBTM_CMPL_CB *p_cb);
+
+void BTM_SetDiscoveryParams(UINT16 num_uuid, tSDP_UUID *p_uuid_list,
+                            UINT16 num_attr, UINT16 *p_attr_list);
+tBTM_STATUS BTM_StartDiscovery(tBTM_CMPL_CB *p_cmpl_cb, BD_ADDR p_rem_addr);
+tSDP_DISC_REC *BTM_FindAttribute(UINT16 attr_id, tSDP_DISC_REC *p_start_rec);
+tSDP_DISC_REC *BTM_FindService(UINT16 service_uuid, tSDP_DISC_REC *p_start_rec);
+
+tBTM_STATUS BTM_SetDiscoverability(UINT16 inq_mode, UINT16 window,
+                                   UINT16 interval);
+tBTM_STATUS BTM_SetInquiryScanType(UINT16 scan_type);
+tBTM_STATUS BTM_SetPageScanType(UINT16 scan_type);
+tBTM_STATUS BTM_SetInquiryMode(UINT8 mode);
+UINT16 BTM_ReadDiscoverability(UINT16 *p_window, UINT16 *p_interval);
+tBTM_STATUS BTM_SetPeriodicInquiryMode(tBTM_INQ_PARMS *p_inqparms,
+                                       UINT16 max_delay, UINT16 min_delay,
+                                       tBTM_INQ_RESULTS_CB *p_results_cb);
+tBTM_STATUS BTM_CancelPeriodicInquiry(void);
+tBTM_STATUS BTM_SetConnectability(UINT16 page_mode, UINT16 window,
+                                  UINT16 interval);
+UINT16 BTM_ReadConnectability(UINT16 *p_window, UINT16 *p_interval);
+UINT16 BTM_IsInquiryActive(void);
+tBTM_STATUS BTM_CancelInquiry(void);
+tBTM_STATUS BTM_StartInquiry(tBTM_INQ_PARMS *p_inqparms,
+                             tBTM_INQ_RESULTS_CB *p_results_cb,
+                             tBTM_CMPL_CB *p_cmpl_cb);
+tBTM_STATUS BTM_ReadRemoteDeviceName(BD_ADDR remote_bda, tBTM_CMPL_CB *p_cb);
+tBTM_STATUS BTM_CancelRemoteDeviceName(void);
+tBTM_INQ_INFO *BTM_InqFirstResult(void);
+tBTM_INQ_INFO *BTM_InqNextResult(tBTM_INQ_INFO *p_cur);
+tBTM_INQ_INFO *BTM_InqDbRead(BD_ADDR p_bda);
+tBTM_INQ_INFO *BTM_InqDbFirst(void);
+tBTM_INQ_INFO *BTM_InqDbNext(tBTM_INQ_INFO *p_cur);
+tBTM_STATUS BTM_ClearInqDb(BD_ADDR p_bda);
+UINT8 BTM_ReadNumInqDbEntries(void);
+tBTM_STATUS BTM_InquiryRegisterForChanges(tBTM_INQ_DB_CHANGE_CB *p_cb);
+void BTM_SetInquiryFilterCallback(tBTM_FILTER_CB *p_callback);
+
 tBTM_STATUS BTM_PmRegister(UINT8 mask, UINT8 *p_pm_id,
                            tBTM_PM_STATUS_CBACK *p_cb);
-tBTM_STATUS BTM_SetLinkPolicy(BD_ADDR remote_bda, UINT16 *settings);
+tBTM_STATUS BTM_SetPowerMode(UINT8 pm_id, BD_ADDR remote_bda,
+                             tBTM_PM_PWR_MD *p_mode);
+tBTM_STATUS BTM_ReadPowerMode(BD_ADDR remote_bda, tBTM_PM_MODE *p_mode);
+/**/
+BOOLEAN BTM_IsPowerManagerOn(void);
+
+tBTM_STATUS BTM_CreateSco(BD_ADDR remote_bda, BOOLEAN is_orig, UINT16 pkt_types,
+                          UINT16 *p_sco_inx, tBTM_SCO_CB *p_conn_cb,
+                          tBTM_SCO_CB *p_disc_cb);
+/**/
+tBTM_STATUS BTM_RemoveSco(UINT16 sco_inx);
+/**/
+tBTM_STATUS BTM_SetScoPacketTypes(UINT16 sco_inx, UINT16 pkt_types);
+UINT16 BTM_ReadScoPacketTypes(UINT16 sco_inx);
+UINT16 BTM_ReadScoDiscReason(void);
+UINT16 BTM_ReadDeviceScoPacketTypes(void);
+/**/
+UINT16 BTM_ReadScoHandle(UINT16 sco_inx);
+BD_ADDR_PTR BTM_ReadScoBdAddr(UINT16 sco_inx);
+tBTM_STATUS BTM_SetEScoMode(tBTM_SCO_TYPE sco_mode, tBTM_ESCO_PARAMS *p_parms);
+tBTM_STATUS BTM_RegForEScoEvts(UINT16 sco_inx, tBTM_ESCO_CBACK *p_esco_cback);
+tBTM_STATUS BTM_ReadEScoLinkParms(UINT16 sco_inx, tBTM_ESCO_DATA *p_parms);
+tBTM_STATUS BTM_ChangeEScoLinkParms(UINT16 sco_inx,
+                                    tBTM_CHG_ESCO_PARAMS *p_parms);
+void BTM_EScoConnRsp(UINT16 sco_inx, UINT8 hci_status,
+                     tBTM_ESCO_PARAMS *p_parms);
+
+BOOLEAN BTM_SecRegister(tBTM_APPL_INFO *p_cb_info);
+BOOLEAN BTM_SecAddLinkKeyNotifyCallback(tBTM_LINK_KEY_CALLBACK *p_callback);
+BOOLEAN BTM_SecDeleteLinkKeyNotifyCallback(tBTM_LINK_KEY_CALLBACK *p_callback);
+BOOLEAN BTM_SecAddRmtNameNotifyCallback(tBTM_RMT_NAME_CALLBACK *p_callback);
+BOOLEAN BTM_SecDeleteRmtNameNotifyCallback(tBTM_RMT_NAME_CALLBACK *p_callback);
+void BTM_SecSetConnectFilterCallback(tBTM_FILTER_CB *p_callback);
+void BTM_SetSecurityMode(UINT8 security_mode);
+void BTM_SetPinType(UINT8 pin_type, PIN_CODE pin_code, UINT8 pin_code_len);
+void BTM_SetPairableMode(BOOLEAN allow_pairing, BOOLEAN connect_only_paired);
+BOOLEAN BTM_SetSecurityLevel(BOOLEAN is_originator, char *p_name,
+                             UINT8 service_id, UINT8 sec_level, UINT16 psm,
+                             UINT32 mx_proto_id, UINT32 mx_chan_id);
 UINT8 BTM_SecClrService(UINT8 service_id);
-void BTM_DeviceReset(tBTM_CMPL_CB *p_cb);
+void BTM_PINCodeReply(BD_ADDR bd_addr, UINT8 res, UINT8 pin_len, UINT8 *p_pin,
+                      UINT32 *trusted_mask);
+void BTM_DeviceAuthorized(BD_ADDR bd_addr, UINT8 res, UINT32 *trusted_mask);
+tBTM_STATUS BTM_SecBond(BD_ADDR bd_addr, UINT8 pin_len, UINT8 *p_pin,
+                        UINT32 *trusted_mask);
+tBTM_STATUS BTM_SecUseMasterLinkKey(BOOLEAN use_master_key);
+void BTM_SetMasterKeyCompCback(tBTM_MKEY_CALLBACK *mkey_cback);
+tBTM_STATUS BTM_SecGetDeviceLinkKey(BD_ADDR bd_addr, LINK_KEY link_key);
+tBTM_STATUS BTM_SetEncryption(BD_ADDR bd_addr, tBTM_SEC_CBACK *p_callback,
+                              void *p_ref_data);
 
 #ifdef __cplusplus
 	}
