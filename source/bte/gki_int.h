@@ -1,14 +1,14 @@
-#ifndef BTE_HCI_H
-#define BTE_HCI_H
+#ifndef BTE_GKI_INT_H
+#define BTE_GKI_INT_H
 
 /* Original source:
  * bluedroid <android.googlesource.com/platform/external/bluetooth/bluedroid>
- * hci/include/hci.h
+ * gki/ulinux/gki_int.h
  */
 
 /******************************************************************************
  *
- *  Copyright (C) 2009-2012 Broadcom Corporation
+ *  Copyright (C) 1999-2012 Broadcom Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -30,24 +30,15 @@
  * headers
  */
 
-#include <decomp.h>
-
-#include "bt_types.h"
 #include "data_types.h"
+
+#include "gki_common.h"
 
 /*******************************************************************************
  * macros
  */
 
-#define MSG_HC_TO_STACK_HCI_EVT        0x1000 /* eq. BT_EVT_TO_BTU_HCI_EVT */
-#define MSG_HC_TO_STACK_HCI_ACL        0x1100 /* eq. BT_EVT_TO_BTU_HCI_ACL */
-#define MSG_HC_TO_STACK_HCI_SCO        0x1200 /* eq. BT_EVT_TO_BTU_HCI_SCO */
-#define MSG_HC_TO_STACK_HCI_ERR        0x1300 /* eq. BT_EVT_TO_BTU_HCIT_ERR */
-#define MSG_HC_TO_STACK_L2C_SEG_XMIT   0x1900 /* eq. BT_EVT_TO_BTU_L2C_SEG_XMIT */
-
-#define MSG_STACK_TO_HC_HCI_CMD        0x2000 /* eq. BT_EVT_TO_LM_HCI_CMD */
-#define MSG_STACK_TO_HC_HCI_ACL        0x2100 /* eq. BT_EVT_TO_LM_HCI_ACL */
-#define MSG_STACK_TO_HC_HCI_SCO        0x2200 /* eq. BT_EVT_TO_LM_HCI_SCO */
+#define MAX_INT_STATE	20
 
 /*******************************************************************************
  * types
@@ -57,47 +48,42 @@
 	extern "C" {
 #endif
 
-typedef BT_HDR HC_BT_HDR;
+typedef struct
+{
+	UINT8	int_index;
+	int		int_state[MAX_INT_STATE];
+} tGKI_OS;
 
 typedef struct
 {
-	UINT16	at_0x00;	// size 0x02, offset 0x00
-	UINT16	at_0x02;	// size 0x02, offset 0x02
-} tHCI_CFG; // size 0x04
-
-typedef void tHCI_INIT(UINT8, UINT8, UINT16);
-typedef BOOLEAN tHCI_OPEN(tHCI_CFG *p_cfg);
-typedef void tHCI_CLOSE(void);
-typedef BOOLEAN tHCI_SEND(HC_BT_HDR *p_msg);
-typedef unk_t tHCI_HANDLE_EVENT(UINT16 len);
-
-typedef struct
-{
-	tHCI_INIT			*init;
-	tHCI_OPEN			*open;
-	tHCI_CLOSE			*close;
-	tHCI_SEND			*send;
-	tHCI_HANDLE_EVENT	*handle_event;
-} tHCI_IF;
+	tGKI_OS		os;
+	tGKI_COM_CB	com;
+} tGKI_CB;
 
 /*******************************************************************************
  * external globals
  */
 
-extern tHCI_IF const hcisu_h2;
+extern tGKI_CB gki_cb;
 
 /*******************************************************************************
  * functions
  */
 
-void hcisu_h2_init(UINT8, UINT8, UINT16);
-BOOLEAN hcisu_h2_open(tHCI_CFG *p_cfg);
-void hcisu_h2_close(void);
-BOOLEAN hcisu_h2_send(HC_BT_HDR *p_msg);
-unk_t hcisu_h2_handle_event(UINT16 len);
+void gki_adjust_timer_count(INT32);
+
+// ---
+
+void gki_buffer_init(void);
+/**/
+BOOLEAN gki_chk_buf_damage(void *p_buf);
+
+void gki_timers_init(void);
+/**/
+void gki_adjust_timer_count(INT32 ticks);
 
 #ifdef __cplusplus
 	}
 #endif
 
-#endif // BTE_HCI_H
+#endif // BTE_GKI_INT_H

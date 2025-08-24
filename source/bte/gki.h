@@ -39,12 +39,25 @@
 #define TIMER_0					0
 #define TIMER_1					1
 
+#define TIMER_0_EVT_MASK		0x0010
+#define TIMER_1_EVT_MASK		0x0020
+
 #define TASK_MBOX_0				0
 #define TASK_MBOX_2				2
 
-#define TASK_MBOX_2_EVT_MASK	0x0004
+#define NUM_TASK_MBOX			4
 
+#define TASK_MBOX_0_EVT_MASK	0x0001
+#define TASK_MBOX_1_EVT_MASK	0x0002
+#define TASK_MBOX_2_EVT_MASK	0x0004
+#define TASK_MBOX_3_EVT_MASK	0x0008
+
+#define GKI_SUCCESS				0x00
+#define GKI_FAILURE				0x01
+#define GKI_INVALID_TASK		0xf0
 #define GKI_INVALID_POOL		0xff
+
+#define GKI_RESTRICTED_POOL     1       /* Inaccessible pool to GKI_getbuf() */
 
 /*******************************************************************************
  * types
@@ -57,6 +70,8 @@
 typedef void TIMER_CBACK(void *p_tle);
 
 #define TIMER_PARAM_TYPE	__typeof__(UINT32)
+
+#define TASKPTR				__typeof__(void (*)(UINT32))
 
 typedef struct
 {
@@ -93,41 +108,68 @@ typedef struct
  * functions
  */
 
-UINT8 GKI_get_taskid(void);
-void GKI_send_msg(UINT8, UINT8, void *);
-void GKI_freebuf(void *);
-void *GKI_getbuf(UINT16);
-void GKI_add_to_timer_list(TIMER_LIST_Q *, TIMER_LIST_ENT *);
-void GKI_init_timer_list(TIMER_LIST_Q *);
-void GKI_remove_from_timer_list(TIMER_LIST_Q *, TIMER_LIST_ENT *);
-void GKI_start_timer(UINT8, INT32, BOOLEAN);
-void GKI_stop_timer(UINT8);
-UINT16 GKI_update_timer_list(TIMER_LIST_Q *, INT32);
-void *GKI_getfirst(BUFFER_Q *);
-void GKI_disable(void);
-void *GKI_getnext(void *);
-void *GKI_dequeue(BUFFER_Q *);
-void GKI_enable(void);
-void *GKI_getpoolbuf(UINT8);
-void GKI_enqueue(BUFFER_Q *, void *);
-void GKI_enqueue_head(BUFFER_Q *, void *);
-void *GKI_remove_from_queue(BUFFER_Q *, void *);
-UINT16 GKI_get_pool_bufsize(UINT8);
+UINT8 GKI_set_pool_permission(UINT8 pool_id, UINT8 permission);
+/**/
+void GKI_init_q(BUFFER_Q *p_q);
+void *GKI_getbuf(UINT16 size);
+void *GKI_getpoolbuf(UINT8 pool_id);
+void *GKI_igetpoolbuf(UINT8 pool_id);
+void GKI_freebuf(void *p_buf);
+UINT16 GKI_get_buf_size(void *p_buf);
+UINT16 GKI_poolfreecount(UINT8 pool_id);
+/**/
+void GKI_change_buf_owner(void *p_buf, UINT8 task_id);
+void GKI_send_msg(UINT8 task_id, UINT8 mbox, void *msg);
+void *GKI_read_mbox(UINT8 mbox);
+void GKI_enqueue(BUFFER_Q *p_q, void *p_buf);
+void GKI_enqueue_head(BUFFER_Q *p_q, void *p_buf);
+void *GKI_dequeue(BUFFER_Q *p_q);
+void *GKI_remove_from_queue(BUFFER_Q *p_q, void *p_buf);
+void *GKI_getfirst(BUFFER_Q *p_q);
+void *GKI_getnext(void *p_buf);
+BOOLEAN GKI_queue_is_empty(BUFFER_Q *p_q);
+void *GKI_find_buf_start(void *p_user_area);
+UINT8 GKI_create_pool(UINT16 size, UINT16 count, UINT8 permission,
+                      void *p_mem_pool);
+void GKI_delete_pool(UINT8 pool_id);
+
 UINT32 GKI_get_tick_count(void);
-void GKI_init_q(BUFFER_Q *);
+INT32 GKI_ready_to_sleep(void);
+void GKI_start_timer(UINT8 tnum, INT32 ticks, BOOLEAN is_continuous);
+void GKI_stop_timer(UINT8 tnum);
+void GKI_timer_update(INT32 ticks_since_last_update);
+void GKI_init_timer_list(TIMER_LIST_Q *p_timer_listq);
+void GKI_init_timer_list_entry(TIMER_LIST_ENT *p_tle);
+UINT16 GKI_update_timer_list(TIMER_LIST_Q *p_timer_listq,
+                             INT32 num_units_since_last_update);
+void GKI_add_to_timer_list(TIMER_LIST_Q *p_timer_listq, TIMER_LIST_ENT *p_tle);
+void GKI_remove_from_timer_list(TIMER_LIST_Q *p_timer_listq,
+                                TIMER_LIST_ENT *p_tle);
+
+void GKI_init(void);
+void GKI_shutdown(void);
+/**/
+UINT8 GKI_create_task(TASKPTR task_entry, UINT8 task_id, INT8 *taskname,
+                      UINT16 *stack, UINT16 stacksize);
+void GKI_run(void *p_task_id);
+UINT8 GKI_suspend_task(UINT8 task_id);
+UINT8 GKI_resume_task(UINT8 task_id);
+void GKI_exit_task(UINT8 task_id);
 void GKI_sched_lock(void);
 void GKI_sched_unlock(void);
-BOOLEAN GKI_queue_is_empty(BUFFER_Q *);
-void *GKI_read_mbox(UINT8);
-void *GKI_os_malloc(UINT32);
-void GKI_os_free(void *);
-void GKI_delay(UINT32);
-void GKI_init(void);
-void GKI_run(void *);
-void GKI_shutdown(void);
-void GKI_delete_pool(UINT8);
-UINT16 GKI_get_buf_size(void *);
-UINT8 GKI_create_pool(UINT16, UINT16, UINT8, void *);
+UINT16 GKI_wait(UINT16 flag, UINT32 timeout);
+void GKI_delay(UINT32 timeout);
+UINT8 GKI_send_event(UINT8 task_id, UINT16 event);
+UINT8 GKI_isend_event(UINT8 task_id, UINT16 event);
+UINT8 GKI_get_taskid(void);
+INT8 *GKI_map_taskname(UINT8 task_id);
+void GKI_enable(void);
+void GKI_disable(void);
+void GKI_exception(UINT16 code, char *msg);
+INT8 *GKI_get_time_stamp(INT8 *tbuf);
+void GKI_register_mempool(void *p_mem);
+void *GKI_os_malloc(UINT32 size);
+void GKI_os_free(void *p_mem);
 
 #ifdef __cplusplus
 	}

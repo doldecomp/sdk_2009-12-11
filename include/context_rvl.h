@@ -131,6 +131,7 @@ byte4_t OSCalcCRC32(void const *data, u32 length);
 ATTR_WEAK void OSReport(char const *msg, ...);
 ATTR_WEAK void OSPanic(char const *file, int line, char const *msg, ...);
 
+BOOL OSEnableInterrupts(void);
 BOOL OSDisableInterrupts(void);
 BOOL OSRestoreInterrupts(BOOL status);
 

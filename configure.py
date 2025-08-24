@@ -340,10 +340,10 @@ config.libs = [
     RvlLib(
         "bte",
         [
-            Object(DebugNonMatching, ReleaseNonMatching, "bte/gki_buffer.c"),
-            Object(DebugNonMatching, ReleaseNonMatching, "bte/gki_debug.c"),
-            Object(DebugNonMatching, ReleaseNonMatching, "bte/gki_time.c"),
-            Object(DebugNonMatching, ReleaseNonMatching, "bte/gki_ppc.c"),
+            Object(DebugMatching, ReleaseMatching, "bte/gki_buffer.c", mw_version = "Wii/1.0"),
+            Object(DebugMatching, ReleaseMatching, "bte/gki_debug.c", mw_version = "Wii/1.0"),
+            Object(DebugMatching, ReleaseMatching, "bte/gki_time.c", mw_version = "Wii/1.0"),
+            Object(DebugMatching, ReleaseMatching, "bte/gki_ppc.c", mw_version = "Wii/1.0"),
             Object(DebugMatching, ReleaseMatching, "bte/hcisu_h2.c", mw_version = "Wii/1.0"),
             Object(DebugMatching, ReleaseMatching, "bte/uusb_ppc.c", mw_version = "Wii/1.0"),
             Object(DebugMatching, ReleaseMatching, "bte/bta_aa_cfg.c", mw_version = "Wii/1.0"),

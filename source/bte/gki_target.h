@@ -35,50 +35,116 @@
  */
 
 #ifndef BTU_TASK
-# define BTU_TASK				0
+# define BTU_TASK					0
 #endif
 
 #ifndef PPC_TASK
-# define PPC_TASK				2
+# define PPC_TASK					2
+#endif
+
+#define GKI_MAX_TASKS				8
+
+#ifndef GKI_MAX_TASKS
+# define GKI_MAX_TASKS				3
 #endif
 
 #ifndef GKI_POOL_ID_1
-# define GKI_POOL_ID_1			1
+# define GKI_POOL_ID_1				1
 #endif
 
 #ifndef GKI_POOL_ID_2
-# define GKI_POOL_ID_2			2
-#endif
-
-#define GKI_BUF3_SIZE			1800
-
-#ifndef GKI_BUF3_SIZE
-# define GKI_BUF3_SIZE			(4096 + 16)
+# define GKI_POOL_ID_2				2
 #endif
 
 #ifndef GKI_POOL_ID_3
-# define GKI_POOL_ID_3			3
+# define GKI_POOL_ID_3				3
 #endif
 
-#ifndef TICKS_PER_SEC
-# define TICKS_PER_SEC			100
+#ifndef GKI_BUF0_SIZE
+# define GKI_BUF0_SIZE				64
 #endif
 
-#ifndef GKI_MS_TO_TICKS
-# define GKI_MS_TO_TICKS(x)		((x) / (1000 / TICKS_PER_SEC))
-#endif
+#define GKI_BUF1_SIZE				128
 
-#ifndef GKI_SECS_TO_TICKS
-# define GKI_SECS_TO_TICKS(x)	((x) * (TICKS_PER_SEC))
+#ifndef GKI_BUF1_SIZE
+# define GKI_BUF1_SIZE				288
 #endif
 
 #ifndef GKI_BUF2_SIZE
-# define GKI_BUF2_SIZE			660
+# define GKI_BUF2_SIZE				660
+#endif
+
+#define GKI_BUF3_SIZE				1800
+
+#ifndef GKI_BUF3_SIZE
+# define GKI_BUF3_SIZE				(4096 + 16)
+#endif
+
+#define GKI_BUF4_SIZE				0x2000
+
+#ifndef GKI_BUF4_SIZE
+# define GKI_BUF4_SIZE				(8080 + 26)
 #endif
 
 #ifndef GKI_MAX_BUF_SIZE
-# define GKI_MAX_BUF_SIZE		GKI_BUF3_SIZE
+# define GKI_MAX_BUF_SIZE			GKI_BUF3_SIZE
 #endif
+
+#ifndef GKI_BUF0_MAX
+# define GKI_BUF0_MAX				48
+#endif
+
+#ifndef GKI_BUF1_MAX
+# define GKI_BUF1_MAX				26
+#endif
+
+#ifndef GKI_BUF2_MAX
+# define GKI_BUF2_MAX				45
+#endif
+
+#define GKI_BUF3_MAX				30
+
+#ifndef GKI_BUF3_MAX
+#define GKI_BUF3_MAX				200
+#endif
+
+#define GKI_BUF4_MAX				9
+
+#ifndef GKI_BUF4_MAX
+# define GKI_BUF4_MAX				(OBX_NUM_SERVERS + OBX_NUM_CLIENTS)
+#endif
+
+#ifndef TICKS_PER_SEC
+# define TICKS_PER_SEC				100
+#endif
+
+#ifndef GKI_MS_TO_TICKS
+# define GKI_MS_TO_TICKS(x)			((x) / (1000 / TICKS_PER_SEC))
+#endif
+
+#ifndef GKI_SECS_TO_TICKS
+# define GKI_SECS_TO_TICKS(x)		((x) * (TICKS_PER_SEC))
+#endif
+
+#define GKI_NUM_FIXED_BUF_POOLS		5
+
+#ifndef GKI_NUM_FIXED_BUF_POOLS
+# define GKI_NUM_FIXED_BUF_POOLS	10
+#endif
+
+#define GKI_NUM_TOTAL_BUF_POOLS		9
+
+#ifndef GKI_NUM_TOTAL_BUF_POOLS
+# define GKI_NUM_TOTAL_BUF_POOLS	10
+#endif
+
+#define GKI_DEF_BUFPOOL_PERM_MASK	0xfff0
+
+#ifndef GKI_DEF_BUFPOOL_PERM_MASK
+# define GKI_DEF_BUFPOOL_PERM_MASK	0xfdf0
+#endif
+
+#define EVENT_MASK(evt)	((UINT16)(1 << (evt)))
 
 /*******************************************************************************
  * types
