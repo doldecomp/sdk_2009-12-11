@@ -418,4 +418,10 @@ void bte_hcisu_send(BT_HDR *p_msg, UINT16 event);
 # define BTM_DEFAULT_SCO_MODE			2
 #endif
 
+#define BTA_DM_COD						{0x40, 0x02, 0x04}
+
+#ifndef BTA_DM_COD
+# define BTA_DM_COD						{0x5a, 0x02, 0x0c}
+#endif
+
 #endif // BTE_BT_TARGET_H

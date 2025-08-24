@@ -36,9 +36,13 @@
  * macros
  */
 
-#define TIMER_0		0
+#define TIMER_0					0
+#define TIMER_1					1
 
-#define TASK_MBOX_0	0
+#define TASK_MBOX_0				0
+#define TASK_MBOX_2				2
+
+#define TASK_MBOX_2_EVT_MASK	0x0004
 
 /*******************************************************************************
  * types

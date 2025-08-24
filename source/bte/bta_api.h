@@ -63,8 +63,8 @@
 #define BTA_SIG_STRENGTH_LINK_QUALITY_MASK 2
 
 #define BTA_ANY_ROLE          0x00
-
-#define BTA_MASTER_ROLE_ONLY 2
+#define BTA_MASTER_ROLE_PREF  0x01
+#define BTA_MASTER_ROLE_ONLY  0x02
 
 #define BTA_DM_PM_NUM_EVTS      9
 
@@ -73,6 +73,7 @@
 #define BTA_DM_PM_PARK         0x10       /* prefers park mode */
 #define BTA_DM_PM_SNIFF        0x20       /* prefers sniff mode */
 #define BTA_DM_PM_ACTIVE       0x40       /* prefers active mode */
+#define BTA_DM_PM_SNIFF2       0x22       /* prefers sniff2 mode */
 
 #ifndef BTA_DM_PM_PARK_IDX
 # define BTA_DM_PM_PARK_IDX 5

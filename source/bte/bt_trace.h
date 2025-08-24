@@ -182,4 +182,14 @@ extern void LogMsg_6(UINT32 trace_mask, char const *fmt_str, UINT32 p1, UINT32 p
 
 // clang-format on
 
+/*******************************************************************************
+ * Default logging levels
+ */
+
+#define APPL_INITIAL_TRACE_LEVEL	BT_TRACE_LEVEL_NONE
+
+#ifndef APPL_INITIAL_TRACE_LEVEL
+# define APPL_INITIAL_TRACE_LEVEL	BT_TRACE_LEVEL_WARNING
+#endif
+
 #endif // BT_TRACE_H

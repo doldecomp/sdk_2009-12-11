@@ -38,9 +38,11 @@
  * macros
  */
 
+#define BTA_ID_SYS          0            /* system manager */
 #define BTA_ID_DM           1            /* device manager */
 #define BTA_ID_DM_SEARCH    2            /* device manager search */
-
+#define BTA_ID_PAN          14           /* Personal Area Networking */
+#define BTA_ID_AV           18           /* Advanced audio/video */
 #define BTA_ID_PRM          22
 #define BTA_ID_HH           23           /* Human Interface Device Host */
 
