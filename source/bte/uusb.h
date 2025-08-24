@@ -5,6 +5,8 @@
  * headers
  */
 
+#include <decomp.h>
+
 #include "data_types.h"
 
 /*******************************************************************************
@@ -47,7 +49,19 @@ extern UINT32 volatile wait4hci;
  * functions
  */
 
+void uusb_set_trace_state(UINT8 state);
+UINT8 uusb_get_trace_state(void);
+
+void UUSB_Register(tUUSB *uusb);
+void UUSB_Open(tUUSB *uusb, tUUSB_CBACK *cback);
+UINT16 UUSB_Read(UINT8 param_1, void *param_2, UINT16 param_3);
+void UUSB_ReadBuf(/* ... */);
+unk_t UUSB_WriteBuf(/* ... */);
+UINT16 UUSB_Write(UINT8 param_1, void *p_data, UINT16 len, void *param_4);
+void UUSB_Ioctl(tUUSB_IOCTL_OP op, void *p_data);
+void UUSB_Close(void);
 void UUSB_Unregister(void);
+unk_t UUSB_Feature(void);
 
 #ifdef __cplusplus
 	}

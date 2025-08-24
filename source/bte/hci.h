@@ -39,7 +39,15 @@
  * macros
  */
 
-typedef BT_HDR HC_BT_HDR;
+#define MSG_HC_TO_STACK_HCI_EVT        0x1000 /* eq. BT_EVT_TO_BTU_HCI_EVT */
+#define MSG_HC_TO_STACK_HCI_ACL        0x1100 /* eq. BT_EVT_TO_BTU_HCI_ACL */
+#define MSG_HC_TO_STACK_HCI_SCO        0x1200 /* eq. BT_EVT_TO_BTU_HCI_SCO */
+#define MSG_HC_TO_STACK_HCI_ERR        0x1300 /* eq. BT_EVT_TO_BTU_HCIT_ERR */
+#define MSG_HC_TO_STACK_L2C_SEG_XMIT   0x1900 /* eq. BT_EVT_TO_BTU_L2C_SEG_XMIT */
+
+#define MSG_STACK_TO_HC_HCI_CMD        0x2000 /* eq. BT_EVT_TO_LM_HCI_CMD */
+#define MSG_STACK_TO_HC_HCI_ACL        0x2100 /* eq. BT_EVT_TO_LM_HCI_ACL */
+#define MSG_STACK_TO_HC_HCI_SCO        0x2200 /* eq. BT_EVT_TO_LM_HCI_SCO */
 
 /*******************************************************************************
  * types
@@ -49,19 +57,19 @@ typedef BT_HDR HC_BT_HDR;
 	extern "C" {
 #endif
 
+typedef BT_HDR HC_BT_HDR;
+
 typedef struct
 {
-	UINT8	at_0x00;
-	UINT8	at_0x01;
-	UINT8	at_0x02;
-	UINT8	at_0x03;
-} tHCI_CFG;
+	UINT16	at_0x00;	// size 0x02, offset 0x00
+	UINT16	at_0x02;	// size 0x02, offset 0x02
+} tHCI_CFG; // size 0x04
 
-typedef unk_t tHCI_INIT(UINT8, UINT8, UINT16);
-typedef unk_t tHCI_OPEN(tHCI_CFG *p_cfg);
-typedef unk_t tHCI_CLOSE(void);
-typedef void tHCI_SEND(HC_BT_HDR *p_msg);
-typedef unk_t tHCI_HANDLE_EVENT();
+typedef void tHCI_INIT(UINT8, unk1_t, UINT16);
+typedef BOOLEAN tHCI_OPEN(tHCI_CFG *p_cfg);
+typedef void tHCI_CLOSE(void);
+typedef BOOLEAN tHCI_SEND(HC_BT_HDR *p_msg);
+typedef unk_t tHCI_HANDLE_EVENT(UINT16 len);
 
 typedef struct
 {
@@ -81,6 +89,12 @@ extern tHCI_IF const hcisu_h2;
 /*******************************************************************************
  * functions
  */
+
+void hcisu_h2_init(UINT8, unk1_t, UINT16);
+BOOLEAN hcisu_h2_open(tHCI_CFG *p_cfg);
+void hcisu_h2_close(void);
+BOOLEAN hcisu_h2_send(HC_BT_HDR *p_msg);
+unk_t hcisu_h2_handle_event(UINT16 len);
 
 #ifdef __cplusplus
 	}

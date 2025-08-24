@@ -42,6 +42,10 @@
 # define PPC_TASK				2
 #endif
 
+#ifndef GKI_POOL_ID_1
+# define GKI_POOL_ID_1			1
+#endif
+
 #ifndef GKI_POOL_ID_2
 # define GKI_POOL_ID_2			2
 #endif

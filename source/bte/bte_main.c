@@ -65,7 +65,7 @@ unsigned char __BTUInterruptHandlerStack[0x1000] __attribute__((aligned(32)));
 // .sdata
 static tHCI_CFG bte_hcisu_h2_cfg =
 {
-	10, 92, 33, 1
+	2652, 8449
 };
 
 // .sbss
