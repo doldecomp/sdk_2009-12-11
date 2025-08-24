@@ -69,8 +69,16 @@ typedef struct
  * local function declarations
  */
 
+static void uusb_ReleaseCmdBufferPool(void);
+static void uusb_ReleaseAclBufferPool(void);
+static void uusb_CloseDeviceCB(long result, void *p_data);
+static void uusb_ReadIntrDataCB(long result, void *p_data);
+static void uusb_ReadBulkDataCB(long result, void *p_data);
 static void uusb_issue_bulk_read(void);
 static void uusb_issue_intr_read(void);
+static void uusb_WriteCtrlDataCB(long result, void *p_data);
+static void uusb_WriteBulkDataCB(long result, void *p_data);
+static long uusb_get_devId(int vid, int pid);
 
 /*******************************************************************************
  * variables
@@ -104,7 +112,7 @@ void HCI_TRACE(char const *p_msg)
 	/* ... */
 }
 
-void HCI_TRACE1(const char *p_msg, unsigned long arg1)
+void HCI_TRACE1(char const *p_msg, UINT32 arg1)
 {
 	/* ... */
 }
@@ -765,7 +773,7 @@ void UUSB_Unregister(void)
 	GKI_enable();
 }
 
-unk_t UUSB_Feature()
+unk_t UUSB_Feature(void)
 {
 	return 0;
 }

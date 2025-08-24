@@ -87,7 +87,7 @@ typedef struct
 	char		pad4_[1];		// size 0x01, offset 0x1d
 	UINT8		at_0x1e;		// size 0x01, offset 0x1e
 	UINT8		at_0x1f;		// size 0x01, offset 0x1f
-	unk1_t		at_0x20;		// size 0x01, offset 0x20
+	UINT8		at_0x20;		// size 0x01, offset 0x20
 	char		pad5_[2];		// size 0x02, offset 0x21
 	/* 1 byte padding */
 } tHCISU_H2_CB; // size 0x24
@@ -429,7 +429,7 @@ void hcisu_h2_send_msg(tHCISU_H2_CB *p_cb, HC_BT_HDR *p_msg)
 	hcisu_h2_send_msg_now(p_cb, p_msg);
 }
 
-void hcisu_h2_init(UINT8 param_1, unk1_t param_2, UINT16 param_3)
+void hcisu_h2_init(UINT8 param_1, UINT8 param_2, UINT16 param_3)
 {
 	hcisu_h2_cb.at_0x1e = 0;
 
