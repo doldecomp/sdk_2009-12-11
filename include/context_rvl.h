@@ -402,6 +402,10 @@ void GXInitTlutObj(GXTlutObj *, void *, GXTlutFmt, u16);
 
 // IPC
 
+typedef s32 IPCResult;
+
+IPCResult IPCCltInit(void);
+
 extern u32 volatile __IPCRegs[] AT_ADDRESS(0xcd000000);
 
 inline u32 ACRReadReg(u32 reg)
@@ -678,6 +682,27 @@ enum SCProductGameRegion_et
 };
 
 SCProductGameRegion SCGetProductGameRegion(void);
+
+// USB
+
+typedef void (*USBCallback)(IPCResult result, void *arg);
+
+IPCResult IUSB_OpenLib(void);
+IPCResult IUSB_CloseLib(void);
+IPCResult IUSB_OpenDeviceIds(char const *interface, u16 vid, u16 pid,
+                             IPCResult *resultOut);
+IPCResult IUSB_CloseDeviceAsync(s32 fd, USBCallback callback,
+                                void *callbackArg);
+IPCResult IUSB_ReadIntrMsgAsync(s32 fd, u32 endpoint, u32 length, void *buffer,
+                                USBCallback callback, void *callbackArg);
+IPCResult IUSB_ReadBlkMsgAsync(s32 fd, u32 endpoint, u32 length, void *buffer,
+                               USBCallback callback, void *callbackArg);
+IPCResult IUSB_WriteBlkMsgAsync(s32 fd, u32 endpoint, u32 length,
+                                void const *buffer, USBCallback callback,
+                                void *callbackArg);
+IPCResult IUSB_WriteCtrlMsgAsync(s32 fd, u8 requestType, u8 request, u16 value,
+                                 u16 index, u16 length, void *buffer,
+                                 USBCallback callback, void *callbackArg);
 
 // VI
 

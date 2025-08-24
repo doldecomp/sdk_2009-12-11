@@ -29,7 +29,9 @@
 
 #define MIN(x, y)								((x) < (y) ? (x) : (y))
 
+
 #define ROUND_UP(x, align)						(((x) + ((align) - 1)) & -(align))
+#define ROUND_UP_PTR(x, align)					((void *)((((unsigned long)(x)) + ((align) - 1)) & -(align)))
 #define ROUND_DOWN_PTR(x, align)				((void *)((unsigned long)(x) & -(align)))
 
 #define POINTER_ADD_TYPE(type_, ptr_, offset_)	((type_)((unsigned long)(ptr_) + (unsigned long)(offset_)))

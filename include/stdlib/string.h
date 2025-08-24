@@ -2,7 +2,7 @@
 #define __STDC_STRING_H__
 
 #include <__internal/__size_t.h>
-#include <__internal/__NULL.h>
+#include <__internal/__NULL.h> // IWYU pragma: export
 
 extern void *memcpy(void * restrict s1, const void * restrict s2, size_t n);
 extern char *strcpy(char * restrict s1, const char * restrict s2);

@@ -345,7 +345,7 @@ config.libs = [
             Object(DebugNonMatching, ReleaseNonMatching, "bte/gki_time.c"),
             Object(DebugNonMatching, ReleaseNonMatching, "bte/gki_ppc.c"),
             Object(DebugNonMatching, ReleaseNonMatching, "bte/hcisu_h2.c"),
-            Object(DebugNonMatching, ReleaseNonMatching, "bte/uusb_ppc.c"),
+            Object(DebugMatching, ReleaseMatching, "bte/uusb_ppc.c", mw_version = "Wii/1.0"),
             Object(DebugMatching, ReleaseMatching, "bte/bta_aa_cfg.c", mw_version = "Wii/1.0"),
             Object(DebugMatching, ReleaseMatching, "bte/bta_ag_cfg.c", mw_version = "Wii/1.0"),
             Object(DebugMatching, ReleaseMatching, "bte/bta_av_cfg.c", mw_version = "Wii/1.0"),

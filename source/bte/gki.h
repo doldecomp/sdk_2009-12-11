@@ -44,6 +44,8 @@
 
 #define TASK_MBOX_2_EVT_MASK	0x0004
 
+#define GKI_INVALID_POOL		0xff
+
 /*******************************************************************************
  * types
  */
@@ -123,6 +125,9 @@ void GKI_delay(UINT32);
 void GKI_init(void);
 void GKI_run(void *);
 void GKI_shutdown(void);
+void GKI_delete_pool(UINT8);
+UINT16 GKI_get_buf_size(void *);
+UINT8 GKI_create_pool(UINT16, UINT16, UINT8, void *);
 
 #ifdef __cplusplus
 	}
