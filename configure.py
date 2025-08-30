@@ -193,8 +193,9 @@ cflags_base = [
     "-cpp_exceptions off",
     "-nosyspath",
     "-cwd include",
-    "-i include",
     "-i include/stdlib",
+    "-i include/external",
+    "-i include",
     "-i source",
     "-enc sjis",
     "-flag no-cats",
@@ -762,7 +763,7 @@ config.libs = [
     RvlLib(
         "rso",
         [
-            Object(DebugNonMatching, ReleaseNonMatching, "rso/RSOLink.c"),
+            Object(DebugMatching, ReleaseMatching, "rso/RSOLink.c"),
         ],
     ),
     RvlLib(

@@ -21,8 +21,10 @@
 
 #if defined(__MWERKS__)
 # define AT_ADDRESS(x)							: x
+# define ATTR_NOINLINE							__attribute__((never_inline))
 #else
 # define AT_ADDRESS(x)
+# define ATTR_NOINLINE							__attribute__((noinline))
 #endif
 
 // useful stuff
@@ -35,7 +37,6 @@
 
 #define POINTER_ADD_TYPE(type_, ptr_, offset_)	((type_)((unsigned long)(ptr_) + (unsigned long)(offset_)))
 #define POINTER_ADD(ptr_, offset_)				POINTER_ADD_TYPE(__typeof__(ptr_), ptr_, offset_)
-
 
 #define IS_ALIGNED(x, align)					(((unsigned long)(x) & ((align) - 1)) == 0)
 
