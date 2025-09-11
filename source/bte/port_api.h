@@ -190,7 +190,7 @@ enum
 enum
 {
 	PORT_ERR_BREAK		= 1 << 0,
-	PORT_ERR_OVERRUN	= 1 << 0,
+	PORT_ERR_OVERRUN	= 1 << 1, // CLEANUP: header cleanup
 };
 
 enum

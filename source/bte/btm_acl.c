@@ -40,6 +40,7 @@
 #include "btu.h"
 #include "gki.h"
 #include "hcidefs.h"
+#include "hcimsgs.h"
 #include "l2c_int.h"
 
 /*******************************************************************************

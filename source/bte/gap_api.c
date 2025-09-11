@@ -39,6 +39,7 @@
 #include "btm_api.h"
 #include "gap_int.h"
 #include "profiles_api.h"
+#include "sdp_api.h"
 
 /*******************************************************************************
  * functions
@@ -424,9 +425,9 @@ UINT16 GAP_SetDeviceClass(tGAP_COD *p_cod, UINT8 cmd)
 	DEV_CLASS dev_class;
 
 	dev = BTM_ReadDeviceClass();
-	BTM_SET_COD_SERVICE_CLASS(dev, &service);
-	BTM_SET_COD_MINOR_CLASS(dev, &minor);
-	BTM_SET_COD_MAJOR_CLASS(dev, &major);
+	BTM_GET_COD_SERVICE_CLASS(dev, &service);
+	BTM_GET_COD_MINOR_CLASS(dev, &minor);
+	BTM_GET_COD_MAJOR_CLASS(dev, &major);
 
 	switch (cmd)
 	{
@@ -474,9 +475,9 @@ UINT16 GAP_ReadDeviceClass(tGAP_COD *p_cod)
 {
 	UINT8 *dev = BTM_ReadDeviceClass();
 
-	BTM_SET_COD_SERVICE_CLASS(dev, &p_cod->service);
-	BTM_SET_COD_MINOR_CLASS(dev, &p_cod->minor);
-	BTM_SET_COD_MAJOR_CLASS(dev, &p_cod->major);
+	BTM_GET_COD_SERVICE_CLASS(dev, &p_cod->service);
+	BTM_GET_COD_MINOR_CLASS(dev, &p_cod->minor);
+	BTM_GET_COD_MAJOR_CLASS(dev, &p_cod->major);
 
 	return BT_PASS;
 }

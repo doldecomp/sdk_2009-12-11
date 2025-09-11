@@ -139,9 +139,9 @@ BOOLEAN utl_set_device_class(tBTA_UTL_COD *p_cod, tUTL_SET_DEVICE_CLASS_CMD cmd)
 	DEV_CLASS dev_class;
 
 	dev = BTM_ReadDeviceClass();
-	BTM_SET_COD_SERVICE_CLASS(dev, &service);
-	BTM_SET_COD_MINOR_CLASS(dev, &minor);
-	BTM_SET_COD_MAJOR_CLASS(dev, &major);
+	BTM_GET_COD_SERVICE_CLASS(dev, &service);
+	BTM_GET_COD_MINOR_CLASS(dev, &minor);
+	BTM_GET_COD_MAJOR_CLASS(dev, &major);
 
 	switch (cmd)
 	{

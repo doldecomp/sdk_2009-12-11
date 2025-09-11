@@ -37,6 +37,7 @@
 #include "bt_types.h"
 #include "data_types.h"
 
+#include "btm_api.h"
 #include "btu.h"
 #include "gap_api.h"
 #include "gki.h"

@@ -29,17 +29,21 @@
  * headers
  */
 
+// CLEANUP: btm subsystem
+#include <stddef.h>
+#include <string.h>
+
 #include "bt_target.h"
 #include "bt_trace.h"
 #include "bt_types.h"
-#include "btu.h"
 #include "data_types.h"
-#include "gki.h"
-#include "btm_int.h"
 #include "gki_target.h"
+
+#include "btm_int.h"
+#include "btu.h"
+#include "gki.h"
 #include "hcidefs.h"
-#include <stddef.h>
-#include <string.h>
+#include "hcimsgs.h"
 
 /*******************************************************************************
  * macros
@@ -169,15 +173,15 @@ tBTM_STATUS BTM_SetDiscoverability(UINT16 inq_mode, UINT16 window,
 	}
 
 	p_cod = BTM_ReadDeviceClass();
-	BTM_SET_COD_SERVICE_CLASS(p_cod, &service_class);
+	BTM_GET_COD_SERVICE_CLASS(p_cod, &service_class);
 
 	is_limited = inq_mode & BTM_LIMITED_DISCOVERABLE ? TRUE : FALSE;
 	cod_limited = service_class & BTM_COD_SERVICE_LMTD_DISCOVER ? TRUE : FALSE;
 
 	if (is_limited ^ cod_limited)
 	{
-		BTM_SET_COD_MINOR_CLASS(p_cod, &minor);
-		BTM_SET_COD_MAJOR_CLASS(p_cod, &major);
+		BTM_GET_COD_MINOR_CLASS(p_cod, &minor);
+		BTM_GET_COD_MAJOR_CLASS(p_cod, &major);
 
 		if (is_limited)
 			service_class |= BTM_COD_SERVICE_LMTD_DISCOVER;

@@ -816,10 +816,11 @@ tHID_STATUS hidh_conn_initiate(UINT8 dhandle)
 	{
 		HIDH_TRACE(WARNING, "HID - Originate failed");
 
-		/* ERRATUM: p_dev - hh_cb.devices already implicitly divides by size of
-		 * common type; doing it again is incorrect
+		/* ERRATUM: pointer subtraction already implicitly divides by size of
+		 * pointed to type; doing it again manually is incorrect
 		 */
-		dhandle = (p_dev - hh_cb.devices) / sizeof *p_dev;
+		dhandle = (p_dev - hh_cb.devices) / sizeof *p_dev; // NOLINT
+
 		(*hh_cb.callback)(dhandle, HID_HDEV_EVT_CLOSE, HID_ERR_L2CAP_FAILED,
 		                  NULL);
 	}

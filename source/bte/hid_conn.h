@@ -77,7 +77,11 @@ enum
 {
 	HID_SEC_CHN		= 1,
 	HID_NOSEC_CHN	= 2,
+
+#define HID_SEC_CHN		(HID_SEC_CHN + 0)
+#define HID_NOSEC_CHN	(HID_NOSEC_CHN + 0)
 };
+
 
 typedef struct hid_conn
 {

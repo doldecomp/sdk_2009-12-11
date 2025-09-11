@@ -39,6 +39,7 @@
 #include "btm_int.h"
 #include "gki.h"
 #include "hcidefs.h"
+#include "hcimsgs.h"
 
 /*******************************************************************************
  * types

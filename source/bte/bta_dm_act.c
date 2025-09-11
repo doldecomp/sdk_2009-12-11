@@ -31,6 +31,8 @@
 
 #include <string.h>
 
+#include <decomp.h>
+
 #include "bt_target.h"
 #include "bt_trace.h"
 #include "bt_types.h"
@@ -46,6 +48,7 @@
 #include "btu.h"
 #include "gki.h"
 #include "hcidefs.h"
+#include "hcimsgs.h"
 #include "l2c_api.h"
 #include "sdp_api.h"
 #include "sdpdefs.h"

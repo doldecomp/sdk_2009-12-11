@@ -76,6 +76,9 @@ enum
 	SDP_DB_FULL					= 0xfff4,
 	SDP_SECURITY_ERR			= 0xfff6,
 	SDP_CONN_REJECTED			= 0xfff7,
+
+#define SDP_SUCCESS		(SDP_SUCCESS + 0)
+#define SDP_CONN_FAILED	(SDP_CONN_FAILED + 0)
 };
 
 typedef void tSDP_DISC_CMPL_CB(UINT16 result);

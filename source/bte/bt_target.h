@@ -118,8 +118,9 @@ void bte_hcisu_send(BT_HDR *p_msg, UINT16 event);
 # define BTM_DEFAULT_SCAN_TYPE			BTM_SCAN_TYPE_INTERLACED
 #endif
 
+// CLEANUP: header pass, probably
 #ifndef BTM_DEFAULT_CONN_WINDOW
-# define BTM_DEFAULT_CONN_WINDOW		12
+# define BTM_DEFAULT_CONN_WINDOW		18
 #endif
 
 #ifndef BTM_DEFAULT_CONN_INTERVAL
@@ -130,8 +131,9 @@ void bte_hcisu_send(BT_HDR *p_msg, UINT16 event);
 # define BTM_DEFAULT_DISC_MODE			BTM_GENERAL_DISCOVERABLE
 #endif
 
+// CLEANUP: header pass, probably
 #ifndef BTM_DEFAULT_DISC_WINDOW
-# define BTM_DEFAULT_DISC_WINDOW		12
+# define BTM_DEFAULT_DISC_WINDOW		18
 #endif
 
 #ifndef BTM_DEFAULT_DISC_INTERVAL
