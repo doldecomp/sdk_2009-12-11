@@ -41,57 +41,21 @@
  * macros
  */
 
-#define L2CAP_MIN_MTU   48      /* Minimum acceptable MTU is 48 bytes */
+#define L2CAP_MIN_MTU					48
 
-#define L2CAP_ECHO_RSP_TOUT				30           /* 30 seconds */
-#define L2CAP_CHNL_CONNECT_TOUT      60           /* 60 seconds */
-#define L2CAP_CHNL_CFG_TIMEOUT       30           /* 30 seconds */
-#define L2CAP_CHNL_CONNECT_TOUT_EXT  120          /* 120 seconds */
-// #define L2CAP_CHNL_DISCONNECT_TOUT   10           /* 10 seconds */
-#define L2CAP_CHNL_DISCONNECT_TOUT   30           /* 10 seconds */
-#define L2CAP_LINK_CONNECT_TOUT      60           /* 30 seconds */
-#define L2CAP_DELAY_CHECK_SM4        2            /* 2 seconds */
-#define L2CAP_LINK_DISCONNECT_TOUT   30           /* 30 seconds */
-#define L2CAP_LINK_FLOW_CONTROL_TOUT 2            /* 2  seconds */
-#define L2CAP_LINK_CONNECT_TOUT_EXT  120          /* 120 seconds */
-#define L2CAP_LINK_ROLE_SWITCH_TOUT  10           /* 10 seconds */
+#define L2CAP_ECHO_RSP_TOUT				30
+#define L2CAP_CHNL_CONNECT_TOUT			60
+#define L2CAP_CHNL_CFG_TOUT				30
+#define L2CAP_CHNL_CONNECT_TOUT_EXT		120
+#define L2CAP_CHNL_DISCONNECT_TOUT		30
+#define L2CAP_LINK_CONNECT_TOUT			60
+#define L2CAP_DELAY_CHECK_SM4			2
+#define L2CAP_LINK_DISCONNECT_TOUT		30
+#define L2CAP_LINK_FLOW_CONTROL_TOUT	2
+#define L2CAP_LINK_CONNECT_TOUT_EXT		120
+#define L2CAP_LINK_ROLE_SWITCH_TOUT		10
 
-#define L2CAP_PEER_CFG_OK               1
-#define L2CAP_PEER_CFG_DISCONNECT       2
-
-#define L2CEVT_LP_CONNECT_CFM			( 0 - 0)
-#define L2CEVT_LP_CONNECT_CFM_NEG		( 1 - 0)
-#define L2CEVT_LP_DISCONNECT_IND		( 3 - 0)
-#define L2CEVT_LP_QOS_VIOLATION_IND		( 6 - 0)
-#define L2CEVT_SEC_COMP					( 7 - 0)
-#define L2CEVT_SEC_COMP_NEG				( 8 - 0)
-#define L2CEVT_L2CAP_CONNECT_REQ		(10 - 0)
-#define L2CEVT_L2CAP_CONNECT_RSP		(11 - 0)
-#define L2CEVT_L2CAP_CONNECT_RSP_PND	(12 - 0)
-#define L2CEVT_L2CAP_CONNECT_RSP_NEG	(13 - 0)
-#define L2CEVT_L2CAP_CONFIG_REQ			(14 - 0)
-#define L2CEVT_L2CAP_CONFIG_RSP			(15 - 0)
-#define L2CEVT_L2CAP_CONFIG_RSP_NEG		(16 - 0)
-#define L2CEVT_L2CAP_DISCONNECT_REQ		(17 - 0)
-#define L2CEVT_L2CAP_DISCONNECT_RSP		(18 - 0)
-#define L2CEVT_L2CAP_DATA				(20 - 1)
-#define L2CEVT_L2CA_CONNECT_REQ			(21 - 1)
-#define L2CEVT_L2CA_CONNECT_RSP			(22 - 1)
-#define L2CEVT_L2CA_CONNECT_RSP_NEG		(23 - 1)
-#define L2CEVT_L2CA_CONFIG_REQ			(24 - 1)
-#define L2CEVT_L2CA_CONFIG_RSP			(25 - 1)
-#define L2CEVT_L2CA_CONFIG_RSP_NEG		(26 - 1)
-#define L2CEVT_L2CA_DISCONNECT_REQ		(27 - 1)
-#define L2CEVT_L2CA_DISCONNECT_RSP		(28 - 1)
-#define L2CEVT_L2CA_DATA_WRITE			(30 - 1)
-#define L2CEVT_TIMEOUT					(32 - 2)
-#define L2CEVT_SEC_RE_SEND_CMD			(33 - 2)
-#define L2CEVT_ACK_TIMEOUT				(34 - 2)
-
-#define L2CAP_SEND_CMD_OFFSET       0
-
-#define L2CAP_ADJ_ID                0x03
-#define L2CAP_PEER_CFG_UNACCEPTABLE     0
+#define L2CAP_SEND_CMD_OFFSET			0
 
 /*******************************************************************************
  * types
@@ -124,30 +88,80 @@ typedef enum
 	LST_DISCONNECTING,
 } tL2C_LINK_STATE;
 
+enum
+{
+	L2CEVT_LP_CONNECT_CFM			= 0,
+	L2CEVT_LP_CONNECT_CFM_NEG		= 1,
+	L2CEVT_LP_DISCONNECT_IND		= 3,
+	L2CEVT_LP_QOS_VIOLATION_IND		= 6,
+	L2CEVT_SEC_COMP					= 7,
+	L2CEVT_SEC_COMP_NEG				= 8,
+	L2CEVT_L2CAP_CONNECT_REQ		= 10,
+	L2CEVT_L2CAP_CONNECT_RSP		= 11,
+	L2CEVT_L2CAP_CONNECT_RSP_PND	= 12,
+	L2CEVT_L2CAP_CONNECT_RSP_NEG	= 13,
+	L2CEVT_L2CAP_CONFIG_REQ			= 14,
+	L2CEVT_L2CAP_CONFIG_RSP			= 15,
+	L2CEVT_L2CAP_CONFIG_RSP_NEG		= 16,
+	L2CEVT_L2CAP_DISCONNECT_REQ		= 17,
+	L2CEVT_L2CAP_DISCONNECT_RSP		= 18,
+
+	L2CEVT_L2CAP_DATA				= 19,
+	L2CEVT_L2CA_CONNECT_REQ			= 20,
+	L2CEVT_L2CA_CONNECT_RSP			= 21,
+	L2CEVT_L2CA_CONNECT_RSP_NEG		= 22,
+	L2CEVT_L2CA_CONFIG_REQ			= 23,
+	L2CEVT_L2CA_CONFIG_RSP			= 24,
+	L2CEVT_L2CA_CONFIG_RSP_NEG		= 25,
+	L2CEVT_L2CA_DISCONNECT_REQ		= 26,
+	L2CEVT_L2CA_DISCONNECT_RSP		= 27,
+	L2CEVT_L2CA_DATA_WRITE			= 29,
+
+	L2CEVT_TIMEOUT					= 30,
+	L2CEVT_SEC_RE_SEND_CMD			= 31,
+	L2CEVT_ACK_TIMEOUT				= 32,
+};
+
+enum
+{
+	L2CAP_ADJ_ID	= 0x03,
+};
+
+enum
+{
+	L2CAP_PEER_CFG_UNACCEPTABLE,
+	L2CAP_PEER_CFG_OK,
+	L2CAP_PEER_CFG_DISCONNECT,
+};
+
+typedef UINT8 tL2C_CCB_CFG_FLAGS;
+enum
+{
+	IB_CFG_DONE		= 1 << 0,
+	OB_CFG_DONE		= 1 << 1,
+	RECONFIG_FLAG	= 1 << 2,
+
+	CFG_DONE_MASK	= IB_CFG_DONE | OB_CFG_DONE
+};
+
 typedef struct
 {
-    BD_ADDR         bd_addr;                        /* Remote BD address        */
-    UINT8           status;                         /* Connection status        */
-    UINT16          psm;                            /* PSM of the connection    */
-    UINT16          l2cap_result;                   /* L2CAP result             */
-    UINT16          l2cap_status;                   /* L2CAP status             */
-    UINT16          remote_cid;                     /* Remote CID               */
-} tL2C_CONN_INFO;
+	BD_ADDR	bd_addr;		// size 0x06, offset 0x00
+	UINT8	status;			// size 0x01, offset 0x06
+	/* 1 byte padding */
+	UINT16	psm;			// size 0x02, offset 0x08
+	UINT16	l2cap_result;	// size 0x02, offset 0x0a
+	UINT16	l2cap_status;	// size 0x02, offset 0x0c
+	UINT16	remote_cid;		// size 0x02, offset 0x0e
+} tL2C_CONN_INFO; // size 0x10
 
 typedef struct
 {
-	BOOLEAN				in_use;
-	UINT16				psm;
-	tL2CAP_APPL_INFO	api;
-} tL2C_RCB;
-
-#define IB_CFG_DONE     0x01
-#define OB_CFG_DONE     0x02
-#define RECONFIG_FLAG   0x04                    /* True after initial configuration */
-#define CFG_DONE_MASK   (IB_CFG_DONE | OB_CFG_DONE)
-
-#define CCB_FLAG_NO_RETRY       0x01            /* no more retry */
-#define CCB_FLAG_SENT_PENDING   0x02            /* already sent pending response */
+	BOOLEAN				in_use;	// size 0x01, offset 0x00
+	/* 1 byte padding */
+	UINT16				psm;	// size 0x02, offset 0x02
+	tL2CAP_APPL_INFO	api;	// size 0x28, offset 0x04
+} tL2C_RCB; // size 0x2c
 
 typedef struct t_l2c_ccb
 {
@@ -161,7 +175,7 @@ typedef struct t_l2c_ccb
 	UINT16				remote_cid;		// size 0x02, offset 0x16
 	TIMER_LIST_ENT		timer_entry;	// size 0x18, offset 0x18
 	tL2C_RCB			*p_rcb;			// size 0x04, offset 0x30
-	UINT8				config_done;	// size 0x01, offset 0x34
+	tL2C_CCB_CFG_FLAGS	config_done;	// size 0x01, offset 0x34
 	UINT8				local_id;		// size 0x01, offset 0x35
 	UINT8				remote_id;		// size 0x01, offset 0x36
 	BOOLEAN				rtry_flag;		// size 0x01, offset 0x37

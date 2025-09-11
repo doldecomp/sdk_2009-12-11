@@ -47,7 +47,7 @@ void GOEP_Init(void)
 BOOLEAN GOEP_SetSecurityLevel(BOOLEAN bOrig, char *pName, UINT32 service,
                             UINT8 level, UINT8 scn)
 {
-	char sec_name[22]; // TODO: Where does 22
+	char sec_name[22]; // TODO: Where does 22 come from
 
 	if (!pName)
 		pName = "";
@@ -110,24 +110,20 @@ tGOEP_STATUS GOEP_Register(char *p_name, UINT32 *phSDP, UINT8 scn,
 	tSDP_PROTOCOL_ELEM protoList[GOEP_NUM_PROTO_ELEMS];
 	UINT16 browse;
 
-	if (!phSDP)
-		WCAssert_Line(202);
-
-	if (!scn)
-		WCAssert_Line(203);
+	WCAssert_Line(202, phSDP);
+	WCAssert_Line(203, scn);
 
 	if (!phSDP || !scn)
 		return GOEP_INVALID_PARAM;
 
 	*phSDP = SDP_CreateRecord();
 
-	if (!*phSDP)
-		WCAssert_Line(212);
+	WCAssert_Line(212, *phSDP != 0);
 
 	GOEP_TRACE(API, "GOEP:  Register with SDP:  scn %d, record:0x%08x", scn,
 	           *phSDP);
 
-	if (!*phSDP)
+	if (*phSDP == 0)
 		return GOEP_RESOURCES;
 
 	if (SDP_AddServiceClassIdList(*phSDP, num_srv_class, p_service_class))

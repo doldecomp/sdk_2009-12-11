@@ -18,9 +18,9 @@
 #endif
 
 extern tBTA_AA_CFG const bta_aa_cfg;
-extern UINT16 const bta_aa_rc_id[];
-
 extern tBTA_AA_CFG *p_bta_aa_cfg;
+
+extern UINT16 const bta_aa_rc_id[];
 extern UINT16 *p_bta_aa_rc_id;
 
 #ifdef __cplusplus

@@ -38,33 +38,13 @@
  * macros
  */
 
-#define  SDP_DI_DISC_FAILED                 0x0008
-#define  SDP_NO_DI_RECORD_FOUND             0x0009
-#define  SDP_ERR_ATTR_NOT_PRESENT           0x000A
-#define  SDP_NO_RESOURCES                   0x0006
-#define  SDP_DI_REG_FAILED                  0x0007
-#define  SDP_GENERIC_ERROR                  0xFFF3
-#define  SDP_NO_RECS_MATCH                  0xFFF0
-#define  SDP_INVALID_CONT_STATE             0x0005
-#define  SDP_INVALID_PDU_SIZE               0x0004
-#define  SDP_DB_FULL                        0xFFF4
-#define  SDP_SECURITY_ERR                   0xFFF6
-#define  SDP_CONN_REJECTED                  0xFFF7
-#define  SDP_CONN_FAILED                    0xFFF1
-#define  SDP_CFG_FAILED                     0xFFF2
-#define  SDP_INVALID_REQ_SYNTAX             0x0003
-#define  SDP_INVALID_SERV_REC_HDL           0x0002
-
-#define SDP_PSM     0x0001
-
-
-#define SDP_MAX_LIST_ELEMS				3
-
-#define SDP_MAX_ATTR_LEN				80
+#define SDP_PSM							0x0001
 
 #define SDP_DISC_ATTR_LEN_MASK			0x0fff
 #define SDP_DISC_ATTR_TYPE(len_type)	((len_type) >> 12)
 #define SDP_DISC_ATTR_LEN(len_type)		((len_type) & SDP_DISC_ATTR_LEN_MASK)
+
+#define SDP_MAX_LIST_ELEMS				3
 
 /*******************************************************************************
  * types
@@ -77,44 +57,30 @@
 typedef UINT16 tSDP_STATUS;
 enum
 {
-	SDP_SUCCESS,
-	SDP_ILLEGAL_PARAMETER = 11,
+	SDP_SUCCESS					=  0,
+	SDP_INVALID_SERV_REC_HDL	=  2,
+	SDP_INVALID_REQ_SYNTAX		=  3,
+	SDP_INVALID_PDU_SIZE		=  4,
+	SDP_INVALID_CONT_STATE		=  5,
+	SDP_NO_RESOURCES			=  6,
+	SDP_DI_REG_FAILED			=  7,
+	SDP_DI_DISC_FAILED			=  8,
+	SDP_NO_DI_RECORD_FOUND		=  9,
+	SDP_ERR_ATTR_NOT_PRESENT	= 10,
+	SDP_ILLEGAL_PARAMETER		= 11,
+
+	SDP_NO_RECS_MATCH			= 0xfff0,
+	SDP_CONN_FAILED				= 0xfff1,
+	SDP_CFG_FAILED				= 0xfff2,
+	SDP_GENERIC_ERROR			= 0xfff3,
+	SDP_DB_FULL					= 0xfff4,
+	SDP_SECURITY_ERR			= 0xfff6,
+	SDP_CONN_REJECTED			= 0xfff7,
 };
 
 typedef void tSDP_DISC_CMPL_CB(UINT16 result);
 
 typedef tBT_UUID tSDP_UUID;
-
-typedef struct t_sdp_di_record
-{
-	UINT16	vendor;										// size 0x02, offset 0x00
-	UINT16	vendor_id_source;							// size 0x02, offset 0x02
-	UINT16	product;									// size 0x02, offset 0x04
-	UINT16	version;									// size 0x02, offset 0x06
-	BOOLEAN	primary_record;								// size 0x01, offset 0x08
-	char	client_executable_url[SDP_MAX_ATTR_LEN];	// size 0x50, offset 0x09
-	char	service_description[SDP_MAX_ATTR_LEN];		// size 0x50, offset 0x59
-	char	documentation_url[SDP_MAX_ATTR_LEN];		// size 0x50, offset 0xa9
-} tSDP_DI_RECORD; // size 0xfa
-
-typedef struct t_sdp_di_get_record
-{
-	UINT16			spec_id;	// size 0x02, offset 0x00
-	tSDP_DI_RECORD	rec;		// size 0xfa, offset 0x02
-} tSDP_DI_GET_RECORD; // size 0xfc
-
-typedef struct
-{
-	UINT16	protocol_uuid;						// size 0x02, offset 0x00
-	UINT16	num_params;							// size 0x02, offset 0x02
-	UINT16	params[SDP_MAX_PROTOCOL_PARAMS];	// size 0x04, offset 0x04
-} tSDP_PROTOCOL_ELEM; // size 0x08
-
-typedef struct
-{
-	UINT16				num_elems;						// size 0x02, offset 0x00
-	tSDP_PROTOCOL_ELEM	list_elem[SDP_MAX_LIST_ELEMS];	// size 0x18, offset 0x02
-} tSDP_PROTO_LIST_ELEM; // size 0x1a
 
 typedef struct
 {
@@ -159,9 +125,36 @@ typedef struct
 	UINT8			*p_free_mem;						// size 0x04, offset 0x68
 } tSDP_DISCOVERY_DB;
 
-/*******************************************************************************
- * external globals
- */
+typedef struct
+{
+	UINT16	protocol_uuid;						// size 0x02, offset 0x00
+	UINT16	num_params;							// size 0x02, offset 0x02
+	UINT16	params[SDP_MAX_PROTOCOL_PARAMS];	// size 0x04, offset 0x04
+} tSDP_PROTOCOL_ELEM; // size 0x08
+
+typedef struct
+{
+	UINT16				num_elems;						// size 0x02, offset 0x00
+	tSDP_PROTOCOL_ELEM	list_elem[SDP_MAX_LIST_ELEMS];	// size 0x18, offset 0x02
+} tSDP_PROTO_LIST_ELEM; // size 0x1a
+
+typedef struct t_sdp_di_record
+{
+	UINT16	vendor;										// size 0x02, offset 0x00
+	UINT16	vendor_id_source;							// size 0x02, offset 0x02
+	UINT16	product;									// size 0x02, offset 0x04
+	UINT16	version;									// size 0x02, offset 0x06
+	BOOLEAN	primary_record;								// size 0x01, offset 0x08
+	char	client_executable_url[SDP_MAX_ATTR_LEN];	// size 0x50, offset 0x09
+	char	service_description[SDP_MAX_ATTR_LEN];		// size 0x50, offset 0x59
+	char	documentation_url[SDP_MAX_ATTR_LEN];		// size 0x50, offset 0xa9
+} tSDP_DI_RECORD; // size 0xfa
+
+typedef struct t_sdp_di_get_record
+{
+	UINT16			spec_id;	// size 0x02, offset 0x00
+	tSDP_DI_RECORD	rec;		// size 0xfa, offset 0x02
+} tSDP_DI_GET_RECORD; // size 0xfc
 
 /*******************************************************************************
  * functions

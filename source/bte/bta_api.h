@@ -37,49 +37,13 @@
  * macros
  */
 
-#define BTA_SUCCESS             0           /* Successful operation. */
-#define BTA_FAILURE             1           /* Generic failure. */
+#define BTA_SERVICE_NAME_LEN	35
 
-#define BTA_DM_INQ_RES_EVT              0       /* Inquiry result for a peer device. */
-#define BTA_DM_INQ_CMPL_EVT             1       /* Inquiry complete. */
-#define BTA_DM_DISC_RES_EVT             2       /* Discovery result for a peer device. */
-#define BTA_DM_DISC_CMPL_EVT            3       /* Discovery complete. */
-#define BTA_DM_SEARCH_CANCEL_CMPL_EVT   4       /* Search cancelled */
-
-#define BTA_DM_DISABLE_EVT              1       /* Disable Event */
-#define BTA_DM_PIN_REQ_EVT              2       /* PIN request. */
-#define BTA_DM_AUTH_CMPL_EVT            3       /* Authentication complete indication. */
-#define BTA_DM_AUTHORIZE_EVT            4       /* Authorization request. */
-#define BTA_DM_LINK_UP_EVT              5       /* Connection UP event */
-#define BTA_DM_LINK_DOWN_EVT            6       /* Connection DOWN event */
-#define BTA_DM_SIG_STRENGTH_EVT         7       /* Signal strength for bluetooth connection */
-
-#define BTA_DM_AUTH_PERM        0      /* Authorized for future connections to the service */
-#define BTA_DM_NOT_AUTH         2      /* Not authorized for the service */
-
-#define BTA_MAX_SERVICE_ID      23
-
-#define BTA_SIG_STRENGTH_RSSI_MASK 1
-#define BTA_SIG_STRENGTH_LINK_QUALITY_MASK 2
-
-#define BTA_ANY_ROLE          0x00
-#define BTA_MASTER_ROLE_PREF  0x01
-#define BTA_MASTER_ROLE_ONLY  0x02
-
-#define BTA_DM_PM_NUM_EVTS      9
-
-#define BTA_DM_PM_NO_ACTION    0x00       /* no change to the current pm setting */
-#define BTA_DM_PM_NO_PREF      0x01       /* service has no prefernce on power mode setting. eg. connection to service got closed */
-#define BTA_DM_PM_PARK         0x10       /* prefers park mode */
-#define BTA_DM_PM_SNIFF        0x20       /* prefers sniff mode */
-#define BTA_DM_PM_ACTIVE       0x40       /* prefers active mode */
-#define BTA_DM_PM_SNIFF2       0x22       /* prefers sniff2 mode */
+#define BTA_DM_PM_NUM_EVTS		9
 
 #ifndef BTA_DM_PM_PARK_IDX
-# define BTA_DM_PM_PARK_IDX 5
+# define BTA_DM_PM_PARK_IDX		5
 #endif
-
-#define BTA_SERVICE_NAME_LEN    35
 
 /*******************************************************************************
  * types
@@ -90,155 +54,257 @@
 #endif
 
 typedef UINT8 tBTA_STATUS;
-
-typedef UINT32 tBTA_SERVICE_MASK;
-typedef UINT8 tBTA_DM_INQ_MODE;
-typedef UINT8 tBTA_DM_INQ_FILT;
-typedef UINT8 tBTA_SERVICE_ID;
-typedef UINT8 tBTA_SIG_STRENGTH_MASK;
-typedef INT8 tBTA_DM_RSSI_VALUE;
-typedef UINT8 tBTA_DM_LINK_QUALITY_VALUE;
-typedef UINT8 tBTA_DM_SEC_EVT;
-typedef UINT8 tBTA_DM_DISC;
-typedef UINT8 tBTA_DM_CONN;
-typedef UINT8 tBTA_DM_SEARCH_EVT;
-typedef UINT8 tBTA_AUTH_RESP;
-typedef UINT8 tBTA_DM_PM_ACTION;
-typedef UINT8 tBTA_SEC;
-
 enum
 {
-    BTA_DM_NO_SCATTERNET,
-    BTA_DM_PARTIAL_SCATTERNET,
+	BTA_SUCCESS = 0,
+	BTA_FAILURE = 1,
 };
 
-typedef struct
+typedef UINT8 tBTA_SERVICE_ID;
+enum
 {
-    BD_ADDR         bd_addr;                /* BD address peer device. */
-    DEV_CLASS       dev_class;              /* Device class of peer device. */
-    INT8            rssi;                   /* The rssi value */
-    BOOLEAN         remt_name_not_required; /* Application sets this flag if it already knows the name of the device */
-                                            /* If the device name is known to application BTA skips the remote name request */
-} tBTA_DM_INQ_RES;
+	BTA_MAX_SERVICE_ID	= 23, // MAX_SERVICE_ID is a limit, not a service id for a MAX service
+};
+
+typedef UINT32 tBTA_SERVICE_MASK;
+#if 0
+enum
+{
+	/* ... */
+};
+#endif
+
+typedef UINT8 tBTA_SEC;
+#if 0
+enum
+{
+	/* ... */
+};
+#endif
+
+typedef UINT8 tBTA_DM_DISC;
+#if 0
+enum
+{
+	/* ... */
+};
+#endif
+
+typedef UINT8 tBTA_DM_CONN;
+#if 0
+enum
+{
+	/* ... */
+};
+#endif
+
+typedef UINT8 tBTA_DM_INQ_MODE;
+#if 0
+enum
+{
+	/* ... */
+};
+#endif
+
+typedef UINT8 tBTA_DM_INQ_FILT;
+#if 0
+enum
+{
+	/* ... */
+};
+#endif
+
+typedef UINT8 tBTA_AUTH_RESP;
+enum
+{
+	BTA_DM_AUTH_PERM	= 0,
+	BTA_DM_NOT_AUTH		= 2,
+};
+
+typedef UINT8 tBTA_PREF_ROLES;
+enum
+{
+	BTA_ANY_ROLE,
+	BTA_MASTER_ROLE_PREF,
+	BTA_MASTER_ROLE_ONLY,
+};
+
+// TODO: any associated type?
+enum
+{
+	BTA_DM_NO_SCATTERNET		= 0,
+	BTA_DM_PARTIAL_SCATTERNET	= 1,
+};
+
+typedef INT8 tBTA_DM_RSSI_VALUE;
+typedef UINT8 tBTA_DM_LINK_QUALITY_VALUE;
+
+typedef UINT8 tBTA_SIG_STRENGTH_MASK;
+enum
+{
+	BTA_SIG_STRENGTH_RSSI_MASK = 1,
+	BTA_SIG_STRENGTH_LINK_QUALITY_MASK,
+};
+
+typedef UINT8 tBTA_DM_SEC_EVT;
+enum
+{
+	BTA_DM_DISABLE_EVT		= 1,
+	BTA_DM_PIN_REQ_EVT		= 2,
+	BTA_DM_AUTH_CMPL_EVT	= 3,
+	BTA_DM_AUTHORIZE_EVT	= 4,
+	BTA_DM_LINK_UP_EVT		= 5,
+	BTA_DM_LINK_DOWN_EVT	= 6,
+	BTA_DM_SIG_STRENGTH_EVT	= 7,
+};
+
+typedef UINT8 tBTA_DM_SEARCH_EVT;
+enum
+{
+	BTA_DM_INQ_RES_EVT				= 0,
+	BTA_DM_INQ_CMPL_EVT				= 1,
+	BTA_DM_DISC_RES_EVT				= 2,
+	BTA_DM_DISC_CMPL_EVT			= 3,
+	BTA_DM_SEARCH_CANCEL_CMPL_EVT	= 4,
+};
+
+typedef UINT8 tBTA_DM_PM_ACTION;
+enum
+{
+	BTA_DM_PM_NO_ACTION	= 0,
+	BTA_DM_PM_NO_PREF	= 1 << 0,
+	BTA_DM_PM_PARK		= 1 << 4,
+	BTA_DM_PM_SNIFF		= 1 << 5,
+	BTA_DM_PM_ACTIVE	= 1 << 6,
+};
+
+typedef void tBTA_CLEAN_UP_CBACK(tBTA_STATUS status);
 
 typedef struct
 {
-    UINT8           num_resps;          /* Number of inquiry responses. */
-} tBTA_DM_INQ_CMPL;
-
-typedef struct
-{
-    BD_ADDR             bd_addr;        /* BD address peer device. */
-    BD_NAME             bd_name;        /* Name of peer device. */
-    tBTA_SERVICE_MASK   services;       /* Services found on peer device. */
-    tBTA_STATUS         result;
-} tBTA_DM_DISC_RES;
-
-typedef struct
-{
-    DEV_CLASS       dev_class;        /* device class of interest */
-    DEV_CLASS       dev_class_mask;   /* mask to determine the bits of device class of interest */
-} tBTA_DM_COD_COND;
+	DEV_CLASS	dev_class;		// size 0x03, offset 0x00
+	DEV_CLASS	dev_class_mask;	// size 0x03, offset 0x03
+} tBTA_DM_COD_COND; // size 0x06
 
 typedef union
 {
-    BD_ADDR              bd_addr;            /* BD address of  device to filter. */
-    tBTA_DM_COD_COND     dev_class_cond;     /* Device class filter condition */
-} tBTA_DM_INQ_COND;
+	BD_ADDR				bd_addr;		// size 0x06, offset 0x00
+	tBTA_DM_COD_COND	dev_class_cond;	// size 0x06, offset 0x06
+} tBTA_DM_INQ_COND; // size 0x0c
 
 typedef struct
 {
-    tBTA_DM_INQ_MODE    mode;           /* Inquiry mode, limited or general. */
-    UINT8               duration;       /* Inquiry duration in 1.28 sec units. */
-    UINT8               max_resps;      /* Maximum inquiry responses.  Set to zero for unlimited responses. */
-    tBTA_DM_INQ_FILT    filter_type;    /* Filter condition type. */
-    tBTA_DM_INQ_COND    filter_cond;    /* Filter condition data. */
-} tBTA_DM_INQ;
+	tBTA_DM_INQ_MODE	mode;			// size 0x01, offset 0x00
+	UINT8				duration;		// size 0x01, offset 0x01
+	UINT8				max_resps;		// size 0x01, offset 0x02
+	tBTA_DM_INQ_FILT	filter_type;	// size 0x01, offset 0x03
+	tBTA_DM_INQ_COND	filter_cond;	// size 0x0c, offset 0x04
+} tBTA_DM_INQ; // size 0x10
+
+typedef struct
+{
+	BD_ADDR	bd_addr;	// size 0x06, offset 0x00
+} tBTA_DM_ENABLE; // size 0x06
+
+typedef struct
+{
+	BD_ADDR		bd_addr;	// size 0x06, offset 0x00
+	BD_NAME		bd_name;	// size 0xf8, offset 0x06
+	DEV_CLASS	dev_class;	// size 0x03, offset 0xfe
+} tBTA_DM_PIN_REQ; // size 0x101
+
+typedef struct
+{
+	BD_ADDR		bd_addr;		// size 0x006, offset 0x000
+	BD_NAME		bd_name;		// size 0x0f8, offset 0x006
+	BOOLEAN		key_present;	// size 0x001, offset 0x0fe
+	LINK_KEY	key;			// size 0x010, offset 0x0ff
+	BOOLEAN		success;		// size 0x001, offset 0x10f
+} tBTA_DM_AUTH_CMPL; // size 0x110
+
+typedef struct
+{
+	BD_ADDR			bd_addr;	// size 0x06, offset 0x00
+	BD_NAME			bd_name;	// size 0xf8, offset 0x06
+	tBTA_SERVICE_ID	service;	// size 0x01, offset 0xfe
+} tBTA_DM_AUTHORIZE; // size 0xff
+
+typedef struct
+{
+	BD_ADDR	bd_addr;	// size 0x06, offset 0x00
+} tBTA_DM_LINK_UP; // size 0x06
+
+typedef struct
+{
+	BD_ADDR	bd_addr;	// size 0x06, offset 0x00
+	UINT8	status;		// size 0x01, offset 0x06
+} tBTA_DM_LINK_DOWN; // size 0x07
+
+typedef struct
+{
+	BD_ADDR						bd_addr;			// size 0x06, offset 0x00
+	tBTA_SIG_STRENGTH_MASK		mask;				// size 0x01, offset 0x06
+	tBTA_DM_RSSI_VALUE			rssi_value;			// size 0x01, offset 0x07
+	tBTA_DM_LINK_QUALITY_VALUE	link_quality_value;	// size 0x01, offset 0x08
+} tBTA_DM_SIG_STRENGTH; // size 0x09
+
+typedef struct
+{
+	UINT8	level;	// size 0x01, offset 0x00
+} tBTA_DM_BUSY_LEVEL; // size 0x01
 
 typedef union
 {
-    tBTA_DM_INQ_RES     inq_res;        /* Inquiry result for a peer device. */
-    tBTA_DM_INQ_CMPL    inq_cmpl;       /* Inquiry complete. */
-    tBTA_DM_DISC_RES    disc_res;       /* Discovery result for a peer device. */
-} tBTA_DM_SEARCH;
-
-typedef void tBTA_DM_SEARCH_CBACK(tBTA_DM_SEARCH_EVT event, tBTA_DM_SEARCH *p_data);
-
-typedef struct
-{
-    BD_ADDR         bd_addr;            /* BD address of local device. */
-} tBTA_DM_ENABLE;
-
-typedef struct
-{
-    BD_ADDR         bd_addr;            /* BD address peer device. */
-    BD_NAME         bd_name;            /* Name of peer device. */
-    DEV_CLASS       dev_class;          /* Class of Device */
-} tBTA_DM_PIN_REQ;
-
-typedef struct
-{
-    BD_ADDR         bd_addr;            /* BD address peer device. */
-    BD_NAME         bd_name;            /* Name of peer device. */
-    BOOLEAN         key_present;        /* Valid link key value in key element */
-    LINK_KEY        key;                /* Link key associated with peer device. */
-    BOOLEAN         success;            /* TRUE of authentication succeeded, FALSE if failed. */
-} tBTA_DM_AUTH_CMPL;
-
-typedef struct
-{
-    BD_ADDR         bd_addr;            /* BD address peer device. */
-    BD_NAME         bd_name;            /* Name of peer device. */
-    tBTA_SERVICE_ID service;            /* Service ID to authorize. */
-} tBTA_DM_AUTHORIZE;
-
-typedef struct
-{
-    BD_ADDR         bd_addr;            /* BD address peer device. */
-} tBTA_DM_LINK_UP;
-
-typedef struct
-{
-    BD_ADDR         bd_addr;            /* BD address peer device. */
-    UINT8           status;             /* connection open/closed */
-} tBTA_DM_LINK_DOWN;
-
-typedef struct
-{
-    BD_ADDR         bd_addr;            /* BD address peer device. */
-    tBTA_SIG_STRENGTH_MASK mask;        /* mask for the values that are valid */
-    tBTA_DM_RSSI_VALUE  rssi_value;
-    tBTA_DM_LINK_QUALITY_VALUE link_quality_value;
-} tBTA_DM_SIG_STRENGTH;
-
-typedef struct
-{
-    UINT8           level;     /* when paging or inquiring, level is 10.
-                                    Otherwise, the number of ACL links */
-} tBTA_DM_BUSY_LEVEL;
-
-typedef union
-{
-    tBTA_DM_ENABLE      enable;         /* BTA enabled */
-    tBTA_DM_PIN_REQ     pin_req;        /* PIN request. */
-    tBTA_DM_AUTH_CMPL   auth_cmpl;      /* Authentication complete indication. */
-    tBTA_DM_AUTHORIZE   authorize;      /* Authorization request. */
-    tBTA_DM_LINK_UP     link_up;       /* ACL connection down event */
-    tBTA_DM_LINK_DOWN   link_down;       /* ACL connection down event */
-    tBTA_DM_SIG_STRENGTH sig_strength;  /* rssi and link quality value */
-    tBTA_DM_BUSY_LEVEL  busy_level;     /* System busy level */
-} tBTA_DM_SEC;
+	tBTA_DM_ENABLE			enable;			// size 0x006
+	tBTA_DM_PIN_REQ			pin_req;		// size 0x101
+	tBTA_DM_AUTH_CMPL		auth_cmpl;		// size 0x110
+	tBTA_DM_AUTHORIZE		authorize;		// size 0x0ff
+	tBTA_DM_LINK_UP			link_up;		// size 0x006
+	tBTA_DM_LINK_DOWN		link_down;		// size 0x007
+	tBTA_DM_SIG_STRENGTH	sig_strength;	// size 0x009
+	tBTA_DM_BUSY_LEVEL		busy_level;		// size 0x001
+} tBTA_DM_SEC; // size 0x110
 
 typedef void tBTA_DM_SEC_CBACK(tBTA_DM_SEC_EVT event, tBTA_DM_SEC *p_data);
 
-/*******************************************************************************
- * external globals
- */
+typedef struct
+{
+	BD_ADDR		bd_addr;				// size 0x06, offset 0x00
+	DEV_CLASS	dev_class;				// size 0x03, offset 0x06
+	INT8		rssi;					// size 0x01, offset 0x09
+	BOOLEAN		remt_name_not_required;	// size 0x01, offset 0x0a
+} tBTA_DM_INQ_RES; // size 0x0b
+
+typedef struct
+{
+	UINT8	num_resps;	// size 0x01, offset 0x00
+} tBTA_DM_INQ_CMPL; // size 0x01
+
+typedef struct
+{
+	BD_ADDR				bd_addr;	// size 0x006, offset 0x000
+	BD_NAME				bd_name;	// size 0x0f8, offset 0x006
+	/* 2 bytes padding */
+	tBTA_SERVICE_MASK	services;	// size 0x004, offset 0x100
+	tBTA_STATUS			result;		// size 0x001, offset 0x104
+	/* 3 bytes padding */
+} tBTA_DM_DISC_RES; // size 0x108
+
+typedef union
+{
+	tBTA_DM_INQ_RES		inq_res;	// size 0x00b
+	tBTA_DM_INQ_CMPL	inq_cmpl;	// size 0x001
+	tBTA_DM_DISC_RES	disc_res;	// size 0x108
+} tBTA_DM_SEARCH; // size 0x108
+
+typedef void tBTA_DM_SEARCH_CBACK(tBTA_DM_SEARCH_EVT event,
+                                  tBTA_DM_SEARCH *p_data);
 
 /*******************************************************************************
  * functions
  */
 
+/* bta_dm_api.h */
 tBTA_STATUS BTA_EnableBluetooth(tBTA_DM_SEC_CBACK *p_cback);
 void BTA_DisableBluetooth(void);
 BOOLEAN BTA_DmIsDeviceUp(void);
@@ -262,8 +328,9 @@ void BTA_DmSignalStrength(tBTA_SIG_STRENGTH_MASK mask, UINT16 period,
 void BTA_KeepACLLinksOnShutDown(BOOLEAN keep);
 void BTA_DmSendHciReset(void);
 
+/* bte_main.c */
 tBTA_STATUS BTA_Init(void);
-void BTA_CleanUp(void (*p_cb)(tBTA_STATUS status)); // TODO: typedef
+void BTA_CleanUp(tBTA_CLEAN_UP_CBACK *p_cb);
 
 #ifdef __cplusplus
 	}

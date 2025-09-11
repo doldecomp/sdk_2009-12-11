@@ -43,9 +43,9 @@
 typedef struct
 {
 	UINT8	realm_charset;			// size 0x01, offset 0x00
-	BOOLEAN	userid_req;				// size 0x01, offset 0x00
-	UINT8	supported_features;		// size 0x01, offset 0x00
-	UINT8	supported_repositories;	// size 0x01, offset 0x00
+	BOOLEAN	userid_req;				// size 0x01, offset 0x01
+	UINT8	supported_features;		// size 0x01, offset 0x02
+	UINT8	supported_repositories;	// size 0x01, offset 0x03
 } tBTA_PBS_CFG; // size 0x04
 
 /*******************************************************************************

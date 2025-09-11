@@ -2,12 +2,6 @@
 #define BTE_BTA_BI_API_H
 
 /*******************************************************************************
- * headers
- */
-
-#include "data_types.h"
-
-/*******************************************************************************
  * types
  */
 
@@ -15,14 +9,12 @@
 	extern "C" {
 #endif
 
-// unknowable so who cares
-
 typedef struct
 {
-	UINT8	at_0x00[0x18];	// size 0x18, offset 0x00
-	void	*at_0x18;		// size 0x04, offset 0x18
-	void	*at_0x1c;		// size 0x04, offset 0x1c
-	UINT8	at_0x20[0x10];	// size 0x10, offset 0x20
+	char unsigned	at_0x00[0x18];	// size 0x18, offset 0x00
+	void			*at_0x18;		// size 0x04, offset 0x18
+	void			*at_0x1c;		// size 0x04, offset 0x1c
+	char unsigned	at_0x20[0x10];	// size 0x10, offset 0x20
 } tBTA_BI_IMAGING_CAPABILITIES; // size 0x30
 
 typedef struct

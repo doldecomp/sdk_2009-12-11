@@ -37,25 +37,19 @@
 #include "hci.h"
 
 /*******************************************************************************
- * macros
- */
-
-/*******************************************************************************
- * types
+ * external globals
  */
 
 #ifdef __cplusplus
 	extern "C" {
 #endif
 
-/*******************************************************************************
- * external globals
- */
+extern char const bte_version_string[];
+
+extern UINT8 volatile bte_target_mode;
 
 extern tHCI_IF *p_hcisu_if;
 extern tHCI_CFG *p_hcisu_cfg;
-extern UINT8 bte_target_mode;
-extern char const bte_version_string[];
 
 /*******************************************************************************
  * functions

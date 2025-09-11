@@ -29,8 +29,6 @@
  * headers
  */
 
-#include <stddef.h>
-
 #include <decomp.h>
 
 #include "data_types.h"
@@ -73,7 +71,7 @@ static void (*_bte_app_info)(tBTA_STATUS status);
 #if !defined(NDEBUG)
 static BOOLEAN enable_dbg_msg;
 #endif
-UINT8 bte_target_mode;
+UINT8 volatile bte_target_mode;
 
 /*******************************************************************************
  * functions

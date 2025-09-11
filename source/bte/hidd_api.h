@@ -11,10 +11,6 @@
 #include "hiddefs.h"
 
 /*******************************************************************************
- * macros
- */
-
-/*******************************************************************************
  * types
  */
 
@@ -24,68 +20,58 @@
 
 typedef struct rep_data
 {
-    // total size: 0x2
-    UINT8 rep_type; // offset 0x0, size 0x1
-    UINT8 rep_id; // offset 0x1, size 0x1
-} tHID_DEV_REP_DATA;
+	UINT8	rep_type;	// size 0x01, offset 0x00
+	UINT8	rep_id;		// size 0x01, offset 0x01
+} tHID_DEV_REP_DATA; // size 0x02
 
 typedef struct snd_data_params
 {
-    // total size: 0x8
-    UINT8 ctrl_ch; // offset 0x0, size 0x1
-    UINT8 trans_type; // offset 0x1, size 0x1
-    UINT8 param; // offset 0x2, size 0x1
-    BT_HDR *buf; // offset 0x4, size 0x4
-} tSND_DATA_PARAMS;
+	UINT8	ctrl_ch;	// size 0x01, offset 0x00
+	UINT8	trans_type;	// size 0x01, offset 0x01
+	UINT8	param;		// size 0x01, offset 0x02
+	BT_HDR	*buf;		// size 0x04, offset 0x04
+} tSND_DATA_PARAMS; // size 0x08
 
 typedef struct pwr_md
 {
-    // total size: 0xA
-    UINT16 max; // offset 0x0, size 0x2
-    UINT16 min; // offset 0x2, size 0x2
-    UINT16 attempt; // offset 0x4, size 0x2
-    UINT16 timeout; // offset 0x6, size 0x2
-    UINT8 mode; // offset 0x8, size 0x1
-} tHID_DEV_PWR_MD;
+	UINT16	max;		// size 0x02, offset 0x00
+	UINT16	min;		// size 0x02, offset 0x02
+	UINT16	attempt;	// size 0x02, offset 0x04
+	UINT16	timeout;	// size 0x02, offset 0x06
+	UINT8	mode;		// size 0x01, offset 0x08
+} tHID_DEV_PWR_MD; // size 0x0a
 
 typedef struct curr_pm_setting
 {
-    // total size: 0x4
-    UINT8 mode; // offset 0x0, size 0x1
-    UINT16 interval; // offset 0x2, size 0x2
-} tHID_DEV_CURR_PM_SETTING;
+	UINT8	mode;		// size 0x01, offset 0x00
+	UINT16	interval;	// size 0x02, offset 0x02
+} tHID_DEV_CURR_PM_SETTING; // size 0x04
 
 typedef struct
 {
-    // total size: 0x48
-    FLOW_SPEC ctrl_ch; // offset 0x0, size 0x18
-    FLOW_SPEC int_ch; // offset 0x18, size 0x18
-    FLOW_SPEC hci; // offset 0x30, size 0x18
-} tQOS_INFO;
+	FLOW_SPEC	ctrl_ch;	// size 0x18, offset 0x00
+	FLOW_SPEC	int_ch;		// size 0x18, offset 0x18
+	FLOW_SPEC	hci;		// size 0x18, offset 0x30
+} tQOS_INFO; // size 0x048
 
 typedef union
 {
-    UINT8 host_bdaddr[6]; // offset 0x0, size 0x6
-    BT_HDR * buffer; // offset 0x0, size 0x4
-    tHID_DEV_REP_DATA get_rep; // offset 0x0, size 0x2
-    UINT8 pm_err_code; // offset 0x0, size 0x1
-    UINT16 pm_interval; // offset 0x0, size 0x2
+	BD_ADDR				host_bdaddr;	// size 0x06, offset 0x00
+	BT_HDR				*buffer;		// size 0x04, offset 0x00
+	tHID_DEV_REP_DATA	get_rep;		// size 0x02, offset 0x00
+	UINT8				pm_err_code;	// size 0x01, offset 0x00
+	UINT16				pm_interval;	// size 0x02, offset 0x00
 } tHID_DEV_REG_INFO_CBACK_DATA;
 
-typedef void tHID_DEV_REG_INFO_CBACK(UINT8, UINT32,
-                                     tHID_DEV_REG_INFO_CBACK_DATA *);
+typedef void tHID_DEV_REG_INFO_CBACK(UINT8 event, UINT32 data,
+                                     tHID_DEV_REG_INFO_CBACK_DATA *pdata);
 
 typedef struct
 {
-    // total size: 0x10
-    UINT8 host_addr[6]; // offset 0x0, size 0x6
-    tQOS_INFO * qos_info; // offset 0x8, size 0x4
-    tHID_DEV_REG_INFO_CBACK *app_cback; // offset 0xC, size 0x4
-} tHID_DEV_REG_INFO;
-
-/*******************************************************************************
- * external globals
- */
+	BD_ADDR					host_addr;	// size 0x06, offset 0x00
+	tQOS_INFO				*qos_info;	// size 0x04, offset 0x08
+	tHID_DEV_REG_INFO_CBACK	*app_cback;	// size 0x04, offset 0x0C
+} tHID_DEV_REG_INFO;	// size 0x010
 
 /*******************************************************************************
  * functions

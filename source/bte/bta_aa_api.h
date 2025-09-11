@@ -12,7 +12,7 @@
 // TODO
 typedef struct
 {
-	char at_0x00[0x10];	// size 0x10, offset 0x00
+	char unsigned	at_0x00[0x10];	// size 0x10, offset 0x00
 } tBTA_AA_CFG; // size 0x10
 
 #ifdef __cplusplus

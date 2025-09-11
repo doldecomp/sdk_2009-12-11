@@ -22,6 +22,7 @@ extern UINT8 const bta_bi_attachment_formats[];
 extern tBTA_BI_IMAGING_CAPABILITIES const bta_bi_imaging_capabilities[];
 extern UINT8 const bta_bi_print_service_id[];
 extern UINT8 const bta_bi_archive_service_id[];
+
 extern tBTA_BI_CFG const bta_bi_cfg;
 extern tBTA_BI_CFG *p_bta_bi_cfg;
 

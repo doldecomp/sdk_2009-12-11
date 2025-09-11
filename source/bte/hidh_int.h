@@ -76,16 +76,18 @@ typedef struct per_device_ctb
 
 typedef struct host_ctb
 {
-	tHID_HOST_DEV_CTB		devices[HID_HOST_MAX_DEVICES];
-	tHID_HOST_DEV_CALLBACK	*callback;
-	tL2CAP_CFG_INFO			l2cap_cfg;
-	BOOLEAN					sdp_busy;
-	tHID_HOST_SDP_CALLBACK	*sdp_cback;
-	tSDP_DISCOVERY_DB		*p_sdp_db;
-	tHID_DEV_SDP_INFO		sdp_rec;
-	BOOLEAN					reg_flag;
-	UINT8					trace_level;
-} tHID_HOST_CTB;
+	tHID_HOST_DEV_CTB		devices[HID_HOST_MAX_DEVICES];	// size 0x340, offset 0x000
+	tHID_HOST_DEV_CALLBACK	*callback;						// size 0x004, offset 0x340
+	tL2CAP_CFG_INFO			l2cap_cfg;						// size 0x03c, offset 0x344
+	BOOLEAN					sdp_busy;						// size 0x001, offset 0x380
+	/* 3 bytes padding */
+	tHID_HOST_SDP_CALLBACK	*sdp_cback;						// size 0x004, offset 0x384
+	tSDP_DISCOVERY_DB		*p_sdp_db;						// size 0x004, offset 0x388
+	tHID_DEV_SDP_INFO		sdp_rec;						// size 0x074, offset 0x38c
+	BOOLEAN					reg_flag;						// size 0x001, offset 0x400
+	UINT8					trace_level;					// size 0x001, offset 0x401
+	/* 2 bytes padding */
+} tHID_HOST_CTB; // size 0x404
 
 /*******************************************************************************
  * external globals

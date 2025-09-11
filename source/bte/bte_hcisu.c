@@ -6,7 +6,6 @@
 
 #include <decomp.h>
 
-#include "bt_target.h"
 #include "data_types.h"
 
 #include "gki.h"

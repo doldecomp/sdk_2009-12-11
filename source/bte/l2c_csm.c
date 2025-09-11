@@ -337,7 +337,7 @@ static void l2c_csm_w4_l2cap_connect_rsp(tL2C_CCB *p_ccb, UINT16 event,
 		p_ccb->remote_cid = p_ci->remote_cid;
 		p_ccb->chnl_state = CST_CONFIG;
 		btu_start_timer(&p_ccb->timer_entry, BTU_TTYPE_L2CAP_CHNL,
-		                L2CAP_CHNL_CFG_TIMEOUT);
+		                L2CAP_CHNL_CFG_TOUT);
 		L2CAP_TRACE(API,
 		            "L2CAP - Calling Connect_Cfm_Cb(), CID: 0x%04x, Success",
 		            p_ccb->local_cid);
@@ -414,7 +414,7 @@ static void l2c_csm_w4_l2ca_connect_rsp(tL2C_CCB *p_ccb, UINT16 event,
 			l2cu_send_peer_connect_rsp(p_ccb, L2CAP_CONN_OK, 0);
 			p_ccb->chnl_state = CST_CONFIG;
 			btu_start_timer(&p_ccb->timer_entry, BTU_TTYPE_L2CAP_CHNL,
-			                L2CAP_CHNL_CFG_TIMEOUT);
+			                L2CAP_CHNL_CFG_TOUT);
 		}
 		else
 		{
@@ -533,7 +533,7 @@ static void l2c_csm_config(tL2C_CCB *p_ccb, UINT16 event, void *p_data)
 		l2cu_process_our_cfg_req(p_ccb, p_cfg);
 		l2cu_send_peer_config_req(p_ccb, p_cfg);
 		btu_start_timer(&p_ccb->timer_entry, BTU_TTYPE_L2CAP_CHNL,
-		                L2CAP_CHNL_CFG_TIMEOUT);
+		                L2CAP_CHNL_CFG_TOUT);
 		break;
 
 	case L2CEVT_L2CA_CONFIG_RSP:
@@ -555,7 +555,7 @@ static void l2c_csm_config(tL2C_CCB *p_ccb, UINT16 event, void *p_data)
 	case L2CEVT_L2CA_CONFIG_RSP_NEG:
 		l2cu_send_peer_config_rsp(p_ccb, p_cfg);
 		btu_start_timer(&p_ccb->timer_entry, BTU_TTYPE_L2CAP_CHNL,
-		                L2CAP_CHNL_CFG_TIMEOUT);
+		                L2CAP_CHNL_CFG_TOUT);
 		break;
 
 	case L2CEVT_L2CA_DISCONNECT_REQ:
@@ -632,7 +632,7 @@ static void l2c_csm_open(tL2C_CCB *p_ccb, UINT16 event, void *p_data)
 		p_ccb->config_done = 0;
 
 		btu_start_timer(&p_ccb->timer_entry, BTU_TTYPE_L2CAP_CHNL,
-		                L2CAP_CHNL_CFG_TIMEOUT);
+		                L2CAP_CHNL_CFG_TOUT);
 
 		if (l2cu_process_peer_cfg_req(p_ccb, p_cfg))
 		{
@@ -685,7 +685,7 @@ static void l2c_csm_open(tL2C_CCB *p_ccb, UINT16 event, void *p_data)
 		p_ccb->config_done = 0;
 
 		btu_start_timer(&p_ccb->timer_entry, BTU_TTYPE_L2CAP_CHNL,
-		                L2CAP_CHNL_CFG_TIMEOUT);
+		                L2CAP_CHNL_CFG_TOUT);
 		break;
 	}
 }

@@ -224,9 +224,9 @@ static void sdp_config_ind(UINT16 l2cap_cid, tL2CAP_CFG_INFO *p_cfg)
 
 	SDP_TRACE(EVENT, "SDP - Rcvd cfg ind, sent cfg cfm, CID: 0x%x", l2cap_cid);
 
-	p_ccb->con_flags |= SDP_FLAGS_HIS_CFG_DONE;
+	p_ccb->con_flags |= SDP_FLAGS_THEIR_CFG_DONE;
 
-	if (p_ccb->con_flags & SDP_FLAGS_MY_CFG_DONE)
+	if (p_ccb->con_flags & SDP_FLAGS_OUR_CFG_DONE)
 	{
 		p_ccb->con_state = SDP_STATE_CONNECTED;
 
@@ -258,9 +258,9 @@ static void sdp_config_cfm(UINT16 l2cap_cid, tL2CAP_CFG_INFO *p_cfg)
 
 	if (p_cfg->result == L2CAP_CFG_OK)
 	{
-		p_ccb->con_flags |= SDP_FLAGS_MY_CFG_DONE;
+		p_ccb->con_flags |= SDP_FLAGS_OUR_CFG_DONE;
 
-		if (p_ccb->con_flags & SDP_FLAGS_HIS_CFG_DONE)
+		if (p_ccb->con_flags & SDP_FLAGS_THEIR_CFG_DONE)
 		{
 			p_ccb->con_state = SDP_STATE_CONNECTED;
 

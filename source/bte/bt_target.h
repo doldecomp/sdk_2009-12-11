@@ -36,90 +36,169 @@
 #include "gki_target.h"
 
 /*******************************************************************************
- * Configuration options
+ * Configuration options, sorted as seen in bluedroid's bt_target.h
  */
 
-/* NOTE: confirmed to be 248 */
-#ifndef BTM_MAX_REM_BD_NAME_LEN
-# define BTM_MAX_REM_BD_NAME_LEN		248
+/* Added from bluedroid buildcfg.h */
+
+#ifndef BTA_RFC_MTU_SIZE
+# define BTA_RFC_MTU_SIZE				(L2CAP_MTU_SIZE - L2CAP_MIN_OFFSET - RFCOMM_DATA_OVERHEAD)
 #endif
+
+#define BTA_DISABLE_DELAY				1000
+
+#ifndef BTA_DISABLE_DELAY
+# define BTA_DISABLE_DELAY				200
+#endif
+
+/* GKI pools */
 
 #ifndef HCI_CMD_POOL_ID
 # define HCI_CMD_POOL_ID				GKI_POOL_ID_2
+#endif
+
+#define SDP_POOL_ID						GKI_POOL_ID_2
+
+#ifndef SDP_POOL_ID
+# define SDP_POOL_ID					GKI_POOL_ID_3
+#endif
+
+#ifndef RFCOMM_CMD_POOL_ID
+# define RFCOMM_CMD_POOL_ID				GKI_POOL_ID_2
+#endif
+
+#ifndef RFCOMM_DATA_POOL_ID
+# define RFCOMM_DATA_POOL_ID			GKI_POOL_ID_3
+#endif
+
+#ifndef RFCOMM_DATA_POOL_BUF_SIZE
+# define RFCOMM_DATA_POOL_BUF_SIZE		GKI_BUF3_SIZE
+#endif
+
+#ifndef L2CAP_CMD_POOL_ID
+# define L2CAP_CMD_POOL_ID				GKI_POOL_ID_2
 #endif
 
 #ifndef GAP_DATA_POOL_ID
 # define GAP_DATA_POOL_ID				GKI_POOL_ID_3
 #endif
 
-#ifndef L2CAP_MTU_SIZE
-# define L2CAP_MTU_SIZE					1691
-#endif
+/* Lower layer interface */
 
-#ifndef SDP_MAX_PROTOCOL_PARAMS
-# define SDP_MAX_PROTOCOL_PARAMS		2
-#endif
+#define HCI_GET_CMD_BUF(paramlen)		GKI_getpoolbuf(HCI_CMD_POOL_ID)
 
-void bte_hcisu_send(BT_HDR *p_msg, UINT16 event);
+/* HCI services */
+
 #ifndef HCI_ACL_DATA_TO_LOWER
-#define HCI_ACL_DATA_TO_LOWER(p)		\
-	bte_hcisu_send((BT_HDR *)(p), BT_EVT_TO_LM_HCI_ACL);
+#if !defined(BTE_HCI_H)
+void bte_hcisu_send(BT_HDR *p_msg, UINT16 event);
+#endif
+# define HCI_ACL_DATA_TO_LOWER(p)		bte_hcisu_send((BT_HDR *)(p), BT_EVT_TO_LM_HCI_ACL);
 #endif
 
-#ifndef HID_MAX_SVC_NAME_LEN
-# define HID_MAX_SVC_NAME_LEN			32
+#ifndef BTU_CMD_CMPL_TIMEOUT
+# define BTU_CMD_CMPL_TIMEOUT			8
 #endif
 
-#ifndef HID_MAX_SVC_DESCR_LEN
-# define HID_MAX_SVC_DESCR_LEN			32
+#define BT_1SEC_TIMEOUT					1
+
+#ifndef BT_1SEC_TIMEOUT
+# define BT_1SEC_TIMEOUT				2
 #endif
 
-#ifndef HID_MAX_PROV_NAME_LEN
-# define HID_MAX_PROV_NAME_LEN			32
+/* BTM */
+
+#define BTM_INQ_DB_SIZE					12
+
+#ifndef BTM_INQ_DB_SIZE
+# define BTM_INQ_DB_SIZE				40
 #endif
 
-#define HID_HOST_MAX_DEVICES			16
-
-#ifndef HID_HOST_MAX_DEVICES
-# define HID_HOST_MAX_DEVICES			7
+#ifndef BTM_DEFAULT_SCAN_TYPE
+# define BTM_DEFAULT_SCAN_TYPE			BTM_SCAN_TYPE_INTERLACED
 #endif
 
-#define SDP_MAX_ATTR_FILTERS			12
-
-#ifndef SDP_MAX_ATTR_FILTERS
-# define SDP_MAX_ATTR_FILTERS			15
+#ifndef BTM_DEFAULT_CONN_WINDOW
+# define BTM_DEFAULT_CONN_WINDOW		12
 #endif
 
-#ifndef SDP_MAX_UUID_FILTERS
-# define SDP_MAX_UUID_FILTERS			3
+#ifndef BTM_DEFAULT_CONN_INTERVAL
+# define BTM_DEFAULT_CONN_INTERVAL		2048
 #endif
 
-#define HID_HOST_MAX_CONN_RETRY			0
-
-#ifndef HID_HOST_MAX_CONN_RETRY
-# define HID_HOST_MAX_CONN_RETRY		3
+#ifndef BTM_DEFAULT_DISC_MODE
+# define BTM_DEFAULT_DISC_MODE			BTM_GENERAL_DISCOVERABLE
 #endif
 
-#ifndef HID_HOST_MTU
-# define HID_HOST_MTU					640
+#ifndef BTM_DEFAULT_DISC_WINDOW
+# define BTM_DEFAULT_DISC_WINDOW		12
 #endif
 
-#ifndef HID_HOST_FLUSH_TO
-# define HID_HOST_FLUSH_TO				0xffff
+#ifndef BTM_DEFAULT_DISC_INTERVAL
+# define BTM_DEFAULT_DISC_INTERVAL		2048
 #endif
 
-#ifndef HID_CONTROL_POOL_ID
-# define HID_CONTROL_POOL_ID			2
+/* Major service class: 0x400 - Telephony
+ * Major  device class:     1 - Phone
+ * Minor  device class:     1 - Cellular
+ */
+#define BTA_DM_COD						{0x40, 0x02, 0x04}
+
+#ifndef BTA_DM_COD
+# define BTA_DM_COD						{0x5a, 0x02, 0x0c}
 #endif
 
-#ifndef HID_INTERRUPT_POOL_ID
-# define HID_INTERRUPT_POOL_ID			2
+#define BTM_MAX_SCO_LINKS				3
+
+#ifndef BTM_MAX_SCO_LINKS
+# define BTM_MAX_SCO_LINKS				2
 #endif
 
-#ifndef HID_HOST_REPAGE_WIN
-# define HID_HOST_REPAGE_WIN			2
+#ifndef BTM_DEFAULT_SCO_MODE
+# define BTM_DEFAULT_SCO_MODE			2
 #endif
 
+#define BTM_SEC_MAX_DEVICE_RECORDS		16
+
+#ifndef BTM_SEC_MAX_DEVICE_RECORDS
+# define BTM_SEC_MAX_DEVICE_RECORDS		100
+#endif
+
+#define BTM_SEC_MAX_SERVICE_RECORDS		24
+
+#ifndef BTM_SEC_MAX_SERVICE_RECORDS
+# define BTM_SEC_MAX_SERVICE_RECORDS	32
+#endif
+
+#ifndef BTM_MAX_REM_BD_NAME_LEN
+# define BTM_MAX_REM_BD_NAME_LEN		248
+#endif
+
+#define BTM_MAX_LOC_BD_NAME_LEN			31
+
+#ifndef BTM_MAX_LOC_BD_NAME_LEN
+# define BTM_MAX_LOC_BD_NAME_LEN		248
+#endif
+
+#ifndef BTM_SEC_SERVICE_NAME_LEN
+# define BTM_SEC_SERVICE_NAME_LEN		BT_MAX_SERVICE_NAME_LEN
+#endif
+
+#ifndef BT_MAX_SERVICE_NAME_LEN
+# define BT_MAX_SERVICE_NAME_LEN		21
+#endif
+
+#ifndef BTM_PWR_MGR_INCLUDED
+# define BTM_PWR_MGR_INCLUDED			TRUE
+#endif
+
+#ifndef BTM_MAX_PM_RECORDS
+# define BTM_MAX_PM_RECORDS				2
+#endif
+
+/* L2CAP */
+
+// TODO: could this be resolved by configuring MAX_ACL_CONNECTIONS?
 #if 0
 #define MAX_ACL_CONNECTIONS				4
 
@@ -144,172 +223,32 @@ void bte_hcisu_send(BT_HDR *p_msg, UINT16 event);
 # define MAX_L2CAP_CLIENTS				15
 #endif
 
-#ifndef BTM_SEC_SERVICE_NAME_LEN
-# define BTM_SEC_SERVICE_NAME_LEN		BT_MAX_SERVICE_NAME_LEN
-#endif
-
-#ifndef BT_MAX_SERVICE_NAME_LEN
-# define BT_MAX_SERVICE_NAME_LEN		21
-#endif
-
-#ifndef L2CAP_LINK_STARTUP_TOUT
-# define L2CAP_LINK_STARTUP_TOUT		60
-#endif
-
-#ifndef BTM_MAX_PM_RECORDS
-# define BTM_MAX_PM_RECORDS				2
-#endif
-
-#define BTM_SEC_MAX_SERVICE_RECORDS		24
-
-#ifndef BTM_SEC_MAX_SERVICE_RECORDS
-# define BTM_SEC_MAX_SERVICE_RECORDS	32
-#endif
-
-#define BTM_SEC_MAX_DEVICE_RECORDS		16
-
-#ifndef BTM_SEC_MAX_DEVICE_RECORDS
-# define BTM_SEC_MAX_DEVICE_RECORDS		100
-#endif
-
-#define BTM_MAX_SCO_LINKS				3
-
-#ifndef BTM_MAX_SCO_LINKS
-# define BTM_MAX_SCO_LINKS				2
-#endif
-
-#define BTM_INQ_DB_SIZE					12
-
-#ifndef BTM_INQ_DB_SIZE
-# define BTM_INQ_DB_SIZE				40
-#endif
-
-#define BT_1SEC_TIMEOUT					1
-
-/* Use 2 seconds by default for low-resolution systems, override to 1 for
- * high-resolution systems
- */
-#ifndef BT_1SEC_TIMEOUT
-# define BT_1SEC_TIMEOUT				2
-#endif
-
 #define L2CAP_LINK_INACTIVITY_TOUT		2
 
 #ifndef L2CAP_LINK_INACTIVITY_TOUT
 # define L2CAP_LINK_INACTIVITY_TOUT		4
 #endif
 
-#ifndef L2CAP_CMD_POOL_ID
-# define L2CAP_CMD_POOL_ID				GKI_POOL_ID_2
+#ifndef L2CAP_LINK_STARTUP_TOUT
+# define L2CAP_LINK_STARTUP_TOUT		60
 #endif
 
-#ifndef L2CAP_EXTFEA_SUPPORTED_MASK
-# define L2CAP_EXTFEA_SUPPORTED_MASK	(L2CAP_EXTFEA_ENH_RETRANS | L2CAP_EXTFEA_STREAM_MODE | L2CAP_EXTFEA_NO_CRC | L2CAP_EXTFEA_FIXED_CHNLS)
+#ifndef L2CAP_MTU_SIZE
+# define L2CAP_MTU_SIZE					1691
 #endif
 
-#define L2CAP_FEATURE_REQ_ID			73
-#define L2CAP_FEATURE_RSP_ID			173
-
-#define BTM_MAX_LOC_BD_NAME_LEN			31
-
-#ifndef BTM_MAX_LOC_BD_NAME_LEN
-# define BTM_MAX_LOC_BD_NAME_LEN		248
+#ifndef L2CAP_HOST_FC_ACL_BUFS
+# define L2CAP_HOST_FC_ACL_BUFS			20
 #endif
 
-#define MAX_RFC_PORTS					5
-
-#ifndef MAX_RFC_PORTS
-# define MAX_RFC_PORTS					30
+#ifndef L2CAP_DESIRED_LINK_ROLE
+# define L2CAP_DESIRED_LINK_ROLE		HCI_ROLE_SLAVE
 #endif
 
-#if 0
-#ifndef MAX_ACL_CONNECTIONS
-# define MAX_BD_CONNECTIONS				7
-#else
-# define MAX_BD_CONNECTIONS				MAX_ACL_CONNECTIONS
-#endif
-#else
-# define MAX_BD_CONNECTIONS				1
-#endif
+/* SDP */
 
-#define PORT_TX_BUF_CRITICAL_WM			22
-
-#ifndef PORT_TX_BUF_CRITICAL_WM
-# define PORT_TX_BUF_CRITICAL_WM		15
-#endif
-
-#define PORT_TX_CRITICAL_WM				10000
-
-#ifndef PORT_TX_CRITICAL_WM
-# define PORT_TX_CRITICAL_WM			(BTA_RFC_MTU_SIZE * PORT_TX_BUF_CRITICAL_WM)
-#endif
-
-// L2CAP_MIN_OFFSET is in l2c_api.h
-// RFCOMM_DATA_OVERHEAD is in rfcdefs.h
-#ifndef BTA_RFC_MTU_SIZE
-# define BTA_RFC_MTU_SIZE				(L2CAP_MTU_SIZE - L2CAP_MIN_OFFSET - RFCOMM_DATA_OVERHEAD)
-#endif
-
-#ifndef RFCOMM_DATA_POOL_ID
-# define RFCOMM_DATA_POOL_ID			GKI_POOL_ID_3
-#endif
-
-#ifndef RFCOMM_DATA_POOL_BUF_SIZE
-# define RFCOMM_DATA_POOL_BUF_SIZE		GKI_BUF3_SIZE
-#endif
-
-#define PORT_TX_BUF_HIGH_WM				16
-
-#ifndef PORT_TX_BUF_HIGH_WM
-# define PORT_TX_BUF_HIGH_WM			10
-#endif
-
-#define PORT_TX_HIGH_WM					8000
-
-#ifndef PORT_TX_HIGH_WM
-# define PORT_TX_HIGH_WM				(BTA_RFC_MTU_SIZE * PORT_TX_BUF_HIGH_WM)
-#endif
-
-#ifndef RFCOMM_CMD_POOL_ID
-# define RFCOMM_CMD_POOL_ID				GKI_POOL_ID_2
-#endif
-
-#ifndef PORT_FC_DEFAULT
-# define PORT_FC_DEFAULT				PORT_FC_CREDIT
-#endif
-
-#ifndef PORT_RX_BUF_CRITICAL_WM
-# define PORT_RX_BUF_CRITICAL_WM		15
-#endif
-
-#define PORT_RX_CRITICAL_WM				12000
-
-#ifndef PORT_RX_CRITICAL_WM
-# define PORT_RX_CRITICAL_WM			(BTA_RFC_MTU_SIZE * PORT_RX_BUF_CRITICAL_WM)
-#endif
-
-#define PORT_RX_BUF_HIGH_WM				16
-
-#ifndef PORT_RX_BUF_HIGH_WM
-# define PORT_RX_BUF_HIGH_WM			10
-#endif
-
-#define PORT_RX_HIGH_WM					8000
-
-#ifndef PORT_RX_HIGH_WM
-# define PORT_RX_HIGH_WM				(BTA_RFC_MTU_SIZE * PORT_RX_BUF_HIGH_WM)
-#endif
-
-#define PORT_RX_BUF_LOW_WM				8
-
-#ifndef PORT_RX_BUF_LOW_WM
-# define PORT_RX_BUF_LOW_WM				4
-#endif
-
-#define PORT_RX_LOW_WM					5000
-
-#ifndef PORT_RX_LOW_WM
-# define PORT_RX_LOW_WM					(BTA_RFC_MTU_SIZE * PORT_RX_BUF_LOW_WM)
+#ifndef SDP_MAX_RECORDS
+# define SDP_MAX_RECORDS				20
 #endif
 
 #ifndef SDP_MAX_REC_ATTR
@@ -322,32 +261,43 @@ void bte_hcisu_send(BT_HDR *p_msg, UINT16 event);
 # define SDP_MAX_PAD_LEN				600
 #endif
 
+#define SDP_MAX_ATTR_LEN				80
+
+#ifndef SDP_MAX_ATTR_LEN
+# if defined(HID_DEV_INCLUDED) && HID_DEV_INCLUDED == TRUE
+// probably went here
+#  define SDP_MAX_ATTR_LEN				80
+# else
+#  define SDP_MAX_ATTR_LEN				100
+# endif
+#endif
+
+#define SDP_MAX_ATTR_FILTERS			12
+
+#ifndef SDP_MAX_ATTR_FILTERS
+# define SDP_MAX_ATTR_FILTERS			15
+#endif
+
+#ifndef SDP_MAX_UUID_FILTERS
+# define SDP_MAX_UUID_FILTERS			3
+#endif
+
 #ifndef SDP_MAX_DISC_SERVER_RECS
 # define SDP_MAX_DISC_SERVER_RECS		21
-#endif
-
-#ifndef SDP_MAX_RECORDS
-# define SDP_MAX_RECORDS				20
-#endif
-
-#ifndef SDP_MAX_CONNECTIONS
-# define SDP_MAX_CONNECTIONS			4
-#endif
-
-#define SDP_POOL_ID						GKI_POOL_ID_2
-
-#ifndef SDP_POOL_ID
-# define SDP_POOL_ID					GKI_POOL_ID_3
-#endif
-
-#ifndef SDP_RAW_DATA_INCLUDED
-# define SDP_RAW_DATA_INCLUDED			TRUE
 #endif
 
 #define SDP_MAX_LIST_BYTE_COUNT			1000
 
 #ifndef SDP_MAX_LIST_BYTE_COUNT
 # define SDP_MAX_LIST_BYTE_COUNT		0x1000
+#endif
+
+#ifndef SDP_MAX_PROTOCOL_PARAMS
+# define SDP_MAX_PROTOCOL_PARAMS		2
+#endif
+
+#ifndef SDP_MAX_CONNECTIONS
+# define SDP_MAX_CONNECTIONS			4
 #endif
 
 #ifndef SDP_MTU_SIZE
@@ -366,62 +316,155 @@ void bte_hcisu_send(BT_HDR *p_msg, UINT16 event);
 # define SDP_SECURITY_LEVEL				BTM_SEC_NONE
 #endif
 
-#define BTA_DISABLE_DELAY				1000
+/* RFCOMM */
 
-#ifndef BTA_DISABLE_DELAY
-# define BTA_DISABLE_DELAY				200
+#define MAX_RFC_PORTS					5
+
+#ifndef MAX_RFC_PORTS
+# define MAX_RFC_PORTS					30
 #endif
 
-#ifndef L2CAP_DESIRED_LINK_ROLE
-# define L2CAP_DESIRED_LINK_ROLE		HCI_ROLE_SLAVE
+// Well I guess not since this is different than MAX_L2CAP_LINKS
+#if 0
+#define MAX_ACL_CONNECTIONS				4
+
+#ifndef MAX_ACL_CONNECTIONS
+# define MAX_BD_CONNECTIONS				7
+#else
+# define MAX_BD_CONNECTIONS				MAX_ACL_CONNECTIONS
+#endif
+#else
+# define MAX_BD_CONNECTIONS				1
 #endif
 
-#define HCI_GET_CMD_BUF(paramlen)    ((BT_HDR *)GKI_getpoolbuf (HCI_CMD_POOL_ID))
+#define PORT_RX_LOW_WM					5000
 
-#ifndef BTU_CMD_CMPL_TIMEOUT
-# define BTU_CMD_CMPL_TIMEOUT			8
+#ifndef PORT_RX_LOW_WM
+# define PORT_RX_LOW_WM					(BTA_RFC_MTU_SIZE * PORT_RX_BUF_LOW_WM)
 #endif
 
-#ifndef L2CAP_HOST_FC_ACL_BUFS
-# define L2CAP_HOST_FC_ACL_BUFS			20
+#define PORT_RX_HIGH_WM					8000
+
+#ifndef PORT_RX_HIGH_WM
+# define PORT_RX_HIGH_WM				(BTA_RFC_MTU_SIZE * PORT_RX_BUF_HIGH_WM)
 #endif
 
-#ifndef BTM_DEFAULT_CONN_WINDOW
-# define BTM_DEFAULT_CONN_WINDOW		0x0012
+#define PORT_RX_CRITICAL_WM				12000
+
+#ifndef PORT_RX_CRITICAL_WM
+# define PORT_RX_CRITICAL_WM			(BTA_RFC_MTU_SIZE * PORT_RX_BUF_CRITICAL_WM)
 #endif
 
-#ifndef BTM_DEFAULT_CONN_INTERVAL
-# define BTM_DEFAULT_CONN_INTERVAL		0x0800
+#define PORT_RX_BUF_LOW_WM				8
+
+#ifndef PORT_RX_BUF_LOW_WM
+# define PORT_RX_BUF_LOW_WM				4
 #endif
 
-#ifndef BTM_DEFAULT_DISC_MODE
-# define BTM_DEFAULT_DISC_MODE			BTM_GENERAL_DISCOVERABLE
+#define PORT_RX_BUF_HIGH_WM				16
+
+#ifndef PORT_RX_BUF_HIGH_WM
+# define PORT_RX_BUF_HIGH_WM			10
 #endif
 
-#ifndef BTM_DEFAULT_DISC_WINDOW
-# define BTM_DEFAULT_DISC_WINDOW		0x0012
+#ifndef PORT_RX_BUF_CRITICAL_WM
+# define PORT_RX_BUF_CRITICAL_WM		15
 #endif
 
-#ifndef BTM_DEFAULT_DISC_INTERVAL
-# define BTM_DEFAULT_DISC_INTERVAL		0x0800
+#define PORT_TX_HIGH_WM					8000
+
+#ifndef PORT_TX_HIGH_WM
+# define PORT_TX_HIGH_WM				(BTA_RFC_MTU_SIZE * PORT_TX_BUF_HIGH_WM)
 #endif
 
-#ifndef BTM_DEFAULT_SCAN_TYPE
-# define BTM_DEFAULT_SCAN_TYPE			BTM_SCAN_TYPE_INTERLACED
+#define PORT_TX_CRITICAL_WM				10000
+
+#ifndef PORT_TX_CRITICAL_WM
+# define PORT_TX_CRITICAL_WM			(BTA_RFC_MTU_SIZE * PORT_TX_BUF_CRITICAL_WM)
 #endif
 
-#ifndef BTM_PWR_MGR_INCLUDED
-# define BTM_PWR_MGR_INCLUDED			TRUE
+#define PORT_TX_BUF_HIGH_WM				16
+
+#ifndef PORT_TX_BUF_HIGH_WM
+# define PORT_TX_BUF_HIGH_WM			10
 #endif
 
-#ifndef BTM_DEFAULT_SCO_MODE
-# define BTM_DEFAULT_SCO_MODE			2
+#define PORT_TX_BUF_CRITICAL_WM			22
+
+#ifndef PORT_TX_BUF_CRITICAL_WM
+# define PORT_TX_BUF_CRITICAL_WM		15
 #endif
 
-#define BTA_DM_COD						{0x40, 0x02, 0x04}
-
-#ifndef BTA_DM_COD
-# define BTA_DM_COD						{0x5a, 0x02, 0x0c}
+#ifndef PORT_FC_DEFAULT
+# define PORT_FC_DEFAULT				PORT_FC_CREDIT
 #endif
+
+/* GAP */
+
+#ifndef GAP_MAX_CONNECTIONS
+# define GAP_MAX_CONNECTIONS			8
+#endif
+
+/* SPP */
+
+#ifndef SDP_RAW_DATA_INCLUDED
+# define SDP_RAW_DATA_INCLUDED			TRUE
+#endif
+
+/* HID */
+
+#ifndef HID_CONTROL_POOL_ID
+# define HID_CONTROL_POOL_ID			GKI_POOL_ID_2
+#endif
+
+#ifndef HID_INTERRUPT_POOL_ID
+# define HID_INTERRUPT_POOL_ID			GKI_POOL_ID_2
+#endif
+
+/* HID Host & Device */
+
+#ifndef HID_MAX_SVC_NAME_LEN
+# define HID_MAX_SVC_NAME_LEN			32
+#endif
+
+#ifndef HID_MAX_SVC_DESCR_LEN
+# define HID_MAX_SVC_DESCR_LEN			32
+#endif
+
+#ifndef HID_MAX_PROV_NAME_LEN
+# define HID_MAX_PROV_NAME_LEN			32
+#endif
+
+/* HID Host */
+
+#define HID_HOST_MAX_DEVICES			16
+
+#ifndef HID_HOST_MAX_DEVICES
+# define HID_HOST_MAX_DEVICES			7
+#endif
+
+#ifndef HID_HOST_MTU
+# define HID_HOST_MTU					640
+#endif
+
+#ifndef HID_HOST_FLUSH_TO
+# define HID_HOST_FLUSH_TO				0xffff
+#endif
+
+#define HID_HOST_MAX_CONN_RETRY			0
+
+#ifndef HID_HOST_MAX_CONN_RETRY
+# define HID_HOST_MAX_CONN_RETRY		3
+#endif
+
+#ifndef HID_HOST_REPAGE_WIN
+# define HID_HOST_REPAGE_WIN			2
+#endif
+
+/* Application Task */
+
+#define L2CAP_FEATURE_REQ_ID			73
+
+#define L2CAP_FEATURE_RSP_ID			173
 
 #endif // BTE_BT_TARGET_H

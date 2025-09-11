@@ -33,7 +33,7 @@
 #include "data_types.h"
 
 /*******************************************************************************
- * log functions
+ * Log functions
  */
 
 #ifdef __cplusplus
@@ -88,6 +88,13 @@ extern void LogMsg_6(UINT32 trace_mask, char const *fmt_str, UINT32 p1, UINT32 p
 		TRACE_MASK(ctrl_, layer_, org_, type_),					\
 		BDLT_CAST_ARGS(__VA_ARGS__)								\
 	)
+
+#define BDLT_TRACE_COND(max_level_, ctrl_, layer_, origin_, type_, ...)	\
+	do																	\
+	{																	\
+		if ((max_level_) >= BT_TRACE_LEVEL_ ## type_)					\
+			BDLT_TRACE(ctrl_, layer_, origin_, type_, __VA_ARGS__);		\
+	} while (FALSE)
 
 // clang-format on
 
@@ -156,17 +163,10 @@ extern void LogMsg_6(UINT32 trace_mask, char const *fmt_str, UINT32 p1, UINT32 p
 // clang-format on
 
 /*******************************************************************************
- * trace macros
+ * Trace macros
  */
 
 // clang-format off
-
-#define BDLT_TRACE_COND(max_level_, ctrl_, layer_, origin_, type_, ...)	\
-	do																	\
-	{																	\
-		if ((max_level_) >= BT_TRACE_LEVEL_ ## type_)					\
-			BDLT_TRACE(ctrl_, layer_, origin_, type_, __VA_ARGS__);		\
-	} while (FALSE)
 
 #define   APPL_TRACE(        type_, ...)	BDLT_TRACE_COND(         appl_trace_level, GENERAL,   NONE,  APPL, type_, __VA_ARGS__)
 #define     BT_TRACE(layer_, type_, ...)	BDLT_TRACE     (                           GENERAL, layer_, STACK, type_, __VA_ARGS__)

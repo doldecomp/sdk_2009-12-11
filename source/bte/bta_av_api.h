@@ -27,14 +27,6 @@
 /* Includes changes by muff1n1634 */
 
 /*******************************************************************************
- * headers
- */
-
-/*******************************************************************************
- * macros
- */
-
-/*******************************************************************************
  * types
  */
 
@@ -45,9 +37,9 @@
 // TODO
 typedef struct
 {
-	char	at_0x00[0x18];	// size 0x18, offset 0x00
-	void	*at_0x18;		// size 0x04, offset 0x18
-	void	*at_0x1c;		// size 0x04, offset 0x1c
+	char unsigned	at_0x00[0x18];	// size 0x18, offset 0x00
+	void			*at_0x18;		// size 0x04, offset 0x18
+	void			*at_0x1c;		// size 0x04, offset 0x1c
 } tBTA_AV_CFG; // size 0x20
 
 #ifdef __cplusplus

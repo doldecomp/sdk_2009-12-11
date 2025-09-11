@@ -46,15 +46,15 @@
 	extern "C" {
 #endif
 
-typedef uint8_t UINT8;
-typedef uint16_t UINT16;
-typedef uint32_t UINT32;
+typedef int_least8_t INT8;
+typedef int_least16_t INT16;
+typedef int_least32_t INT32;
 
-typedef int8_t INT8;
-typedef int16_t INT16;
-typedef int32_t INT32;
+typedef uint_least8_t UINT8;
+typedef uint_least16_t UINT16;
+typedef uint_least32_t UINT32;
 
-typedef uint8_t BOOLEAN;
+typedef unsigned char BOOLEAN;
 
 #ifndef TRUE
 # define TRUE	1

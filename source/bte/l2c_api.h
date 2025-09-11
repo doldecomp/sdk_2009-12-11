@@ -37,27 +37,9 @@
  * macros
  */
 
-#define L2CAP_FCR_BASIC_MODE		0x00
+#define L2CAP_MIN_OFFSET		9 // NOTE: not 13
 
-#define L2CAP_MIN_OFFSET			9 // NOTE: not 13
-
-#define L2C_INVALID_PSM(psm)		(((psm) & 0x0101) != 0x0001)
-
-#define L2CAP_FLUSHABLE_CH_BASED	0x0000
-
-#define L2CAP_DW_FAILED				0
-#define L2CAP_DW_SUCCESS			1
-#define L2CAP_DW_CONGESTED			2
-
-#define L2CAP_PRIORITY_HIGH         1
-
-#define L2CAP_PING_RESULT_OK        0       /* Ping reply received OK     */
-#define L2CAP_PING_RESULT_NO_LINK   1       /* Link could not be setup    */
-#define L2CAP_PING_RESULT_NO_RESP   2       /* Remote L2CAP did not reply */
-
-#define L2CAP_PRIORITY_NORMAL       0
-#define L2CAP_PRIORITY_HIGH         1
-
+#define L2C_INVALID_PSM(psm)	(((psm) & 0x0101) != 0x0001)
 
 /*******************************************************************************
  * types
@@ -66,6 +48,36 @@
 #ifdef __cplusplus
 	extern "C" {
 #endif
+
+enum
+{
+	L2CAP_PING_RESULT_OK,
+	L2CAP_PING_RESULT_NO_LINK,
+	L2CAP_PING_RESULT_NO_RESP,
+};
+
+enum
+{
+	L2CAP_DW_FAILED,
+	L2CAP_DW_SUCCESS,
+	L2CAP_DW_CONGESTED,
+};
+
+enum
+{
+	L2CAP_PRIORITY_NORMAL,
+	L2CAP_PRIORITY_HIGH,
+};
+
+enum
+{
+	L2CAP_FLUSHABLE_CH_BASED	= 0,
+};
+
+enum
+{
+	L2CAP_FCR_BASIC_MODE	= 0,
+};
 
 typedef void tL2CA_ECHO_RSP_CB(UINT16);
 
@@ -104,16 +116,17 @@ typedef struct
 	UINT16			flags;				// size 0x02, offset 0x38
 } tL2CAP_CFG_INFO; // size 0x3c
 
-typedef void tL2CA_CONNECT_IND_CB(BD_ADDR, UINT16, UINT16, UINT8);
-typedef void tL2CA_CONNECT_CFM_CB(UINT16, UINT16);
+typedef void tL2CA_CONNECT_IND_CB(BD_ADDR bd_addr, UINT16 lcid, UINT16 psm,
+                                  UINT8 id);
+typedef void tL2CA_CONNECT_CFM_CB(UINT16 lcid, UINT16 result);
 typedef void tL2CA_CONNECT_PND_CB(UINT16);
-typedef void tL2CA_CONFIG_IND_CB(UINT16, tL2CAP_CFG_INFO *);
-typedef void tL2CA_CONFIG_CFM_CB(UINT16, tL2CAP_CFG_INFO *);
-typedef void tL2CA_DISCONNECT_IND_CB(UINT16, BOOLEAN);
-typedef void tL2CA_DISCONNECT_CFM_CB(UINT16, UINT16);
-typedef void tL2CA_QOS_VIOLATION_IND_CB(BD_ADDR);
-typedef void tL2CA_DATA_IND_CB(UINT16, BT_HDR *);
-typedef void tL2CA_CONGESTION_STATUS_CB(UINT16, BOOLEAN);
+typedef void tL2CA_CONFIG_IND_CB(UINT16 lcid, tL2CAP_CFG_INFO *p_cfg);
+typedef void tL2CA_CONFIG_CFM_CB(UINT16 lcid, tL2CAP_CFG_INFO *p_cfg);
+typedef void tL2CA_DISCONNECT_IND_CB(UINT16 lcid, BOOLEAN is_conf_needed);
+typedef void tL2CA_DISCONNECT_CFM_CB(UINT16 lcid, UINT16 result);
+typedef void tL2CA_QOS_VIOLATION_IND_CB(BD_ADDR bd_addr);
+typedef void tL2CA_DATA_IND_CB(UINT16 lcid, BT_HDR *p_buf);
+typedef void tL2CA_CONGESTION_STATUS_CB(UINT16 lcid, BOOLEAN is_congested);
 
 typedef struct
 {
@@ -132,10 +145,6 @@ typedef struct
 typedef BOOLEAN tL2CA_COMPRESS_CB(BD_ADDR peer_addr, signed, signed, signed,
                                   signed, signed, signed, UINT8 **p_mem_pool,
                                   UINT32 *mem_pool_size);
-
-/*******************************************************************************
- * external globals
- */
 
 /*******************************************************************************
  * functions

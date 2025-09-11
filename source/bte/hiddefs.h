@@ -43,36 +43,6 @@
 #define HID_GET_PARAM_FROM_HDR(x)	( (x)       & 0x0f)
 #define HID_BUILD_HDR(t, p)			(UINT8)(((t) << 4) | ((p) & 0x0f))
 
-#define HID_PAR_PROTOCOL_BOOT_MODE	0x00
-#define HID_PAR_PROTOCOL_REPORT		0x01
-#define HID_PAR_REP_TYPE_MASK		0x03
-
-#define HID_TRANS_HANDSHAKE			0
-#define HID_TRANS_CONTROL			1
-#define HID_TRANS_GET_REPORT		4
-#define HID_TRANS_SET_REPORT		5
-#define HID_TRANS_GET_PROTOCOL		6
-#define HID_TRANS_SET_PROTOCOL		7
-#define HID_TRANS_GET_IDLE			8
-#define HID_TRANS_SET_IDLE			9
-#define HID_TRANS_DATA				10
-#define HID_TRANS_DATAC				11
-
-#define HID_PAR_CONTROL_VIRTUAL_CABLE_UNPLUG        (5)
-
-#define HID_L2CAP_CONN_FAIL	0x0100
-#define HID_L2CAP_REQ_FAIL	0x0200
-#define HID_L2CAP_CFG_FAIL	0x0400
-
-#define HID_PAR_HANDSHAKE_RSP_SUCCESS               (0)
-#define HID_PAR_HANDSHAKE_RSP_NOT_READY             (1)
-#define HID_PAR_HANDSHAKE_RSP_ERR_INVALID_REP_ID    (2)
-#define HID_PAR_HANDSHAKE_RSP_ERR_UNSUPPORTED_REQ   (3)
-#define HID_PAR_HANDSHAKE_RSP_ERR_INVALID_PARAM     (4)
-#define HID_PAR_HANDSHAKE_RSP_ERR_UNKNOWN           (14)
-#define HID_PAR_HANDSHAKE_RSP_ERR_FATAL             (15)
-
-
 /*******************************************************************************
  * types
  */
@@ -104,7 +74,52 @@ enum
 	HID_ERR_AUTH_FAILED,
 	HID_ERR_SDP_BUSY,
 
-	HID_ERR_INVALID = 0xFF
+	HID_ERR_INVALID = 0xff
+};
+
+enum
+{
+	HID_L2CAP_CONN_FAIL	= 1 <<  8,
+	HID_L2CAP_REQ_FAIL	= 1 <<  9,
+	HID_L2CAP_CFG_FAIL	= 1 << 10,
+};
+
+enum
+{
+	HID_TRANS_HANDSHAKE		= 0,
+	HID_TRANS_CONTROL		= 1,
+	HID_TRANS_GET_REPORT	= 4,
+	HID_TRANS_SET_REPORT	= 5,
+	HID_TRANS_GET_PROTOCOL	= 6,
+	HID_TRANS_SET_PROTOCOL	= 7,
+	HID_TRANS_GET_IDLE		= 8,
+	HID_TRANS_SET_IDLE		= 9,
+	HID_TRANS_DATA			= 10,
+	HID_TRANS_DATAC			= 11,
+};
+
+enum
+{
+	HID_PAR_HANDSHAKE_RSP_SUCCESS				= 0,
+	HID_PAR_HANDSHAKE_RSP_NOT_READY				= 1,
+	HID_PAR_HANDSHAKE_RSP_ERR_INVALID_REP_ID	= 2,
+	HID_PAR_HANDSHAKE_RSP_ERR_UNSUPPORTED_REQ	= 3,
+	HID_PAR_HANDSHAKE_RSP_ERR_INVALID_PARAM		= 4,
+	HID_PAR_HANDSHAKE_RSP_ERR_UNKNOWN			= 14,
+	HID_PAR_HANDSHAKE_RSP_ERR_FATAL				= 15,
+};
+
+enum
+{
+	HID_PAR_CONTROL_VIRTUAL_CABLE_UNPLUG	= 5,
+};
+
+enum
+{
+	HID_PAR_PROTOCOL_BOOT_MODE,
+	HID_PAR_PROTOCOL_REPORT,
+
+	HID_PAR_REP_TYPE_MASK = 0x03
 };
 
 typedef struct desc_info
@@ -127,14 +142,6 @@ typedef struct sdp_info
 	tHID_DEV_DSCP_INFO	dscp_info;							// size 0x08, offset 0x68
 	tSDP_DISC_REC		*p_sdp_layer_rec;					// size 0x04, offset 0x70
 } tHID_DEV_SDP_INFO; // size 0x74
-
-/*******************************************************************************
- * external globals
- */
-
-/*******************************************************************************
- * functions
- */
 
 #ifdef __cplusplus
 	}

@@ -2,12 +2,6 @@
 #define BTE_BTA_SS_API_H
 
 /*******************************************************************************
- * headers
- */
-
-#include "data_types.h"
-
-/*******************************************************************************
  * types
  */
 
@@ -17,7 +11,7 @@
 
 typedef struct
 {
-	UINT8	at_0x00[4];	// size 0x04, offset 0x00
+	char unsigned	at_0x00[4];	// size 0x04, offset 0x00
 } tBTA_SS_CFG; // size 0x04
 
 #ifdef __cplusplus

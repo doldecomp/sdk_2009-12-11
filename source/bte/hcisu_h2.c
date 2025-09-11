@@ -235,7 +235,8 @@ UINT16 hcisu_h2_receive_msg(UINT16 param_1, tHCISU_H2_CB *p_cb)
 					msg_len = (msg_len << 8) + p_cb->at_0x17[param_1];
 
 					if ((p_cb->at_0x00[param_1] =
-					         l2cap_link_chk_pkt_start(p_cb->at_0x00[param_1]))
+					         (HC_BT_HDR *)l2cap_link_chk_pkt_start(
+								 (BT_HDR *)p_cb->at_0x00[param_1]))
 					    == 0)
 					{
 						p_cb->at_0x0c[param_1] = msg_len;

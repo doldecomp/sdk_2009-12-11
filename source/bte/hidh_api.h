@@ -37,22 +37,6 @@
 #include "sdp_api.h"
 
 /*******************************************************************************
- * macros
- */
-
-#define HID_VIRTUAL_CABLE			(1 << 0)
-#define HID_NORMALLY_CONNECTABLE	(1 << 1)
-#define HID_RECONN_INIT				(1 << 2)
-#define HID_SDP_DISABLE				(1 << 3)
-#define HID_BATTERY_POWER			(1 << 4)
-#define HID_REMOTE_WAKE				(1 << 5)
-#define HID_SUP_TOUT_AVLBL			(1 << 6)
-#define HID_SSR_MAX_LATENCY			(1 << 7)
-#define HID_SSR_MIN_TOUT			(1 << 8)
-
-#define HID_SEC_REQUIRED			0x8000
-
-/*******************************************************************************
  * types
  */
 
@@ -68,6 +52,21 @@ enum
 
 enum
 {
+	HID_VIRTUAL_CABLE			= 1 <<  0,
+	HID_NORMALLY_CONNECTABLE	= 1 <<  1,
+	HID_RECONN_INIT				= 1 <<  2,
+	HID_SDP_DISABLE				= 1 <<  3,
+	HID_BATTERY_POWER			= 1 <<  4,
+	HID_REMOTE_WAKE				= 1 <<  5,
+	HID_SUP_TOUT_AVLBL			= 1 <<  6,
+	HID_SSR_MAX_LATENCY			= 1 <<  7,
+	HID_SSR_MIN_TOUT			= 1 <<  8,
+
+	HID_SEC_REQUIRED			= 1 << 15,
+};
+
+enum
+{
 	HID_HDEV_EVT_OPEN,
 	HID_HDEV_EVT_CLOSE,
 	HID_HDEV_EVT_RETRYING,
@@ -79,20 +78,15 @@ enum
 	HID_HDEV_EVT_VC_UNPLUG,
 };
 
-typedef void tHID_HOST_DEV_CALLBACK(UINT8 dev_handle, UINT8 event, UINT32 data,
-                                    BT_HDR *p_buf);
-
 typedef void tHID_HOST_SDP_CALLBACK(UINT16 result, UINT16 attr_mask,
                                     tHID_DEV_SDP_INFO *sdp_rec);
 
-/*******************************************************************************
- * external globals
- */
+typedef void tHID_HOST_DEV_CALLBACK(UINT8 dev_handle, UINT8 event, UINT32 data,
+                                    BT_HDR *p_buf);
 
 /*******************************************************************************
  * functions
  */
-
 
 tHID_STATUS HID_HostGetSDPRecord(BD_ADDR addr, tSDP_DISCOVERY_DB *p_db,
                                  UINT32 db_len,

@@ -42,21 +42,13 @@
  * macros
  */
 
-#define     MAX_UUIDS_PER_SEQ       16
-#define     MAX_ATTR_PER_SEQ        16
+#define SDP_CONTINUATION_LEN		2
+#define SDP_MAX_CONTINUATION_LEN	16
 
-#define  SDP_PDU_ERROR_RESPONSE                 0x01
-#define  SDP_PDU_SERVICE_SEARCH_REQ             0x02
-#define  SDP_PDU_SERVICE_SEARCH_RSP             0x03
-#define  SDP_PDU_SERVICE_ATTR_REQ               0x04
-#define  SDP_PDU_SERVICE_ATTR_RSP               0x05
-#define  SDP_PDU_SERVICE_SEARCH_ATTR_REQ        0x06
-#define  SDP_PDU_SERVICE_SEARCH_ATTR_RSP        0x07
+#define SDP_INACT_TIMEOUT			30
 
-#define SDP_CONTINUATION_LEN        2
-#define SDP_MAX_CONTINUATION_LEN    16          /* As per the spec */
-
-#define SDP_INACT_TIMEOUT       30              /* Inactivity timeout         */
+#define MAX_UUIDS_PER_SEQ			16
+#define MAX_ATTR_PER_SEQ			16
 
 /*******************************************************************************
  * types
@@ -66,103 +58,132 @@
 	extern "C" {
 #endif
 
-typedef struct
+enum
 {
-    UINT32  len;           /* Number of bytes in the entry */
-    UINT8   *value_ptr;    /* Points to attr_pad */
-    UINT16  id;
-    UINT8   type;
-} tSDP_ATTRIBUTE;
+	SDP_PDU_ERROR_RESPONSE = 1,
+	SDP_PDU_SERVICE_SEARCH_REQ,
+	SDP_PDU_SERVICE_SEARCH_RSP,
+	SDP_PDU_SERVICE_ATTR_REQ,
+	SDP_PDU_SERVICE_ATTR_RSP,
+	SDP_PDU_SERVICE_SEARCH_ATTR_REQ,
+	SDP_PDU_SERVICE_SEARCH_ATTR_RSP,
+};
 
-typedef struct
+typedef UINT8 tCONN_CB_STATE;
+enum
 {
-    UINT32              record_handle;
-    UINT32              free_pad_ptr;
-    UINT16              num_attributes;
-    tSDP_ATTRIBUTE      attribute[SDP_MAX_REC_ATTR];
-    UINT8               attr_pad[SDP_MAX_PAD_LEN];
-} tSDP_RECORD;
+	SDP_STATE_IDLE,
+	SDP_STATE_CONN_SETUP,
+	SDP_STATE_CFG_SETUP,
+	SDP_STATE_CONNECTED,
+};
 
-#define SDP_STATE_IDLE              0
-#define SDP_STATE_CONN_SETUP        1
-#define SDP_STATE_CFG_SETUP         2
-#define SDP_STATE_CONNECTED         3
-
-#define SDP_FLAGS_IS_ORIG           0x01
-#define SDP_FLAGS_HIS_CFG_DONE      0x02
-#define SDP_FLAGS_MY_CFG_DONE       0x04
-
-#define SDP_DISC_WAIT_CONN          0
-#define SDP_DISC_WAIT_HANDLES       1
-#define SDP_DISC_WAIT_ATTR          2
-#define SDP_DISC_WAIT_SEARCH_ATTR   3
-#define SDP_DISC_WAIT_PASS_THRU     4
-#define SDP_DISC_WAIT_CANCEL        5
-
-typedef struct
+typedef UINT8 tCONN_CB_FLAGS;
+enum
 {
-    UINT8             con_state;
-    UINT8             con_flags;
-    BD_ADDR           device_address;
-    TIMER_LIST_ENT    timer_entry;
-    UINT16            rem_mtu_size;
-    UINT16            connection_id;
-    UINT16            list_len;
-    UINT8             rsp_list[1000];
-    tSDP_DISCOVERY_DB *p_db;
-    tSDP_DISC_CMPL_CB *p_cb;
-    UINT32            handles[SDP_MAX_DISC_SERVER_RECS];
-    UINT16            num_handles;
-    UINT16            cur_handle;
-    UINT16            transaction_id;
-    UINT16            disconnect_reason;
-    UINT8             disc_state;
-    UINT8             is_attr_search;
-    UINT16            cont_offset;
-} tCONN_CB;
+	SDP_FLAGS_IS_ORIG			= 1 << 0,
+	SDP_FLAGS_THEIR_CFG_DONE	= 1 << 1,
+	SDP_FLAGS_OUR_CFG_DONE		= 1 << 2,
+};
+
+typedef UINT8 tCONN_CB_DISC_STATE;
+enum
+{
+	SDP_DISC_WAIT_CONN,
+	SDP_DISC_WAIT_HANDLES,
+	SDP_DISC_WAIT_ATTR,
+	SDP_DISC_WAIT_SEARCH_ATTR,
+	SDP_DISC_WAIT_PASS_THRU,
+	SDP_DISC_WAIT_CANCEL,
+};
 
 typedef struct
 {
-    UINT32         di_primary_handle;       /* Device ID Primary record or NULL if nonexistent */
-    BOOLEAN        brcm_di_registered;
-    UINT16         num_records;
-    tSDP_RECORD    record[SDP_MAX_RECORDS];
-} tSDP_DB;
+	UINT16	len;					// size 0x02, offset 0x00
+	UINT8	value[MAX_UUID_SIZE];	// size 0x10, offset 0x02
+} tUID_ENT; // size 0x12
 
 typedef struct
 {
-    tL2CAP_CFG_INFO   l2cap_my_cfg;             /* My L2CAP config     */
-    tCONN_CB          ccb[SDP_MAX_CONNECTIONS];
-    tSDP_DB           server_db;
-    tL2CAP_APPL_INFO  reg_info;                 /* L2CAP Registration info */
-    UINT16            max_attr_list_size;       /* Max attribute list size to use   */
-    UINT16            max_recs_per_search;      /* Max records we want per seaarch  */
-    UINT8             trace_level;
-} tSDP_CB;
+	UINT16		num_uids;						// size 0x002, offset 0x000
+	tUID_ENT	uuid_entry[MAX_UUIDS_PER_SEQ];	// size 0x120, offset 0x002
+} tSDP_UUID_SEQ; // size 0x122
 
 typedef struct
 {
-    UINT16     len;
-    UINT8      value[MAX_UUID_SIZE];
-} tUID_ENT;
+	UINT16	start;	// size 0x02, offset 0x00
+	UINT16	end;	// size 0x02, offset 0x02
+} tATT_ENT; // size 0x04
 
 typedef struct
 {
-    UINT16      num_uids;
-    tUID_ENT    uuid_entry[MAX_UUIDS_PER_SEQ];
-} tSDP_UUID_SEQ;
+	UINT16		num_attr;						// size 0x02, offset 0x00
+	tATT_ENT	attr_entry[MAX_ATTR_PER_SEQ];	// size 0x40, offset 0x02
+} tSDP_ATTR_SEQ; // size 0x42
 
 typedef struct
 {
-    UINT16      start;
-    UINT16      end;
-} tATT_ENT;
+	UINT32	len;		// size 0x04, offset 0x00
+	UINT8	*value_ptr;	// size 0x04, offset 0x04
+	UINT16	id;			// size 0x02, offset 0x08
+	UINT8	type;		// size 0x01, offset 0x0a
+	/* 1 byte padding */
+} tSDP_ATTRIBUTE; // size 0x0c
 
 typedef struct
 {
-    UINT16      num_attr;
-    tATT_ENT    attr_entry[MAX_ATTR_PER_SEQ];
-} tSDP_ATTR_SEQ;
+	UINT32			record_handle;					// size 0x004, offset 0x000
+	UINT32			free_pad_ptr;					// size 0x004, offset 0x004
+	UINT16			num_attributes;					// size 0x001, offset 0x008
+	/* 2 bytes padding */
+	tSDP_ATTRIBUTE	attribute[SDP_MAX_REC_ATTR];	// size 0x12c, offset 0x00c
+	UINT8			attr_pad[SDP_MAX_PAD_LEN];		// size 0x15e, offset 0x138
+	/* 2 bytes padding */
+} tSDP_RECORD; // size 0x298
+
+typedef struct
+{
+	UINT32		di_primary_handle;			// size 0x0004, offset 0x0000
+	BOOLEAN		brcm_di_registered;			// size 0x0001, offset 0x0004
+	/* 1 byte padding */
+	UINT16		num_records;				// size 0x0002, offset 0x0006
+	tSDP_RECORD	record[SDP_MAX_RECORDS];	// size 0x33e0, offset 0x0008
+} tSDP_DB; // size 0x33e8
+
+typedef struct
+{
+	tCONN_CB_STATE		con_state;							// size 0x001, offset 0x000
+	tCONN_CB_FLAGS		con_flags;							// size 0x001, offset 0x001
+	BD_ADDR				device_address;						// size 0x006, offset 0x002
+	TIMER_LIST_ENT		timer_entry;						// size 0x018, offset 0x008
+	UINT16				rem_mtu_size;						// size 0x002, offset 0x020
+	UINT16				connection_id;						// size 0x002, offset 0x022
+	UINT16				list_len;							// size 0x002, offset 0x024
+	UINT8				rsp_list[1000];						// size 0x3e8, offset 0x026
+	/* 2 bytes padding */
+	tSDP_DISCOVERY_DB	*p_db;								// size 0x004, offset 0x410
+	tSDP_DISC_CMPL_CB	*p_cb;								// size 0x004, offset 0x414
+	UINT32				handles[SDP_MAX_DISC_SERVER_RECS];	// size 0x054, offset 0x418
+	UINT16				num_handles;						// size 0x002, offset 0x46c
+	UINT16				cur_handle;							// size 0x002, offset 0x46e
+	UINT16				transaction_id;						// size 0x002, offset 0x470
+	UINT16				disconnect_reason;					// size 0x002, offset 0x472
+	tCONN_CB_DISC_STATE	disc_state;							// size 0x001, offset 0x474
+	BOOLEAN				is_attr_search;						// size 0x001, offset 0x475
+	UINT16				cont_offset;						// size 0x002, offset 0x476
+} tCONN_CB; // size 0x1144
+
+typedef struct
+{
+	tL2CAP_CFG_INFO		l2cap_my_cfg;				// size 0x003c, offset 0x0000
+	tCONN_CB			ccb[SDP_MAX_CONNECTIONS];	// size 0x11e0, offset 0x003c
+	tSDP_DB				server_db;					// size 0x33e8, offset 0x121c
+	tL2CAP_APPL_INFO	reg_info;					// size 0x0028, offset 0x4604
+	UINT16				max_attr_list_size;			// size 0x0002, offset 0x462c
+	UINT16				max_recs_per_search;		// size 0x0002, offset 0x462e
+	UINT8				trace_level;				// size 0x0001, offset 0x4630
+	/* 3 bytes padding */
+} tSDP_CB; // size 0x4634
 
 /*******************************************************************************
  * external globals

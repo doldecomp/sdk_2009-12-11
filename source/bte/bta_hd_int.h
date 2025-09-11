@@ -14,10 +14,6 @@
 #include "hiddefs.h"
 
 /*******************************************************************************
- * macros
- */
-
-/*******************************************************************************
  * types
  */
 
@@ -106,6 +102,7 @@ extern tBTA_HD_CFG *p_bta_hd_cfg;
  * functions
  */
 
+/* bta_hd_act.h */
 void bta_hd_init_con_act(tBTA_HD_CB *p_cb, tBTA_HD_MSG *p_data);
 void bta_hd_close_act(tBTA_HD_CB *p_cb, tBTA_HD_MSG *p_data);
 void bta_hd_disable_act(tBTA_HD_CB *p_cb, tBTA_HD_MSG *p_data);
@@ -117,6 +114,7 @@ void bta_hd_discnt_act(tBTA_HD_CB *p_cb, tBTA_HD_MSG *p_data);
 void bta_hd_hidd_cback(UINT8 event, UINT32 data,
                        tHID_DEV_REG_INFO_CBACK_DATA *pdata);
 
+/* bta_hd_int.h */
 void bta_hd_sm_execute(tBTA_HD_CB *p_cb, UINT16 event, tBTA_HD_MSG *p_data);
 BOOLEAN bta_hd_hdl_event(BT_HDR *p_msg);
 

@@ -2,12 +2,6 @@
 #define BTE_BTA_CT_API_H
 
 /*******************************************************************************
- * headers
- */
-
-#include "data_types.h"
-
-/*******************************************************************************
  * types
  */
 
@@ -17,9 +11,9 @@
 
 typedef struct
 {
-	void	*at_0x00;
-	void	*at_0x04;
-	UINT8	at_0x08[4];
+	void			*at_0x00;	// size 0x04, offset 0x00
+	void			*at_0x04;	// size 0x04, offset 0x04
+	char unsigned	at_0x08[4];	// size 0x04, offset 0x08
 } tBTA_CT_CFG; // size 0x0c
 
 #ifdef __cplusplus

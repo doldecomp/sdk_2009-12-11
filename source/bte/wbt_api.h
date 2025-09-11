@@ -36,18 +36,25 @@
  * macros
  */
 
-#define ATTR_ID_EXT_BRCM_VERSION	0x8001
-#define ATTR_ID_EXT_PIN_CODE		0x8002
-
-#define BRCM_EXT_VERSION			1
+#define BRCM_EXT_VERSION	1
 
 /*******************************************************************************
- * functions
+ * types
  */
 
 #ifdef __cplusplus
 	extern "C" {
 #endif
+
+enum
+{
+	ATTR_ID_EXT_BRCM_VERSION	= 0x8001,
+	ATTR_ID_EXT_PIN_CODE		= 0x8002,
+};
+
+/*******************************************************************************
+ * functions
+ */
 
 BOOLEAN WBT_ExtCreateRecord(void);
 BOOLEAN WBT_ExtAddPinCode(void);

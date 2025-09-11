@@ -103,7 +103,7 @@ UINT16 GAP_ConnOpen(char *p_serv_name, UINT8 service_id, BOOLEAN is_server,
 		if (memcmp(p_rem_bda, BT_BD_ANY, BD_ADDR_LEN) != 0)
 			p_ccb->rem_addr_specified = TRUE;
 
-		memcpy(&p_ccb->rem_dev_address[0], p_rem_bda, BD_ADDR_LEN);
+		memcpy(p_ccb->rem_dev_address, p_rem_bda, BD_ADDR_LEN);
 	}
 
 	if (!p_ccb->rem_addr_specified && !is_server)
@@ -394,7 +394,7 @@ static void gap_connect_ind(BD_ADDR bd_addr, UINT16 l2cap_cid, UINT16 psm,
 
 	p_ccb->con_state = GAP_CCB_STATE_CFG_SETUP;
 
-	memcpy(&p_ccb->rem_dev_address[0], bd_addr, BD_ADDR_LEN);
+	memcpy(p_ccb->rem_dev_address, bd_addr, BD_ADDR_LEN);
 	p_ccb->connection_id = l2cap_cid;
 
 	L2CA_ConnectRsp(bd_addr, l2cap_id, l2cap_cid, L2CAP_CONN_OK, L2CAP_CONN_OK);
@@ -446,9 +446,9 @@ static void gap_config_ind(UINT16 l2cap_cid, tL2CAP_CFG_INFO *p_cfg)
 
 	L2CA_ConfigRsp(l2cap_cid, p_cfg);
 
-	p_ccb->con_flags |= GAP_CCB_FLAGS_HER_CFG_DONE;
+	p_ccb->con_flags |= GAP_CCB_FLAGS_THEIR_CFG_DONE;
 
-	if (p_ccb->con_flags & GAP_CCB_FLAGS_MY_CFG_DONE)
+	if (p_ccb->con_flags & GAP_CCB_FLAGS_OUR_CFG_DONE)
 	{
 		p_ccb->con_state = GAP_CCB_STATE_CONNECTED;
 
@@ -465,9 +465,9 @@ static void gap_config_cfm(UINT16 l2cap_cid, tL2CAP_CFG_INFO *p_cfg)
 
 	if (p_cfg->result == L2CAP_CFG_OK)
 	{
-		p_ccb->con_flags |= GAP_CCB_FLAGS_MY_CFG_DONE;
+		p_ccb->con_flags |= GAP_CCB_FLAGS_OUR_CFG_DONE;
 
-		if (p_ccb->con_flags & GAP_CCB_FLAGS_HER_CFG_DONE)
+		if (p_ccb->con_flags & GAP_CCB_FLAGS_THEIR_CFG_DONE)
 		{
 			p_ccb->con_state = GAP_CCB_STATE_CONNECTED;
 

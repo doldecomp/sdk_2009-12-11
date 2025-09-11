@@ -36,10 +36,6 @@
 #include "bta_fs_co.h"
 
 /*******************************************************************************
- * macros
- */
-
-/*******************************************************************************
  * types
  */
 
@@ -47,47 +43,46 @@
 	extern "C" {
 #endif
 
+// TODO: should the tBTA_FS_FD of fd fields be typedef'd?
 typedef struct
 {
-    BT_HDR            hdr;
-    int               fd;
-    tBTA_FS_CO_STATUS status;
-} tBTA_FS_CI_WRITE_EVT;
+	BT_HDR				hdr;	// size 0x08, offset 0x00
+	tBTA_FS_FD			fd;		// size 0x04, offset 0x08
+	tBTA_FS_CO_STATUS	status;	// size 0x02, offset 0x0c
+	/* 2 bytes padding */
+} tBTA_FS_CI_WRITE_EVT; // size 0x10
 
 typedef struct
 {
-    BT_HDR            hdr;
-    int               fd;
-    UINT16            num_read;
-    tBTA_FS_CO_STATUS status;
-} tBTA_FS_CI_READ_EVT;
+	BT_HDR				hdr;		// size 0x08, offset 0x00
+	tBTA_FS_FD			fd;			// size 0x04, offset 0x08
+	UINT16				num_read;	// size 0x02, offset 0x0c
+	tBTA_FS_CO_STATUS	status;		// size 0x02, offset 0x0e
+} tBTA_FS_CI_READ_EVT; // size 0x10
 
 typedef struct
 {
-    BT_HDR            hdr;
-    UINT32            file_size;
-    int               fd;
-    tBTA_FS_CO_STATUS status;
-} tBTA_FS_CI_OPEN_EVT;
+	BT_HDR				hdr;		// size 0x08, offset 0x00
+	UINT32				file_size;	// size 0x04, offset 0x08
+	tBTA_FS_FD			fd;			// size 0x04, offset 0x0c
+	tBTA_FS_CO_STATUS	status;		// size 0x02, offset 0x10
+	/* 2 bytes padding */
+} tBTA_FS_CI_OPEN_EVT; // size 0x14
 
 typedef struct
 {
-    BT_HDR            hdr;
-    tBTA_FS_CO_STATUS status;
-} tBTA_FS_CI_GETDIR_EVT;
-
-/*******************************************************************************
- * external globals
- */
+	BT_HDR				hdr;	// size 0x08, offset 0x00
+	tBTA_FS_CO_STATUS	status;	// size 0x02, offset 0x08
+} tBTA_FS_CI_GETDIR_EVT; // size 0x0a
 
 /*******************************************************************************
  * functions
  */
 
-void bta_fs_ci_write(int fd, tBTA_FS_CO_STATUS status, UINT16 evt);
-void bta_fs_ci_read(int fd, UINT16 num_bytes_read, tBTA_FS_CO_STATUS status,
-                    UINT16 evt);
-void bta_fs_ci_open(int fd, tBTA_FS_CO_STATUS status, UINT32 file_size,
+void bta_fs_ci_write(tBTA_FS_FD fd, tBTA_FS_CO_STATUS status, UINT16 evt);
+void bta_fs_ci_read(tBTA_FS_FD fd, UINT16 num_bytes_read,
+                    tBTA_FS_CO_STATUS status, UINT16 evt);
+void bta_fs_ci_open(tBTA_FS_FD fd, tBTA_FS_CO_STATUS status, UINT32 file_size,
                     UINT16 evt);
 void bta_fs_ci_direntry(tBTA_FS_CO_STATUS status, UINT16 evt);
 

@@ -606,7 +606,7 @@ static void btu_hcif_hdl_command_complete(UINT16 opcode, UINT8 *p,
 		break;
 
 	default:
-		if ((opcode & HCI_GRP_VENDOR_SPECIFIC) == HCI_GRP_VENDOR_SPECIFIC)
+		if ((opcode & HCI_GROUP_VENDOR_SPECIFIC) == HCI_GROUP_VENDOR_SPECIFIC)
 			btm_vsc_complete(p, opcode, evt_len);
 
 		break;
@@ -725,7 +725,7 @@ static void btu_hcif_hdl_command_status(UINT16 opcode, UINT8 status,
 		break;
 
 	default:
-		if ((opcode & HCI_GRP_VENDOR_SPECIFIC) == HCI_GRP_VENDOR_SPECIFIC)
+		if ((opcode & HCI_GROUP_VENDOR_SPECIFIC) == HCI_GROUP_VENDOR_SPECIFIC)
 			btm_vsc_complete(p_cmd, opcode, 1);
 	}
 }

@@ -32,19 +32,8 @@
 
 #include "bt_types.h"
 #include "data_types.h"
+
 #include "gki.h"
-
-/*******************************************************************************
- * macros
- */
-
-#define BTA_ID_SYS          0            /* system manager */
-#define BTA_ID_DM           1            /* device manager */
-#define BTA_ID_DM_SEARCH    2            /* device manager search */
-#define BTA_ID_PAN          14           /* Personal Area Networking */
-#define BTA_ID_AV           18           /* Advanced audio/video */
-#define BTA_ID_PRM          22
-#define BTA_ID_HH           23           /* Human Interface Device Host */
 
 /*******************************************************************************
  * types
@@ -54,20 +43,32 @@
 	extern "C" {
 #endif
 
+typedef UINT8 tBTA_SYS_ID;
+enum
+{
+	BTA_ID_SYS			= 0,
+	BTA_ID_DM			= 1,
+	BTA_ID_DM_SEARCH	= 2,
+	BTA_ID_PAN			= 14,
+	BTA_ID_AV			= 18,
+	BTA_ID_PRM			= 22,
+	BTA_ID_HH			= 23,
+
+	BTA_ID_MAX			= 26, // limit, not a service named MAX
+};
+
 typedef UINT8 tBTA_SYS_CONN_STATUS;
 enum
 {
-	BTA_SYS_CONN_OPEN,
-	BTA_SYS_CONN_CLOSE,
-	BTA_SYS_APP_OPEN,
-	BTA_SYS_APP_CLOSE,
-	BTA_SYS_SCO_OPEN,
-	BTA_SYS_SCO_CLOSE,
-	BTA_SYS_CONN_IDLE,
-	BTA_SYS_CONN_BUSY,
+	BTA_SYS_CONN_OPEN	= 0,
+	BTA_SYS_CONN_CLOSE	= 1,
+	BTA_SYS_APP_OPEN	= 2,
+	BTA_SYS_APP_CLOSE	= 3,
+	BTA_SYS_SCO_OPEN	= 4,
+	BTA_SYS_SCO_CLOSE	= 5,
+	BTA_SYS_CONN_IDLE	= 6,
+	BTA_SYS_CONN_BUSY	= 7,
 };
-
-typedef UINT8 tBTA_SYS_ID;
 
 typedef BOOLEAN tBTA_SYS_EVT_HDLR(BT_HDR *p_msg);
 typedef void tBTA_SYS_DISABLE(void);
@@ -79,6 +80,14 @@ typedef struct
 	tBTA_SYS_EVT_HDLR	*evt_hdlr;	// size 0x04, offset 0x00
 	tBTA_SYS_DISABLE	*disable;	// size 0x04, offset 0x04
 } tBTA_SYS_REG; // size 0x08
+
+typedef struct
+{
+	UINT16	mbox_evt;		// size 0x02, offset 0x00
+	UINT8	mbox;			// size 0x01, offset 0x02
+	UINT8	timer;			// size 0x01, offset 0x03
+	UINT8	trace_level;	// size 0x01, offset 0x04
+} tBTA_SYS_CFG; // size 0x06
 
 /*******************************************************************************
  * external globals

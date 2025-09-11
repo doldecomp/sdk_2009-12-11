@@ -35,13 +35,6 @@
 #include "gki.h"
 
 /*******************************************************************************
- * macros
- */
-
-#define HID_SEC_CHN		1
-#define HID_NOSEC_CHN	2
-
-/*******************************************************************************
  * types
  */
 
@@ -65,13 +58,25 @@ typedef UINT8 tHID_CONN_FLAGS;
 enum
 {
 	HID_CONN_FLAGS_IS_ORIG				= 1 << 0,
-	HID_CONN_FLAGS_HER_CTRL_CFG_DONE	= 1 << 1,
-	HID_CONN_FLAGS_MY_CTRL_CFG_DONE		= 1 << 2,
-	HID_CONN_FLAGS_HER_INTR_CFG_DONE	= 1 << 3,
-	HID_CONN_FLAGS_MY_INTR_CFG_DONE		= 1 << 4,
-	HID_CONN_FLAGS_ALL_CONFIGURED		= 0x1e,
+
+	HID_CONN_FLAGS_THEIR_CTRL_CFG_DONE	= 1 << 1,
+	HID_CONN_FLAGS_OUR_CTRL_CFG_DONE	= 1 << 2,
+	HID_CONN_FLAGS_THEIR_INTR_CFG_DONE	= 1 << 3,
+	HID_CONN_FLAGS_OUR_INTR_CFG_DONE	= 1 << 4,
+
+	HID_CONN_FLAGS_ALL_CONFIGURED		= HID_CONN_FLAGS_THEIR_CTRL_CFG_DONE
+										| HID_CONN_FLAGS_OUR_CTRL_CFG_DONE
+										| HID_CONN_FLAGS_THEIR_INTR_CFG_DONE
+										| HID_CONN_FLAGS_OUR_INTR_CFG_DONE,
+
 	HID_CONN_FLAGS_CONGESTED			= 1 << 5,
 	HID_CONN_FLAGS_INACTIVE				= 1 << 6,
+};
+
+enum
+{
+	HID_SEC_CHN		= 1,
+	HID_NOSEC_CHN	= 2,
 };
 
 typedef struct hid_conn
@@ -86,14 +91,6 @@ typedef struct hid_conn
 	UINT16			disc_reason;	// size 0x02, offset 0x0a
 	TIMER_LIST_ENT	timer_entry;	// size 0x18, offset 0x0c
 } tHID_CONN; // size 0x24
-
-/*******************************************************************************
- * external globals
- */
-
-/*******************************************************************************
- * functions
- */
 
 #ifdef __cplusplus
 	}

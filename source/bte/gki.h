@@ -36,28 +36,7 @@
  * macros
  */
 
-#define TIMER_0					0
-#define TIMER_1					1
-
-#define TIMER_0_EVT_MASK		0x0010
-#define TIMER_1_EVT_MASK		0x0020
-
-#define TASK_MBOX_0				0
-#define TASK_MBOX_2				2
-
-#define NUM_TASK_MBOX			4
-
-#define TASK_MBOX_0_EVT_MASK	0x0001
-#define TASK_MBOX_1_EVT_MASK	0x0002
-#define TASK_MBOX_2_EVT_MASK	0x0004
-#define TASK_MBOX_3_EVT_MASK	0x0008
-
-#define GKI_SUCCESS				0x00
-#define GKI_FAILURE				0x01
-#define GKI_INVALID_TASK		0xf0
-#define GKI_INVALID_POOL		0xff
-
-#define GKI_RESTRICTED_POOL     1       /* Inaccessible pool to GKI_getbuf() */
+#define EVENT_MASK(evt)	((UINT16)(1 << (evt)))
 
 /*******************************************************************************
  * types
@@ -67,11 +46,57 @@
 	extern "C" {
 #endif
 
+typedef UINT8 tGKI_STATUS;
+enum
+{
+	GKI_SUCCESS			= 0,
+	GKI_FAILURE			= 1,
+	GKI_INVALID_TASK	= 240,
+	GKI_INVALID_POOL	= 255,
+};
+
+enum
+{
+	TASK_MBOX_0		= 0,
+	TASK_MBOX_2		= 2,
+
+	NUM_TASK_MBOX	= 4
+};
+
+enum
+{
+	TASK_MBOX_0_EVT_MASK	= 1 << 0,
+	TASK_MBOX_1_EVT_MASK	= 1 << 1,
+	TASK_MBOX_2_EVT_MASK	= 1 << 2,
+	TASK_MBOX_3_EVT_MASK	= 1 << 3,
+};
+
+enum
+{
+	TIMER_0	= 0,
+	TIMER_1	= 1,
+};
+
+enum
+{
+	TIMER_0_EVT_MASK	= 0x0010,
+	TIMER_1_EVT_MASK	= 0x0020,
+};
+
+enum
+{
+	GKI_RESTRICTED_POOL	= 1,
+};
+
 typedef void TIMER_CBACK(void *p_tle);
 
-#define TIMER_PARAM_TYPE	__typeof__(UINT32)
+#ifndef TIMER_PARAM_TYPE
+# define TIMER_PARAM_TYPE	__typeof__(UINT32)
+#endif
 
-#define TASKPTR				__typeof__(void (*)(UINT32))
+#ifndef TASKPTR
+# define TASKPTR			__typeof__(void (*)(UINT32))
+#endif
 
 typedef struct
 {
@@ -99,10 +124,6 @@ typedef struct
 	TIMER_LIST_ENT	*p_last;	// size 0x04, offset 0x04
 	INT32			last_ticks;	// size 0x04, offset 0x08
 } TIMER_LIST_Q; // size 0x0c
-
-/*******************************************************************************
- * external globals
- */
 
 /*******************************************************************************
  * functions

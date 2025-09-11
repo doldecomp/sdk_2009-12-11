@@ -38,7 +38,7 @@
  * macros
  */
 
-#define MAX_INT_STATE	20
+#define MAX_INT_STATE	20	/* name known from asserts */
 
 /*******************************************************************************
  * types
@@ -50,15 +50,16 @@
 
 typedef struct
 {
-	UINT8	int_index;
-	int		int_state[MAX_INT_STATE];
-} tGKI_OS;
+	UINT8	int_index;					// size 0x01, offset 0x00
+	/* 3 bytes padding */
+	int		int_state[MAX_INT_STATE];	// size 0x50, offset 0x04
+} tGKI_OS; // size 0x54
 
 typedef struct
 {
-	tGKI_OS		os;
-	tGKI_COM_CB	com;
-} tGKI_CB;
+	tGKI_OS		os;		// size 0x00054, offset 0x00000
+	tGKI_COM_CB	com;	// size 0x28a8c, offset 0x00054
+} tGKI_CB; // size 0x28ae0
 
 /*******************************************************************************
  * external globals

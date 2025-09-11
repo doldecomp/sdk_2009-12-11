@@ -9,13 +9,10 @@
 #include "data_types.h"
 
 #include "gki.h"
+#include "hiddefs.h"
 #include "hidd_api.h"
 #include "hid_conn.h"
 #include "l2c_api.h"
-
-/*******************************************************************************
- * macros
- */
 
 /*******************************************************************************
  * types
@@ -27,31 +24,31 @@
 
 typedef tHID_STATUS tHID_DEV_PROC_EVT(UINT8 event, void *p_data);
 
-typedef struct hid_control_block {
-    // total size: 0x144
-    BD_ADDR host_addr; // offset 0x0, size 0x6
-    BOOLEAN host_known; // offset 0x6, size 0x1
-    UINT8 virtual_cable; // offset 0x7, size 0x1
-    UINT8 dev_state; // offset 0x8, size 0x1
-    UINT8 conn_tries; // offset 0x9, size 0x1
-    UINT8 sec_mask; // offset 0xA, size 0x1
-    UINT16 get_rep_buf_sz; // offset 0xC, size 0x2
-    tHID_CONN conn; // offset 0x10, size 0x24
-    TIMER_LIST_ENT idle_tle; // offset 0x34, size 0x18
-    tHID_DEV_PWR_MD pm_params[3]; // offset 0x4C, size 0x1E
-    tHID_DEV_CURR_PM_SETTING curr_pm; // offset 0x6A, size 0x4
-    BOOLEAN pm_ctrl_busy; // offset 0x6E, size 0x1
-    UINT8 conn_substate; // offset 0x6F, size 0x1
-    tHID_DEV_PWR_MD final_pm; // offset 0x70, size 0xA
-    BOOLEAN use_qos_flg; // offset 0x7A, size 0x1
-    BOOLEAN unplug_on; // offset 0x7B, size 0x1
-    tQOS_INFO qos_info; // offset 0x7C, size 0x48
-    tHID_DEV_REG_INFO_CBACK * callback; // offset 0xC4, size 0x4
-    tL2CAP_CFG_INFO l2cap_ctrl_cfg; // offset 0xC8, size 0x3C
-    tL2CAP_CFG_INFO l2cap_int_cfg; // offset 0x104, size 0x3C
-    BOOLEAN reg_flag; // offset 0x140, size 0x1
-    UINT8 trace_level; // offset 0x141, size 0x1
-} tHID_DEV_CTB;
+typedef struct hid_control_block
+{
+	BD_ADDR						host_addr;		// size 0x006, offset 0x000
+	BOOLEAN						host_known;		// size 0x001, offset 0x006
+	UINT8						virtual_cable;	// size 0x001, offset 0x007
+	UINT8						dev_state;		// size 0x001, offset 0x008
+	UINT8						conn_tries;		// size 0x001, offset 0x009
+	UINT8						sec_mask;		// size 0x001, offset 0x00a
+	UINT16						get_rep_buf_sz;	// size 0x002, offset 0x00c
+	tHID_CONN					conn;			// size 0x024, offset 0x010
+	TIMER_LIST_ENT				idle_tle;		// size 0x018, offset 0x034
+	tHID_DEV_PWR_MD				pm_params[3];	// size 0x01e, offset 0x04c
+	tHID_DEV_CURR_PM_SETTING	curr_pm;		// size 0x004, offset 0x06a
+	BOOLEAN						pm_ctrl_busy;	// size 0x001, offset 0x06e
+	UINT8						conn_substate;	// size 0x001, offset 0x06f
+	tHID_DEV_PWR_MD				final_pm;		// size 0x00a, offset 0x070
+	BOOLEAN						use_qos_flg;	// size 0x001, offset 0x07a
+	BOOLEAN						unplug_on;		// size 0x001, offset 0x07b
+	tQOS_INFO					qos_info;		// size 0x048, offset 0x07c
+	tHID_DEV_REG_INFO_CBACK		*callback;		// size 0x004, offset 0x0c4
+	tL2CAP_CFG_INFO				l2cap_ctrl_cfg;	// size 0x03c, offset 0x0c8
+	tL2CAP_CFG_INFO				l2cap_int_cfg;	// size 0x03c, offset 0x104
+	BOOLEAN						reg_flag;		// size 0x001, offset 0x140
+	UINT8						trace_level;	// size 0x001, offset 0x141
+} tHID_DEV_CTB; // size 0x144
 
 /*******************************************************************************
  * external globals

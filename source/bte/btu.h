@@ -39,19 +39,6 @@
  * macros
  */
 
-#define BTU_TTYPE_BTM_DEV_CTL			1
-#define BTU_TTYPE_L2CAP_LINK			2
-#define BTU_TTYPE_L2CAP_CHNL			3
-#define BTU_TTYPE_L2CAP_HOLD			4
-#define BTU_TTYPE_SDP					5
-#define BTU_TTYPE_BTM_ACL				9
-#define BTU_TTYPE_BTM_RMT_NAME			10
-#define BTU_TTYPE_RFCOMM_MFC			11
-#define BTU_TTYPE_RFCOMM_PORT			12
-#define BTU_TTYPE_BTU_CMD_CMPL			60
-#define BTU_TTYPE_HID_HOST_REPAGE_TO	66
-#define BTU_TTYPE_73					73
-
 #define BTU_MAX_REG_TIMER				2
 #define BTU_MAX_REG_EVENT				6
 
@@ -61,10 +48,25 @@
  * types
  */
 
-
 #ifdef __cplusplus
 	extern "C" {
 #endif
+
+enum
+{
+	BTU_TTYPE_BTM_DEV_CTL			= 1,
+	BTU_TTYPE_L2CAP_LINK			= 2,
+	BTU_TTYPE_L2CAP_CHNL			= 3,
+	BTU_TTYPE_L2CAP_HOLD			= 4,
+	BTU_TTYPE_SDP					= 5,
+	BTU_TTYPE_BTM_ACL				= 9,
+	BTU_TTYPE_BTM_RMT_NAME			= 10,
+	BTU_TTYPE_RFCOMM_MFC			= 11,
+	BTU_TTYPE_RFCOMM_PORT			= 12,
+	BTU_TTYPE_BTU_CMD_CMPL			= 60,
+	BTU_TTYPE_HID_HOST_REPAGE_TO	= 66,
+	BTU_TTYPE_73					= 73,
+};
 
 typedef void tBTU_TIMER_CALLBACK(TIMER_LIST_ENT *p_tle);
 typedef void tBTU_EVENT_CALLBACK(BT_HDR *p_hdr);
@@ -101,8 +103,9 @@ typedef struct
  * external globals
  */
 
-extern BD_ADDR const BT_BD_ANY;
 extern tBTU_CB btu_cb;
+
+extern BD_ADDR const BT_BD_ANY;
 
 /*******************************************************************************
  * functions

@@ -10,10 +10,6 @@
 #include "data_types.h"
 
 /*******************************************************************************
- * macros
- */
-
-/*******************************************************************************
  * types
  */
 
@@ -54,10 +50,10 @@ UINT8 uusb_get_trace_state(void);
 
 void UUSB_Register(tUUSB *uusb);
 void UUSB_Open(tUUSB *uusb, tUUSB_CBACK *cback);
-UINT16 UUSB_Read(UINT8 param_1, void *param_2, UINT16 param_3);
+UINT16 UUSB_Read(UINT8, void *, UINT16);
 void UUSB_ReadBuf(/* ... */);
 unk_t UUSB_WriteBuf(/* ... */);
-UINT16 UUSB_Write(UINT8 param_1, void *p_data, UINT16 len, void *param_4);
+UINT16 UUSB_Write(UINT8, void *p_data, UINT16 len, void *);
 void UUSB_Ioctl(tUUSB_IOCTL_OP op, void *p_data);
 void UUSB_Close(void);
 void UUSB_Unregister(void);

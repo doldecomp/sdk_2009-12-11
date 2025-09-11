@@ -33,7 +33,6 @@
 #include "bt_types.h"
 #include "data_types.h"
 
-#include "gki.h"
 #include "hcidefs.h"
 #include "sdp_api.h"
 
@@ -41,23 +40,19 @@
  * macros
  */
 
-/* class of device field macros */
-#define BTM_COD_FORMAT_TYPE_MASK	0x03
-#define BTM_COD_MINOR_CLASS_MASK	0xfc
-#define BTM_COD_MAJOR_CLASS_MASK	0x1f
-#define BTM_COD_SERVICE_CLASS_LO_B	0x00e0
 #define BTM_COD_SERVICE_CLASS_MASK	0xffe0
+#define BTM_COD_SERVICE_CLASS_LO_B	0x00e0
+#define BTM_COD_MAJOR_CLASS_MASK	0x1f
+#define BTM_COD_MINOR_CLASS_MASK	0xfc
+#define BTM_COD_FORMAT_TYPE_MASK	0x03
 
-#define BTM_SET_COD_FORMAT_TYPE(pd, fm)		\
-	do { *(fm) = (pd)[2] & BTM_COD_FORMAT_TYPE_MASK; } while (FALSE)
-
-#define BTM_SET_COD_MINOR_CLASS(pd, mn)		\
+#define BTM_GET_COD_MINOR_CLASS(pd, mn)	\
 	do { *(mn) = (pd)[2] & BTM_COD_MINOR_CLASS_MASK; } while (FALSE)
 
-#define BTM_SET_COD_MAJOR_CLASS(pd, mj)		\
+#define BTM_GET_COD_MAJOR_CLASS(pd, mj)	\
 	do { *(mj) = (pd)[1] & BTM_COD_MAJOR_CLASS_MASK; } while (FALSE)
 
-#define BTM_SET_COD_SERVICE_CLASS(pd, sv)				\
+#define BTM_GET_COD_SERVICE_CLASS(pd, sv)				\
 	do													\
 	{													\
 		*(sv) = (pd)[0];								\
@@ -65,7 +60,6 @@
 		*(sv) += (pd)[1] & BTM_COD_SERVICE_CLASS_LO_B;	\
 	} while (FALSE)
 
-/* to set the fields (assumes that format type is always 0) */
 #define MAKE_COD_FROM_FIELDS(pd, mn, mj, sv)					\
 	do															\
 	{															\
@@ -73,6 +67,35 @@
 		(pd)[1] = (mj) + ((sv) & BTM_COD_SERVICE_CLASS_LO_B);	\
 		(pd)[0] = (sv) >> 8;									\
 	} while (FALSE)
+
+#define BTM_INQ_RES_IGNORE_RSSI		0x7f
+
+#define BTM_INVALID_SCO_INDEX		0xffff
+#define BTM_INVALID_HCI_HANDLE		0xffff
+#define BTM_INVALID_SCO_DISC_REASON	0xffff
+
+#define BTM_IGNORE_SCO_PKT_TYPE		0
+
+#define BTM_64KBITS_RATE			0x00001f40
+
+#define BTM_SEC_ARRAY_BITS			32
+#define BTM_SEC_SERVICE_ARRAY_SIZE                       \
+	(((UINT32)BTM_SEC_MAX_SERVICES / BTM_SEC_ARRAY_BITS) \
+	 + (((UINT32)BTM_SEC_MAX_SERVICES % BTM_SEC_ARRAY_BITS) ? 1 : 0))
+
+#define BTM_SEC_MAX_SERVICES		46
+
+#ifndef BTM_SEC_MAX_SERVICES
+# define BTM_SEC_MAX_SERVICES		65
+#endif
+
+#define BTM_SEC_TRUST_ALL			0xffffffff
+
+#define BTM_SEC_IS_SERVICE_TRUSTED(p, service)                               \
+	(((((UINT32 *)(p))[(((UINT32)(service)) / BTM_SEC_ARRAY_BITS)])          \
+	  & (UINT32)(((UINT32)1 << (((UINT32)(service)) % BTM_SEC_ARRAY_BITS)))) \
+	     ? TRUE                                                              \
+	     : FALSE)
 
 #define BTM_SEC_COPY_TRUSTED_DEVICE(p_src, p_dst)					\
 	do																\
@@ -83,167 +106,7 @@
 			((UINT32 *)(p_dst))[trst] = ((UINT32 *)(p_src))[trst];	\
 	} while (FALSE)
 
-#define BTM_COD_SERVICE_LMTD_DISCOVER       0x0020
-
-#define BTM_NON_DISCOVERABLE        0
-#define BTM_LIMITED_DISCOVERABLE    1
-#define BTM_GENERAL_DISCOVERABLE    2
-#define BTM_MAX_DISCOVERABLE        BTM_GENERAL_DISCOVERABLE
-#define BTM_DISCOVERABLE_MASK       (BTM_LIMITED_DISCOVERABLE|BTM_GENERAL_DISCOVERABLE)
-
-#define BTM_NON_CONNECTABLE         0
-#define BTM_CONNECTABLE	1
-#define BTM_CONNECTABLE_MASK        (BTM_NON_CONNECTABLE | BTM_CONNECTABLE)
-
-#define BTM_SEC_SERVICE_HID_SEC_CTRL	32
-#define BTM_SEC_SERVICE_HID_NOSEC_CTRL	33
-#define BTM_SEC_SERVICE_HID_INTR		34
-
-#define BTM_SEC_PROTO_HID	6
-
-#define BTM_SEC_NONE	0
-#define BTM_SEC_OUT_AUTHORIZE      0x0008 /* Outbound call requires authorization */
-#define BTM_SEC_OUT_ENCRYPT        0x0020 /* Outbound call requires encryption */
-#define BTM_SEC_OUT_AUTHENTICATE   0x0010 /* Outbound call requires authentication */
-#define BTM_SEC_OUT_MITM           0x2000 /* outbound Do man in the middle protection */
-#define BTM_SEC_FORCE_MASTER       0x0100 /* Need to switch connection to be master */
-#define BTM_SEC_ATTEMPT_MASTER     0x0200 /* Try to switch connection to be master */
-#define BTM_SEC_FORCE_SLAVE        0x0400 /* Need to switch connection to be master */
-#define BTM_SEC_ATTEMPT_SLAVE      0x0800 /* Try to switch connection to be slave */
-#define BTM_SEC_IN_AUTHORIZE       0x0001 /* Inbound call requires authorization */
-#define BTM_SEC_IN_ENCRYPT         0x0004 /* Inbound call requires encryption */
-#define BTM_SEC_IN_AUTHENTICATE    0x0002 /* Inbound call requires authentication */
-#define BTM_SEC_IN_MITM            0x1000 /* inbound Do man in the middle protection */
-
-#define BTM_SEC_FLAG_AUTHORIZED     0x01
-
-#define BTM_SEC_MAX_SERVICES 46
-
-#ifndef BTM_SEC_MAX_SERVICES
-# define BTM_SEC_MAX_SERVICES            65
-#endif
-
-#define BTM_SEC_ARRAY_BITS          32
-#define BTM_SEC_SERVICE_ARRAY_SIZE  (((UINT32)BTM_SEC_MAX_SERVICES / BTM_SEC_ARRAY_BITS) + \
-                                    (((UINT32)BTM_SEC_MAX_SERVICES % BTM_SEC_ARRAY_BITS) ? 1 : 0))
-
-#define BTM_ACL_MODE_NORMAL	HCI_MODE_ACTIVE
-#define BTM_ACL_MODE_HOLD	HCI_MODE_HOLD
-#define BTM_ACL_MODE_SNIFF	HCI_MODE_SNIFF
-#define BTM_ACL_MODE_PARK	HCI_MODE_PARK
-
-#define BTM_SEC_SERVICE_SDP_SERVER      0
-
-#define BTM_PM_REG_SET      1 /* The module wants to set the desired power mode */
-#define BTM_PM_REG_NOTIF    2 /* The module wants to receive mode change event */
-#define BTM_PM_DEREG        4 /* The module does not want to involve with PM anymore */
-
-#define BTM_GENERAL_INQUIRY         0
-#define BTM_LIMITED_INQUIRY         1
-#define BTM_BR_INQUIRY_MASK         0x0f
-
-#define BTM_INQ_RESULT_STANDARD     0
-#define BTM_INQ_RESULT_WITH_RSSI    1
-
-#define BTM_ROLE_UNDEFINED      0xff     /* undefined value (error status) */
-
-#define BTM_CB_EVT_RETURN_LINK_KEYS         1
-
-#define BTM_SEC_MODE_SP             4
-
-#define BTM_ROLE_UNDEFINED      0xff     /* undefined value (error status) */
-
-#define BTM_SEC_FLAG_ENCRYPTED      0x04
-
-#define BTM_ROLE_MASTER         HCI_ROLE_MASTER
-
-#define BTM_ACL_PKT_TYPES_MASK_DM1      HCI_PKT_TYPES_MASK_DM1
-#define BTM_ACL_PKT_TYPES_MASK_DH1      HCI_PKT_TYPES_MASK_DH1
-#define BTM_ACL_PKT_TYPES_MASK_DM3      HCI_PKT_TYPES_MASK_DM3
-#define BTM_ACL_PKT_TYPES_MASK_DH3      HCI_PKT_TYPES_MASK_DH3
-#define BTM_ACL_PKT_TYPES_MASK_DM5      HCI_PKT_TYPES_MASK_DM5
-#define BTM_ACL_PKT_TYPES_MASK_DH5      HCI_PKT_TYPES_MASK_DH5
-#define BTM_ACL_PKT_TYPES_MASK_NO_2_DH1 HCI_PKT_TYPES_MASK_NO_2_DH1
-#define BTM_ACL_PKT_TYPES_MASK_NO_3_DH1 HCI_PKT_TYPES_MASK_NO_3_DH1
-#define BTM_ACL_PKT_TYPES_MASK_NO_2_DH3 HCI_PKT_TYPES_MASK_NO_2_DH3
-#define BTM_ACL_PKT_TYPES_MASK_NO_3_DH3 HCI_PKT_TYPES_MASK_NO_3_DH3
-#define BTM_ACL_PKT_TYPES_MASK_NO_2_DH5 HCI_PKT_TYPES_MASK_NO_2_DH5
-#define BTM_ACL_PKT_TYPES_MASK_NO_3_DH5 HCI_PKT_TYPES_MASK_NO_3_DH5
-
-#define BTM_SEC_FLAG_LKEY_KNOWN     0x10
-
-#define BTM_SCO_PKT_TYPES_MASK_HV1  HCI_ESCO_PKT_TYPES_MASK_HV1
-#define BTM_SCO_PKT_TYPES_MASK_HV2  HCI_ESCO_PKT_TYPES_MASK_HV2
-#define BTM_SCO_PKT_TYPES_MASK_HV3  HCI_ESCO_PKT_TYPES_MASK_HV3
-#define BTM_SCO_PKT_TYPES_MASK_EV3  HCI_ESCO_PKT_TYPES_MASK_EV3
-#define BTM_SCO_PKT_TYPES_MASK_EV4  HCI_ESCO_PKT_TYPES_MASK_EV4
-#define BTM_SCO_PKT_TYPES_MASK_EV5  HCI_ESCO_PKT_TYPES_MASK_EV5
-
-#define BTM_ESCO_LINK_ONLY_MASK (BTM_SCO_PKT_TYPES_MASK_EV3 | \
-                                 BTM_SCO_PKT_TYPES_MASK_EV4 | \
-                                 BTM_SCO_PKT_TYPES_MASK_EV5)
-#define BTM_SCO_PKT_TYPES_MASK_NO_2_EV3  HCI_ESCO_PKT_TYPES_MASK_NO_2_EV3
-#define BTM_SCO_PKT_TYPES_MASK_NO_2_EV5  HCI_ESCO_PKT_TYPES_MASK_NO_2_EV5
-#define BTM_SCO_PKT_TYPES_MASK_NO_3_EV5  HCI_ESCO_PKT_TYPES_MASK_NO_3_EV5
-#define BTM_SCO_PKT_TYPES_MASK_NO_3_EV3  HCI_ESCO_PKT_TYPES_MASK_NO_3_EV3
-
-#define BTM_SCAN_TYPE_STANDARD      0
-#define BTM_SCAN_TYPE_INTERLACED    1       /* 1.2 devices only */
-
-#define BTM_CB_EVT_READ_STORED_LINK_KEYS    2
-#define BTM_CB_EVT_WRITE_STORED_LINK_KEYS   3
-#define BTM_CB_EVT_DELETE_STORED_LINK_KEYS  4
-
-#define BTM_LIMITED_INQUIRY_ACTIVE  0x1     /* a limited inquiry is in progress */
-#define BTM_GENERAL_INQUIRY_ACTIVE  0x2     /* a general inquiry is in progress */
-#define BTM_PERIODIC_INQUIRY_ACTIVE 0x4     /* a periodic inquiry is active */
-
-#define BTM_CLR_INQUIRY_FILTER          0                   /* Inquiry Filtering is turned off */
-#define BTM_INQUIRY_INACTIVE        0x0     /* no inquiry in progress */
-
-#define BTM_FILTER_COND_DEVICE_CLASS    HCI_FILTER_COND_DEVICE_CLASS /* Filter on device class */
-#define BTM_FILTER_COND_BD_ADDR         HCI_FILTER_COND_BD_ADDR /* Filter on device addr */
-
-#define BTM_INQ_RES_IGNORE_RSSI     0x7f    /* RSSI value not supplied (ignore it) */
-
-#define BTM_64KBITS_RATE            0x00001f40  /* 64 kbits/sec data rate */
-
-#define BTM_ESCO_RETRANS_POWER      1
-
-#define BTM_INVALID_SCO_DISC_REASON 0xFFFF
-
-#define BTM_SCO_LINK_ONLY_MASK  (BTM_SCO_PKT_TYPES_MASK_HV1 | \
-                                 BTM_SCO_PKT_TYPES_MASK_HV2 | \
-                                 BTM_SCO_PKT_TYPES_MASK_HV3)
-
-#define BTM_INVALID_SCO_INDEX       0xFFFF
-#define BTM_INVALID_HCI_HANDLE      0xFFFF
-
-#define BTM_IGNORE_SCO_PKT_TYPE     0
-
-#define BTM_SEC_MODE_NONE           1
-#define BTM_SEC_MODE_SERVICE        2
-#define BTM_SEC_MODE_LINK           3
-#define BTM_SEC_MODE_SP_DEBUG       5
-#define BTM_SEC_MODE_SP             4
-
-#define BTM_SEC_STATE_AUTHORIZING       4
-#define BTM_SEC_STATE_IDLE              0
-#define BTM_SEC_STATE_GETTING_NAME      3
-#define BTM_SEC_STATE_ENCRYPTING        2
-
-#define BTM_SEC_FLAG_AUTHENTICATED  0x02
-
-#define BTM_COD_MAJOR_PERIPHERAL            0x05
-#define BTM_COD_MINOR_KEYBOARD              0x40
-
-#define BTM_SEC_IS_SERVICE_TRUSTED(p, service)                               \
-	(((((UINT32 *)(p))[(((UINT32)(service)) / BTM_SEC_ARRAY_BITS)])          \
-	  & (UINT32)(((UINT32)1 << (((UINT32)(service)) % BTM_SEC_ARRAY_BITS)))) \
-	     ? TRUE                                                              \
-	     : FALSE)
-
-#define BTM_SEC_TRUST_ALL               0xFFFFFFFF  /* for each array element */
+#define BTM_PM_SET_ONLY_ID			0x80
 
 /*******************************************************************************
  * types
@@ -278,30 +141,141 @@ enum
 	BTM_REPEATED_ATTEMPTS,
 };
 
+typedef UINT8 tBTM_DEV_STATUS;
+enum
+{
+	BTM_DEV_STATUS_UP,
+	BTM_DEV_STATUS_DOWN,
+	BTM_DEV_STATUS_CMD_TOUT,
+};
+
+enum
+{
+	BTM_NON_DISCOVERABLE		= 0,
+	BTM_LIMITED_DISCOVERABLE	= 1 << 0,
+	BTM_GENERAL_DISCOVERABLE	= 1 << 1,
+
+	BTM_MAX_DISCOVERABLE		= BTM_GENERAL_DISCOVERABLE,
+	BTM_DISCOVERABLE_MASK		= BTM_LIMITED_DISCOVERABLE | BTM_GENERAL_DISCOVERABLE
+};
+
+enum
+{
+	BTM_NON_CONNECTABLE		= 0,
+	BTM_CONNECTABLE			= 1 << 0,
+
+	BTM_MAX_CONNECTABLE		= BTM_CONNECTABLE,
+	BTM_CONNECTABLE_MASK	= BTM_CONNECTABLE
+};
+
+enum
+{
+	BTM_GENERAL_INQUIRY	= 0,
+	BTM_LIMITED_INQUIRY	= 1,
+
+	BTM_BR_INQUIRY_MASK	= 0x0f
+};
+
+enum
+{
+	BTM_INQUIRY_INACTIVE		= 0,
+	BTM_LIMITED_INQUIRY_ACTIVE	= 1 << 0,
+	BTM_GENERAL_INQUIRY_ACTIVE	= 1 << 1,
+	BTM_PERIODIC_INQUIRY_ACTIVE	= 1 << 2,
+};
+
+enum
+{
+	BTM_SCAN_TYPE_STANDARD,
+	BTM_SCAN_TYPE_INTERLACED,
+};
+
+enum
+{
+	BTM_INQ_RESULT_STANDARD,
+	BTM_INQ_RESULT_WITH_RSSI,
+};
+
+enum
+{
+	BTM_CLR_INQUIRY_FILTER			= 0,
+	BTM_FILTER_COND_DEVICE_CLASS	= HCI_FILTER_COND_DEVICE_CLASS,
+	BTM_FILTER_COND_BD_ADDR			= HCI_FILTER_COND_BD_ADDR,
+};
+
+enum
+{
+	BTM_COD_SERVICE_LMTD_DISCOVER	= 1 << 5,
+};
+
+enum
+{
+	BTM_COD_MAJOR_PERIPHERAL	= 5,
+};
+
+// Peripheral minor device classes
+enum
+{
+	BTM_COD_MINOR_KEYBOARD	= 1 << 6,
+};
+
+enum
+{
+	BTM_ACL_MODE_NORMAL	= HCI_MODE_ACTIVE,
+	BTM_ACL_MODE_HOLD	= HCI_MODE_HOLD,
+	BTM_ACL_MODE_SNIFF	= HCI_MODE_SNIFF,
+	BTM_ACL_MODE_PARK	= HCI_MODE_PARK,
+};
+
+enum
+{
+	BTM_ROLE_MASTER		= HCI_ROLE_MASTER,
+	BTM_ROLE_UNDEFINED	= 255,
+};
+
+enum
+{
+	BTM_ACL_PKT_TYPES_MASK_DM1		= HCI_PKT_TYPES_MASK_DM1,
+	BTM_ACL_PKT_TYPES_MASK_DH1		= HCI_PKT_TYPES_MASK_DH1,
+	BTM_ACL_PKT_TYPES_MASK_DM3		= HCI_PKT_TYPES_MASK_DM3,
+	BTM_ACL_PKT_TYPES_MASK_DH3		= HCI_PKT_TYPES_MASK_DH3,
+	BTM_ACL_PKT_TYPES_MASK_DM5		= HCI_PKT_TYPES_MASK_DM5,
+	BTM_ACL_PKT_TYPES_MASK_DH5		= HCI_PKT_TYPES_MASK_DH5,
+
+	BTM_ACL_PKT_TYPES_MASK_NO_2_DH1	= HCI_PKT_TYPES_MASK_NO_2_DH1,
+	BTM_ACL_PKT_TYPES_MASK_NO_3_DH1	= HCI_PKT_TYPES_MASK_NO_3_DH1,
+	BTM_ACL_PKT_TYPES_MASK_NO_2_DH3	= HCI_PKT_TYPES_MASK_NO_2_DH3,
+	BTM_ACL_PKT_TYPES_MASK_NO_3_DH3	= HCI_PKT_TYPES_MASK_NO_3_DH3,
+	BTM_ACL_PKT_TYPES_MASK_NO_2_DH5	= HCI_PKT_TYPES_MASK_NO_2_DH5,
+	BTM_ACL_PKT_TYPES_MASK_NO_3_DH5	= HCI_PKT_TYPES_MASK_NO_3_DH5,
+};
+
 typedef UINT8 tBTM_BL_EVENT;
-typedef UINT8 tBTA_PREF_ROLES;
-
 enum
 {
-    BTM_BL_COLLISION_EVT
-	 = 4,
+	BTM_BL_COLLISION_EVT	= 4,
 };
 
 enum
 {
-    BTM_PM_STS_ACTIVE = HCI_MODE_ACTIVE,
-    BTM_PM_STS_HOLD   = HCI_MODE_HOLD,
-    BTM_PM_STS_SNIFF  = HCI_MODE_SNIFF,
-    BTM_PM_STS_PARK   = HCI_MODE_PARK,
-    BTM_PM_STS_SSR,     /* report the SSR parameters in HCI_SNIFF_SUB_RATE_EVT */
-    BTM_PM_STS_PENDING = 4,   /* when waiting for status from controller */
-    BTM_PM_STS_ERROR = 5,   /* when HCI command status returns error */
-};
-typedef UINT8 tBTM_PM_STATUS;
+	BTM_SCO_PKT_TYPES_MASK_HV1		= HCI_ESCO_PKT_TYPES_MASK_HV1,
+	BTM_SCO_PKT_TYPES_MASK_HV2		= HCI_ESCO_PKT_TYPES_MASK_HV2,
+	BTM_SCO_PKT_TYPES_MASK_HV3		= HCI_ESCO_PKT_TYPES_MASK_HV3,
+	BTM_SCO_PKT_TYPES_MASK_EV3		= HCI_ESCO_PKT_TYPES_MASK_EV3,
+	BTM_SCO_PKT_TYPES_MASK_EV4		= HCI_ESCO_PKT_TYPES_MASK_EV4,
+	BTM_SCO_PKT_TYPES_MASK_EV5		= HCI_ESCO_PKT_TYPES_MASK_EV5,
+	BTM_SCO_PKT_TYPES_MASK_NO_2_EV3	= HCI_ESCO_PKT_TYPES_MASK_NO_2_EV3,
+	BTM_SCO_PKT_TYPES_MASK_NO_2_EV5	= HCI_ESCO_PKT_TYPES_MASK_NO_2_EV5,
+	BTM_SCO_PKT_TYPES_MASK_NO_3_EV5	= HCI_ESCO_PKT_TYPES_MASK_NO_3_EV5,
+	BTM_SCO_PKT_TYPES_MASK_NO_3_EV3	= HCI_ESCO_PKT_TYPES_MASK_NO_3_EV3,
 
-enum
-{
-    BTM_PM_ST_ACTIVE  = BTM_PM_STS_ACTIVE,
+	BTM_SCO_LINK_ONLY_MASK			= BTM_SCO_PKT_TYPES_MASK_HV1
+	                                | BTM_SCO_PKT_TYPES_MASK_HV2
+	                                | BTM_SCO_PKT_TYPES_MASK_HV3,
+
+	BTM_ESCO_LINK_ONLY_MASK			= BTM_SCO_PKT_TYPES_MASK_EV3
+	                                | BTM_SCO_PKT_TYPES_MASK_EV4
+	                                | BTM_SCO_PKT_TYPES_MASK_EV5,
 };
 
 typedef UINT8 tBTM_SCO_TYPE;
@@ -311,23 +285,121 @@ enum
 	BTM_LINK_TYPE_ESCO	= HCI_LINK_TYPE_ESCO,
 };
 
-/* BTM Power manager modes */
+// muff1n: How do I turn this on
+#define BTM_VOICE_SETTING_TRANS ((UINT16)  (HCI_INP_CODING_LINEAR          |   \
+                                            HCI_INP_DATA_FMT_2S_COMPLEMENT |   \
+                                            HCI_INP_SAMPLE_SIZE_16BIT      |   \
+                                            HCI_AIR_CODING_FORMAT_TRANSPNT))
+
+enum
+{
+	BTM_ESCO_RETRANS_POWER	= 1,
+};
+
+typedef UINT8 tBTM_ESCO_EVT;
+enum
+{
+	BTM_ESCO_CHG_EVT = 1,
+	BTM_ESCO_CONN_REQ_EVT,
+};
+
+enum
+{
+	BTM_SEC_MODE_NONE		= 1,
+	BTM_SEC_MODE_SERVICE	= 2,
+	BTM_SEC_MODE_LINK		= 3,
+	BTM_SEC_MODE_SP			= 4,
+	BTM_SEC_MODE_SP_DEBUG	= 5,
+};
+
+enum
+{
+	BTM_SEC_NONE				= 0,
+	BTM_SEC_IN_AUTHORIZE		= 1 <<  0,
+	BTM_SEC_IN_AUTHENTICATE		= 1 <<  1,
+	BTM_SEC_IN_ENCRYPT			= 1 <<  2,
+	BTM_SEC_OUT_AUTHORIZE		= 1 <<  3,
+	BTM_SEC_OUT_AUTHENTICATE	= 1 <<  4,
+	BTM_SEC_OUT_ENCRYPT			= 1 <<  5,
+	BTM_SEC_FORCE_MASTER		= 1 <<  8,
+	BTM_SEC_ATTEMPT_MASTER		= 1 <<  9,
+	BTM_SEC_FORCE_SLAVE			= 1 << 10,
+	BTM_SEC_ATTEMPT_SLAVE		= 1 << 11,
+	BTM_SEC_IN_MITM				= 1 << 12,
+	BTM_SEC_OUT_MITM			= 1 << 13,
+};
+
+enum
+{
+	BTM_SEC_FLAG_AUTHORIZED		= 1 << 0,
+	BTM_SEC_FLAG_AUTHENTICATED	= 1 << 1,
+	BTM_SEC_FLAG_ENCRYPTED		= 1 << 2,
+	BTM_SEC_FLAG_LKEY_KNOWN		= 1 << 4,
+};
+
+enum
+{
+	BTM_SEC_PROTO_RFCOMM	= 3,
+	BTM_SEC_PROTO_HID		= 6,
+};
+
+enum
+{
+	BTM_SEC_SERVICE_SDP_SERVER		= 0,
+	BTM_SEC_SERVICE_HID_SEC_CTRL	= 32,
+	BTM_SEC_SERVICE_HID_NOSEC_CTRL	= 33,
+	BTM_SEC_SERVICE_HID_INTR		= 34,
+};
+
+typedef UINT8 tBTM_PM_STATUS;
+enum
+{
+	BTM_PM_STS_ACTIVE	= HCI_MODE_ACTIVE,
+	BTM_PM_STS_HOLD		= HCI_MODE_HOLD,
+	BTM_PM_STS_SNIFF	= HCI_MODE_SNIFF,
+	BTM_PM_STS_PARK		= HCI_MODE_PARK,
+	BTM_PM_STS_SSR		= 4,
+	BTM_PM_STS_PENDING	= 4,
+	BTM_PM_STS_ERROR	= 5,
+};
+
 typedef UINT8 tBTM_PM_MODE;
 enum
 {
-    BTM_PM_MD_ACTIVE = BTM_PM_STS_ACTIVE,
-    BTM_PM_MD_HOLD   = BTM_PM_STS_HOLD,
-    BTM_PM_MD_SNIFF  = BTM_PM_STS_SNIFF,
-    BTM_PM_MD_PARK   = BTM_PM_STS_PARK,
-    BTM_PM_MD_FORCE  = 0x10 /* OR this to force ACL link to a certain mode */
+	BTM_PM_MD_ACTIVE	= BTM_PM_STS_ACTIVE,
+	BTM_PM_MD_HOLD		= BTM_PM_STS_HOLD,
+	BTM_PM_MD_SNIFF		= BTM_PM_STS_SNIFF,
+	BTM_PM_MD_PARK		= BTM_PM_STS_PARK,
+	BTM_PM_MD_FORCE		= 0x10
 };
 
-#define BTM_PM_SET_ONLY_ID  0x80
+enum
+{
+	BTM_PM_REG_SET		= 1,
+	BTM_PM_REG_NOTIF	= 2,
+	BTM_PM_DEREG		= 4,
+};
+
+enum
+{
+	BTM_CB_EVT_RETURN_LINK_KEYS = 1,
+	BTM_CB_EVT_READ_STORED_LINK_KEYS,
+	BTM_CB_EVT_WRITE_STORED_LINK_KEYS,
+	BTM_CB_EVT_DELETE_STORED_LINK_KEYS,
+};
 
 // NOTE: does not seem to be BTM_MAX_REM_BD_NAME_LEN + 1
 typedef UINT8 tBTM_BD_NAME[64 + 1];
 
+typedef void tBTM_DEV_STATUS_CB(tBTM_DEV_STATUS status);
+typedef void tBTM_VS_EVT_CB(UINT8 len, UINT8 *p);
 typedef void tBTM_CMPL_CB(void *p1);
+typedef UINT8 tBTM_FILTER_CB(BD_ADDR bd_addr, DEV_CLASS dc);
+typedef void tBTM_INQ_DB_CHANGE_CB(void *p1, BOOLEAN is_new);
+typedef void tBTM_INQ_RESULTS_CB(void *);
+typedef void tBTM_ACL_DB_CHANGE_CB(BD_ADDR p_bda, DEV_CLASS p_dc, BD_NAME p_bdn,
+                                   BD_FEATURES features, BOOLEAN is_new);
+typedef void tBTM_SCO_CB(UINT16 sco_inx);
 typedef UINT8 tBTM_AUTHORIZE_CALLBACK(BD_ADDR bd_addr, DEV_CLASS dev_class,
                                       tBTM_BD_NAME bd_name, UINT8 *service_name,
                                       UINT8 service_id, BOOLEAN is_originator);
@@ -337,87 +409,36 @@ typedef UINT8 tBTM_LINK_KEY_REQ_CALLBACK(BD_ADDR bd_addr, LINK_KEY key);
 typedef UINT8 tBTM_LINK_KEY_CALLBACK(BD_ADDR bd_addr, DEV_CLASS dev_class,
                                      tBTM_BD_NAME bd_name, UINT8 *key,
                                      UINT8 key_type);
+typedef void tBTM_RMT_NAME_CALLBACK(BD_ADDR bd_addr, DEV_CLASS dc,
+                                    tBTM_BD_NAME bd_name);
 typedef UINT8 tBTM_AUTH_COMPLETE_CALLBACK(BD_ADDR bd_addr, DEV_CLASS dev_class,
                                           tBTM_BD_NAME bd_name, int result);
 typedef UINT8 tBTM_ABORT_CALLBACK(BD_ADDR bd_addr, DEV_CLASS dev_class,
                                   tBTM_BD_NAME bd_name);
-
+typedef void tBTM_MKEY_CALLBACK(BD_ADDR bd_addr, UINT8 status, UINT8 key_flag);
 typedef void tBTM_SEC_CBACK(BD_ADDR bd_addr, void *p_ref_data,
                             tBTM_STATUS result);
-typedef void tBTM_MKEY_CALLBACK(BD_ADDR bd_addr, UINT8 status, UINT8 key_flag);
-typedef UINT8 tBTM_FILTER_CB(BD_ADDR bd_addr, DEV_CLASS dc);
-typedef void tBTM_RMT_NAME_CALLBACK(BD_ADDR bd_addr, DEV_CLASS dc,
-                                    tBTM_BD_NAME bd_name);
-typedef void tBTM_ACL_DB_CHANGE_CB(BD_ADDR p_bda, DEV_CLASS p_dc, BD_NAME p_bdn,
-                                   BD_FEATURES features, BOOLEAN is_new);
-typedef void tBTM_SCO_CB(UINT16 sco_inx);
-typedef void tBTM_INQ_DB_CHANGE_CB(void *p1, BOOLEAN is_new);
+typedef void tBTM_PM_STATUS_CBACK(BD_ADDR p_bda, tBTM_PM_STATUS status,
+                                  UINT16 value, UINT8 hci_status);
 
 typedef struct
 {
-    UINT16  rx_pkt_len;
-    UINT16  tx_pkt_len;
-    BD_ADDR bd_addr;
-    UINT8   link_type;  /* BTM_LINK_TYPE_SCO or BTM_LINK_TYPE_ESCO */
-    UINT8   tx_interval;
-    UINT8   retrans_window;
-    UINT8   air_mode;
-} tBTM_ESCO_DATA;
-
-#define BTM_ESCO_CHG_EVT        1
-#define BTM_ESCO_CONN_REQ_EVT   2
-typedef UINT8 tBTM_ESCO_EVT;
+	UINT8	hci_version;	// size 0x01, offset 0x00
+	/* 1 byte padding */
+	UINT16	hci_revision;	// size 0x02, offset 0x02
+	UINT8	lmp_version;	// size 0x01, offset 0x04
+	/* 1 byte padding */
+	UINT16	manufacturer;	// size 0x02, offset 0x06
+	UINT16	lmp_subversion;	// size 0x02, offset 0x08
+} tBTM_VERSION_INFO; // size 0x0a
 
 typedef struct
 {
-    UINT16  sco_inx;
-    UINT16  rx_pkt_len;
-    UINT16  tx_pkt_len;
-    BD_ADDR bd_addr;
-    UINT8   hci_status;
-    UINT8   tx_interval;
-    UINT8   retrans_window;
-} tBTM_CHG_ESCO_EVT_DATA;
-
-typedef struct
-{
-    UINT16        sco_inx;
-    BD_ADDR       bd_addr;
-    DEV_CLASS     dev_class;
-    tBTM_SCO_TYPE link_type;
-} tBTM_ESCO_CONN_REQ_EVT_DATA;
-
-typedef union
-{
-    tBTM_CHG_ESCO_EVT_DATA      chg_evt;
-    tBTM_ESCO_CONN_REQ_EVT_DATA conn_evt;
-} tBTM_ESCO_EVT_DATA;
-
-typedef void tBTM_ESCO_CBACK(tBTM_ESCO_EVT event, tBTM_ESCO_EVT_DATA *p_data);
-
-typedef struct
-{
-    UINT32 tx_bw;
-    UINT32 rx_bw;
-    UINT16 max_latency;
-    UINT16 voice_contfmt;  /* Voice Settings or Content Format */
-    UINT16 packet_types;
-    UINT8  retrans_effort;
-} tBTM_ESCO_PARAMS;
-
-typedef struct
-{
-    UINT16 max_latency;
-    UINT16 packet_types;
-    UINT8  retrans_effort;
-} tBTM_CHG_ESCO_PARAMS;
-
-typedef struct
-{
-    UINT16  opcode;
-    UINT16  param_len;
-    UINT8   param_buf[255];
-} tBTM_VSC_CMPL;
+	UINT16	opcode;							// size 0x02, offset 0x00
+	UINT16	param_len;						// size 0x02, offset 0x02
+	UINT8	param_buf[HCI_COMMAND_SIZE];	// size 0xff, offset 0x04
+	/* 1 byte padding */
+} tBTM_VSC_CMPL; // size 0x104
 
 typedef void tBTM_VSC_CMPL_CB(tBTM_VSC_CMPL *p1);
 
@@ -444,12 +465,6 @@ typedef struct
 
 typedef struct
 {
-	tBTM_STATUS	status;		// size 0x01, offset 0x00
-	UINT8		num_resp;	// size 0x01, offset 0x01
-} tBTM_INQUIRY_CMPL; // size 0x02
-
-typedef struct
-{
 	UINT16		clock_offset;		// size 0x02, offset 0x00
 	BD_ADDR		remote_bd_addr;		// size 0x06, offset 0x02
 	DEV_CLASS	dev_class;			// size 0x03, offset 0x08
@@ -459,14 +474,122 @@ typedef struct
 	INT8		rssi;				// size 0x01, offset 0x0e
 } tBTM_INQ_RESULTS; // size 0x10
 
-typedef void tBTM_INQ_RESULTS_CB(void *);
-
 typedef struct
 {
 	tBTM_INQ_RESULTS	results;				// size 0x10, offset 0x00
 	BOOLEAN				appl_knows_rem_name;	// size 0x01, offset 0x10
 	/* 1 byte padding */
 } tBTM_INQ_INFO; // size 0x12
+
+typedef struct
+{
+	tBTM_STATUS	status;		// size 0x01, offset 0x00
+	UINT8		num_resp;	// size 0x01, offset 0x01
+} tBTM_INQUIRY_CMPL; // size 0x02
+
+typedef struct
+{
+	UINT16	status;			// size 0x02, offset 0x00
+	UINT16	length;			// size 0x02, offset 0x02
+	BD_NAME	remote_bd_name;	// size 0xf8, offset 0x04
+} tBTM_REMOTE_DEV_NAME; // size 0xfc
+
+typedef struct
+{
+	tBTM_STATUS	status;		// size 0x01, offset 0x00
+	UINT8		hci_status;	// size 0x01, offset 0x01
+	BD_ADDR		rem_bda;	// size 0x06, offset 0x02
+	UINT16		settings;	// size 0x02, offset 0x08
+} tBTM_LINK_POLICY_RESULTS; // size 0x0a
+
+typedef struct
+{
+	UINT8	hci_status;		// size 0x01, offset 0x00
+	UINT8	role;			// size 0x01, offset 0x01
+	BD_ADDR	remote_bd_addr;	// size 0x06, offset 0x02
+} tBTM_ROLE_SWITCH_CMPL; // size 0x08
+
+typedef struct
+{
+	FLOW_SPEC	flow;	// size 0x18, offset 0x00
+	UINT16		handle;	// size 0x02, offset 0x18
+	UINT8		status;	// size 0x01, offset 0x1a
+	/* 1 byte padding */
+} tBTM_QOS_SETUP_CMPL; // size 0x1c
+
+typedef struct
+{
+	tBTM_STATUS	status;		// size 0x01, offset 0x00
+	UINT8		hci_status;	// size 0x01, offset 0x01
+	INT8		rssi;		// size 0x01, offset 0x02
+	BD_ADDR		rem_bda;	// size 0x06, offset 0x03
+} tBTM_RSSI_RESULTS; // size 0x09
+
+typedef struct
+{
+	tBTM_STATUS	status;			// size 0x01, offset 0x00
+	UINT8		hci_status;		// size 0x01, offset 0x01
+	UINT8		link_quality;	// size 0x01, offset 0x02
+	BD_ADDR		rem_bda;		// size 0x01, offset 0x03
+} tBTM_LINK_QUALITY_RESULTS; // size 0x09
+
+typedef struct
+{
+	UINT32	tx_bw;			// size 0x04, offset 0x00
+	UINT32	rx_bw;			// size 0x04, offset 0x04
+	UINT16	max_latency;	// size 0x02, offset 0x08
+	UINT16	voice_contfmt;	// size 0x02, offset 0x0a
+	UINT16	packet_types;	// size 0x02, offset 0x0c
+	UINT8	retrans_effort;	// size 0x01, offset 0x0e
+	/* 1 byte padding */
+} tBTM_ESCO_PARAMS; // size 0x10
+
+typedef struct
+{
+	UINT16	max_latency;	// size 0x02, offset 0x00
+	UINT16	packet_types;	// size 0x02, offset 0x02
+	UINT8	retrans_effort;	// size 0x01, offset 0x04
+	/* 1 byte padding */
+} tBTM_CHG_ESCO_PARAMS; // size 0x06
+
+typedef struct
+{
+	UINT16	rx_pkt_len;		// size 0x02, offset 0x00
+	UINT16	tx_pkt_len;		// size 0x02, offset 0x02
+	BD_ADDR	bd_addr;		// size 0x06, offset 0x04
+	UINT8	link_type;		// size 0x01, offset 0x0a
+	UINT8	tx_interval;	// size 0x01, offset 0x0b
+	UINT8	retrans_window;	// size 0x01, offset 0x0c
+	UINT8	air_mode;		// size 0x01, offset 0x0d
+} tBTM_ESCO_DATA; // size 0x0e
+
+typedef struct
+{
+	UINT16	sco_inx;		// size 0x02, offset 0x00
+	UINT16	rx_pkt_len;		// size 0x02, offset 0x02
+	UINT16	tx_pkt_len;		// size 0x02, offset 0x03
+	BD_ADDR	bd_addr;		// size 0x06, offset 0x06
+	UINT8	hci_status;		// size 0x01, offset 0x0c
+	UINT8	tx_interval;	// size 0x01, offset 0x0d
+	UINT8	retrans_window;	// size 0x01, offset 0x0e
+	/* 1 byte padding */
+} tBTM_CHG_ESCO_EVT_DATA; // size 0x10
+
+typedef struct
+{
+	UINT16			sco_inx;	// size 0x02, offset 0x00
+	BD_ADDR			bd_addr;	// size 0x06, offset 0x02
+	DEV_CLASS		dev_class;	// size 0x03, offset 0x08
+	tBTM_SCO_TYPE	link_type;	// size 0x01, offset 0x0b
+} tBTM_ESCO_CONN_REQ_EVT_DATA; // size 0x0c
+
+typedef union
+{
+	tBTM_CHG_ESCO_EVT_DATA		chg_evt;	// size 0x10
+	tBTM_ESCO_CONN_REQ_EVT_DATA	conn_evt;	// size 0x0c
+} tBTM_ESCO_EVT_DATA; // size 0x10
+
+typedef void tBTM_ESCO_CBACK(tBTM_ESCO_EVT event, tBTM_ESCO_EVT_DATA *p_data);
 
 typedef struct
 {
@@ -480,13 +603,6 @@ typedef struct
 
 typedef struct
 {
-	UINT16	status;			// size 0x02, offset 0x00
-	UINT16	length;			// size 0x02, offset 0x02
-	BD_NAME	remote_bd_name;	// size 0xf8, offset 0x04
-} tBTM_REMOTE_DEV_NAME; // size 0xfc
-
-typedef struct
-{
 	UINT16			max;		// size 0x02, offset 0x00
 	UINT16			min;		// size 0x02, offset 0x02
 	UINT16			attempt;	// size 0x02, offset 0x04
@@ -497,144 +613,31 @@ typedef struct
 
 typedef struct
 {
-	UINT8	hci_version;	// size 0x01, offset 0x00
-	/* 1 byte padding */
-	UINT16	hci_revision;	// size 0x02, offset 0x02
-	UINT8	lmp_version;	// size 0x01, offset 0x04
-	/* 1 byte padding */
-	UINT16	manufacturer;	// size 0x02, offset 0x06
-	UINT16	lmp_subversion;	// size 0x02, offset 0x08
-} tBTM_VERSION_INFO; // size 0x0a
+	UINT8	event;		// size 0x01, offset 0x00
+	UINT8	num_keys;	// size 0x01, offset 0x01
+} tBTM_RETURN_LINK_KEYS_EVT; // size 0x02
 
 typedef struct
 {
-	UINT8	hci_status;		// size 0x01, offset 0x00
-	UINT8	role;			// size 0x01, offset 0x01
-	BD_ADDR	remote_bd_addr;	// size 0x06, offset 0x02
-} tBTM_ROLE_SWITCH_CMPL; // size 0x08
-
-typedef UINT8 tBTM_DEV_STATUS;
-enum
-{
-	BTM_DEV_STATUS_UP,
-	BTM_DEV_STATUS_DOWN,
-	BTM_DEV_STATUS_CMD_TOUT
-};
-
-typedef void tBTM_DEV_STATUS_CB(tBTM_DEV_STATUS status);
-typedef void tBTM_VS_EVT_CB(UINT8 len, UINT8 *p);
+	UINT8	event;		// size 0x01, offset 0x00
+	UINT8	status;		// size 0x01, offset 0x01
+	UINT16	max_keys;	// size 0x02, offset 0x02
+	UINT16	read_keys;	// size 0x02, offset 0x04
+} tBTM_READ_STORED_LINK_KEY_COMPLETE; // size 0x06
 
 typedef struct
 {
-	tBTM_DEV_STATUS_CB		*p_dev_status_cb;			// size 0x04, offset 0x00
-	tBTM_VS_EVT_CB			*p_vend_spec_cb;			// size 0x04, offset 0x04
-	tBTM_CMPL_CB			*p_stored_link_key_cmpl_cb;	// size 0x04, offset 0x08
-	TIMER_LIST_ENT			reset_timer;				// size 0x18, offset 0x0c
-	tBTM_CMPL_CB			*p_reset_cmpl_cb;			// size 0x04, offset 0x24
-	TIMER_LIST_ENT			rln_timer;					// size 0x18, offset 0x28
-	tBTM_CMPL_CB			*p_rln_cmpl_cb;				// size 0x04, offset 0x40
-	TIMER_LIST_ENT			rlinkp_timer;				// size 0x18, offset 0x44
-	tBTM_CMPL_CB			*p_rlinkp_cmpl_cb;			// size 0x04, offset 0x5c
-	TIMER_LIST_ENT			rssi_timer;					// size 0x18, offset 0x60
-	tBTM_CMPL_CB			*p_rssi_cmpl_cb;			// size 0x04, offset 0x78
-	TIMER_LIST_ENT			lnk_quality_timer;			// size 0x18, offset 0x7c
-	tBTM_CMPL_CB			*p_lnk_qual_cmpl_cb;		// size 0x04, offset 0x94
-	TIMER_LIST_ENT			qossu_timer;				// size 0x18, offset 0x98
-	tBTM_CMPL_CB			*p_qossu_cmpl_cb;			// size 0x04, offset 0xb0
-	tBTM_CMPL_CB			*p_vsc_cmpl_cb;				// size 0x04, offset 0xb4
-	tBTM_CMPL_CB			*p_reset_only_cmpl_cb;		// size 0x04, offset 0xb8
-	tBTM_ROLE_SWITCH_CMPL	switch_role_ref_data;		// size 0x08, offset 0xbc
-	tBTM_CMPL_CB			*p_switch_role_cb;			// size 0x04, offset 0xc4
-	BD_ADDR					local_addr;					// size 0x06, offset 0xc8
-	tBTM_VERSION_INFO		local_version;				// size 0x0a, offset 0xce
-	BD_FEATURES				local_features;				// size 0x08, offset 0xd8
-	DEV_CLASS				dev_class;					// size 0x03, offset 0xe0
-	/* 1 byte padding */
-	UINT16					page_timeout;				// size 0x02, offset 0xe4
-	UINT8					state;						// size 0x01, offset 0xe6
-	UINT8					retry_count;				// size 0x01, offset 0xe7
-	UINT8					vsc_busy;					// size 0x01, offset 0xe8
-	/* 3 bytes padding */
-} tBTM_DEVCB; // size 0xec
+	UINT8	event;		// size 0x01, offset 0x00
+	UINT8	status;		// size 0x01, offset 0x01
+	UINT8	num_keys;	// size 0x01, offset 0x02
+} tBTM_WRITE_STORED_LINK_KEY_COMPLETE; // size 0x03
 
 typedef struct
 {
-	tBTM_ESCO_CBACK		*p_esco_cback;	// size 0x04, offset 0x00
-	tBTM_ESCO_PARAMS	setup;			// size 0x10, offset 0x04
-	tBTM_ESCO_DATA		data;			// size 0x0e, offset 0x14
-	UINT8				hci_status;		// size 0x01, offset 0x22
-	/* 1 byte padding */
-} tBTM_ESCO_INFO; // size 0x24
-
-typedef struct
-{
-    tBTM_STATUS status;
-    UINT8       hci_status;
-    INT8        rssi;
-    BD_ADDR     rem_bda;
-} tBTM_RSSI_RESULTS;
-
-typedef struct
-{
-    tBTM_STATUS status;
-    UINT8       hci_status;
-    UINT8       link_quality;
-    BD_ADDR     rem_bda;
-} tBTM_LINK_QUALITY_RESULTS;
-
-typedef void tBTM_PM_STATUS_CBACK(BD_ADDR p_bda, tBTM_PM_STATUS status,
-                                  UINT16 value, UINT8 hci_status);
-
-typedef struct
-{
-    UINT8          event;
-    UINT8          num_keys;
-} tBTM_RETURN_LINK_KEYS_EVT;
-
-typedef struct
-{
-    tBTM_STATUS status;
-    UINT8       hci_status;
-    BD_ADDR     rem_bda;
-    UINT16      settings;
-} tBTM_LINK_POLICY_RESULTS;
-
-#if defined(__clang__)
-typedef tBTM_LINK_POLICY_RESULTS tBTM_LNK_POLICY_RESULTS __attribute__((deprecated("", "tBTM_LINK_POLICY_RESULTS")));
-#endif
-
-typedef struct
-{
-    FLOW_SPEC flow;
-    UINT16 handle;
-    UINT8 status;
-} tBTM_QOS_SETUP_CMPL;
-
-typedef struct
-{
-    UINT8          event;
-    UINT8          status;
-    UINT16         max_keys;
-    UINT16         read_keys;
-} tBTM_READ_STORED_LINK_KEY_COMPLETE;
-
-typedef struct
-{
-    UINT8          event;
-    UINT8          status;
-    UINT8          num_keys;
-} tBTM_WRITE_STORED_LINK_KEY_COMPLETE;
-
-typedef struct
-{
-    UINT8          event;
-    UINT8          status;
-    UINT16         num_keys;
-} tBTM_DELETE_STORED_LINK_KEY_COMPLETE;
-
-/*******************************************************************************
- * external globals
- */
+	UINT8	event;		// size 0x01, offset 0x00
+	UINT8	status;		// size 0x01, offset 0x01
+	UINT16	num_keys;	// size 0x02, offset 0x02
+} tBTM_DELETE_STORED_LINK_KEY_COMPLETE; // size 0x04
 
 /*******************************************************************************
  * functions

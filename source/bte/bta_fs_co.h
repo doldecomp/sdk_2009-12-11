@@ -30,10 +30,6 @@
  * headers
  */
 
-/*******************************************************************************
- * macros
- */
-
 #include "data_types.h"
 
 /*******************************************************************************
@@ -44,21 +40,19 @@
 	extern "C" {
 #endif
 
-/*******************************************************************************
- * external globals
- */
-
 typedef UINT16 tBTA_FS_CO_STATUS;
+typedef int tBTA_FS_OPEN_FLAGS;
+typedef int tBTA_FS_FD;
 
 /*******************************************************************************
  * functions
  */
 
-extern void bta_fs_co_open(char const *p_path, int oflags, UINT32 size,
+extern void bta_fs_co_open(char const *p_path, tBTA_FS_OPEN_FLAGS oflags,
+                           UINT32 size, UINT16 evt, UINT8 app_id);
+extern tBTA_FS_CO_STATUS bta_fs_co_close(tBTA_FS_FD fd, UINT8 app_id);
+extern void bta_fs_co_read(tBTA_FS_FD fd, UINT8 *p_buf, UINT16 nbytes,
                            UINT16 evt, UINT8 app_id);
-extern tBTA_FS_CO_STATUS bta_fs_co_close(int fd, UINT8 app_id);
-extern void bta_fs_co_read(int fd, UINT8 *p_buf, UINT16 nbytes, UINT16 evt,
-                           UINT8 app_id);
 
 #ifdef __cplusplus
 	}

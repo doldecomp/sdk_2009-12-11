@@ -36,19 +36,8 @@
  * macros
  */
 
-#define BT_EVT_TO_BTU_SP_DATA	0x1500
-#define BT_EVT_TO_LM_HCI_ACL	0x2100
-#define BT_EVT_TO_START_TIMER	0x3e00
-
-#define BT_PSM_SDP				1
-#define BT_PSM_RFCOMM			3
-
-#define BTM_SEC_PROTO_RFCOMM	3
-
-#define GUARANTEED      2
-#define BEST_EFFORT     1
-
 // clang-format off
+
 #define UINT8_TO_STREAM(p, u8)									\
 	do															\
 	{															\
@@ -259,7 +248,6 @@
 		(p) += 4;												\
 	} while (FALSE)
 
-
 #define BE_STREAM_TO_ARRAY(p, a, len)							\
 	do															\
 	{															\
@@ -287,9 +275,6 @@
 
 // clang-format on
 
-#define HID_PSM_CONTROL		17
-#define HID_PSM_INTERRUPT	19
-
 /*******************************************************************************
  * types
  */
@@ -298,16 +283,32 @@
 	extern "C" {
 #endif
 
-typedef struct
+typedef UINT16 tBT_EVT;
+enum
 {
-	UINT16	event;			// size 0x02, offset 0x00
-	UINT16	len;			// size 0x02, offset 0x02
-	UINT16	offset;			// size 0x02, offset 0x04
-	UINT16	layer_specific;	// size 0x02, offset 0x06
-} BT_HDR; // size 0x08
+	BT_EVT_TO_BTU_SP_DATA	= 21 << 8,
+	BT_EVT_TO_LM_HCI_ACL	= 33 << 8,
+	BT_EVT_TO_START_TIMER	= 62 << 8,
+};
 
-// only for bc; do not use (TODO: migrate uses to actual sizeof expression)
-#define BT_HDR_SIZE			(sizeof(BT_HDR))
+typedef int tBT_PSM;
+enum
+{
+	BT_PSM_SDP			= 1,
+	BT_PSM_RFCOMM		= 3,
+	BT_PSM_HIDC			= 17,
+	BT_PSM_HIDI			= 19,
+
+	HID_PSM_CONTROL		= BT_PSM_HIDC,
+	HID_PSM_INTERRUPT	= BT_PSM_HIDI,
+};
+
+typedef UINT8 tFLOW_SPEC_SERVICE_TYPE;
+enum
+{
+	BEST_EFFORT = 1,
+	GUARANTEED = 2,
+};
 
 #define BD_ADDR_LEN			6
 typedef UINT8 BD_ADDR[BD_ADDR_LEN];
@@ -320,7 +321,7 @@ typedef UINT8 LINK_KEY[LINK_KEY_LEN];
 typedef UINT8 DEV_CLASS[DEV_CLASS_LEN];
 typedef UINT8 *DEV_CLASS_PTR;
 
-#define BD_NAME_LEN			248 // or is 247 to keep the + 1?
+#define BD_NAME_LEN			248
 typedef UINT8 BD_NAME[BD_NAME_LEN];
 typedef UINT8 *BD_NAME_PTR;
 
@@ -336,6 +337,14 @@ typedef UINT8 BT_EVENT_MASK[BT_EVENT_MASK_LEN];
 
 #define BD_FEATURES_LEN		8
 typedef UINT8 BD_FEATURES[BD_FEATURES_LEN];
+
+typedef struct
+{
+	tBT_EVT	event;			// size 0x02, offset 0x00
+	UINT16	len;			// size 0x02, offset 0x02
+	UINT16	offset;			// size 0x02, offset 0x04
+	UINT16	layer_specific;	// size 0x02, offset 0x06
+} BT_HDR; // size 0x08
 
 #define LEN_UUID_16			2
 #define LEN_UUID_32			4
@@ -355,14 +364,14 @@ typedef struct
 
 typedef struct
 {
-	UINT8	qos_flags;			// size 0x01, offset 0x00
-	UINT8	service_type;		// size 0x01, offset 0x01
+	UINT8					qos_flags;			// size 0x01, offset 0x00
+	tFLOW_SPEC_SERVICE_TYPE	service_type;		// size 0x01, offset 0x01
 	/* 2 bytes padding */
-	UINT32	token_rate;			// size 0x04, offset 0x04
-	UINT32	token_bucket_size;	// size 0x04, offset 0x08
-	UINT32	peak_bandwidth;		// size 0x04, offset 0x0c
-	UINT32	latency;			// size 0x04, offset 0x10
-	UINT32	delay_variation;	// size 0x04, offset 0x14
+	UINT32					token_rate;			// size 0x04, offset 0x04
+	UINT32					token_bucket_size;	// size 0x04, offset 0x08
+	UINT32					peak_bandwidth;		// size 0x04, offset 0x0c
+	UINT32					latency;			// size 0x04, offset 0x10
+	UINT32					delay_variation;	// size 0x04, offset 0x14
 } FLOW_SPEC; // size 0x18
 
 #ifdef __cplusplus

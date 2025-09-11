@@ -66,6 +66,7 @@ BOOLEAN WBT_ExtAddPinCode(void)
 		temp_u32[1] = 0;
 		temp_u32[2] = 0;
 		temp_u32[3] = 0;
+
 		SDP_AddAttribute(sdp_record_handle, ATTR_ID_EXT_PIN_CODE, 1,
 		                 ARRAY_LENGTH(temp_u32), temp_u32);
 

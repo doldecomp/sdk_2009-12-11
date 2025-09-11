@@ -1,6 +1,3 @@
-#ifndef BTE_WC_ASSERT_H
-#define BTE_WC_ASSERT_H
-
 /* Original source:
  * bluedroid <android.googlesource.com/platform/external/bluetooth/bluedroid>
  * stack/include/wcassert.h
@@ -27,30 +24,47 @@
 /* Includes changes by muff1n1634 */
 
 /*******************************************************************************
- * macros
+ * anti-header guard
  */
 
-#if !defined(NDEBUG)
-# define WCAssert_FileLine(file_, line_)	\
-	wc_assert("ASSERT at %s line %d\n", file_, line_)
-#else
-# define WCAssert_FileLine(file_, line_)
+#ifdef __MWERKS__
+# pragma notonce
 #endif
 
-#define WCAssert_File(file_)	WCAssert_FileLine(  file_ , __LINE__)
-#define WCAssert_Line(line_)	WCAssert_FileLine(__FILE__,   line_ )
-#define WCAssert()				WCAssert_FileLine(__FILE__, __LINE__)
+/*******************************************************************************
+ * WCAssert macro family
+ */
+
+#undef WCAssert_FileLine /* <assert.h> semantics */
+
+#if !defined(NDEBUG)
+# define WCAssert_FileLine(file_, line_, expr_)						\
+	do																\
+	{																\
+		if (!(expr_))												\
+			(wc_assert)("ASSERT at %s line %d\n", file_, line_);	\
+	} while (0)
+#else
+# define WCAssert_FileLine(file_, line_, expr_)
+#endif
+
+#define WCAssert_File(file_, expr_)	WCAssert_FileLine(  file_ , __LINE__, expr_)
+#define WCAssert_Line(line_, expr_)	WCAssert_FileLine(__FILE__,   line_ , expr_)
+#define WCAssert(expr_)				WCAssert_FileLine(__FILE__, __LINE__, expr_)
 
 /*******************************************************************************
  * functions
  */
 
+#ifndef BTE_WC_ASSERT_H
+#define BTE_WC_ASSERT_H
+
 #ifdef __cplusplus
 	extern "C" {
 #endif
 
-// WARNING: This function does not have a definition
-void wc_assert(char const *message, char const *file, unsigned long int line);
+/* WARNING: This function does not have a definition */
+void (wc_assert)(char const *message, char const *file, unsigned long int line);
 
 #ifdef __cplusplus
 	}

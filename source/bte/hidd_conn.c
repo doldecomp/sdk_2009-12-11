@@ -377,9 +377,9 @@ static void hidd_l2cif_config_ind(UINT16 l2cap_cid, tL2CAP_CFG_INFO *p_cfg)
 	L2CA_ConfigRsp(l2cap_cid, p_cfg);
 
 	if (l2cap_cid == p_hcon->ctrl_cid)
-		p_hcon->conn_flags |= HID_CONN_FLAGS_HER_CTRL_CFG_DONE;
+		p_hcon->conn_flags |= HID_CONN_FLAGS_THEIR_CTRL_CFG_DONE;
 	else
-		p_hcon->conn_flags |= HID_CONN_FLAGS_HER_INTR_CFG_DONE;
+		p_hcon->conn_flags |= HID_CONN_FLAGS_THEIR_INTR_CFG_DONE;
 
 	if ((p_hcon->conn_flags & HID_CONN_FLAGS_ALL_CONFIGURED)
 	        == HID_CONN_FLAGS_ALL_CONFIGURED
@@ -417,9 +417,9 @@ static void hidd_l2cif_config_cfm(UINT16 l2cap_cid, tL2CAP_CFG_INFO *p_cfg)
 	}
 
 	if (l2cap_cid == p_hcon->ctrl_cid)
-		p_hcon->conn_flags |= HID_CONN_FLAGS_MY_CTRL_CFG_DONE;
+		p_hcon->conn_flags |= HID_CONN_FLAGS_OUR_CTRL_CFG_DONE;
 	else
-		p_hcon->conn_flags |= HID_CONN_FLAGS_MY_INTR_CFG_DONE;
+		p_hcon->conn_flags |= HID_CONN_FLAGS_OUR_INTR_CFG_DONE;
 
 	if ((p_hcon->conn_flags & HID_CONN_FLAGS_ALL_CONFIGURED)
 	        == HID_CONN_FLAGS_ALL_CONFIGURED

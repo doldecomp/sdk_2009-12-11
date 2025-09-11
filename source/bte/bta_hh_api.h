@@ -32,17 +32,18 @@
 
 #include "bt_target.h"
 #include "bt_types.h"
-#include "bta_api.h"
 #include "data_types.h"
+
+#include "bta_api.h"
 #include "hiddefs.h"
 
 /*******************************************************************************
  * macros
  */
 
-#define BTA_HH_MAX_KNOWN        HID_HOST_MAX_DEVICES
+#define BTA_HH_MAX_KNOWN		HID_HOST_MAX_DEVICES
 
-#define BTA_HH_INVALID_HANDLE   0xff
+#define BTA_HH_INVALID_HANDLE	0xff
 
 /*******************************************************************************
  * types
@@ -55,164 +56,180 @@
 typedef UINT8 tBTA_HH_STATUS;
 enum
 {
-    BTA_HH_OK = 0,
-    BTA_HH_ERR = 6,
-    BTA_HH_ERR_SDP = 7,
-    BTA_HH_ERR_TOD_UNSPT = 255, // was 10
-    BTA_HH_ERR_NO_RES = 11,          /* out of system resources */
-    BTA_HH_ERR_16 = 16,
-    BTA_HH_ERR_PROTO = 8,
-    BTA_HH_HS_TRANS_NOT_SPT = 3,    /* handshake error : transaction not spt */
-    BTA_HH_ERR_AUTH_FAILED = 12,     /* authentication fail */
-    BTA_HH_HS_ERROR = 5,            /* handshake error : unspecified HS error */
-    BTA_HH_ERR_DB_FULL = 9,
-    BTA_HH_ERR_HDL = 13,
-
+	BTA_HH_OK				= 0,
+	BTA_HH_HS_TRANS_NOT_SPT	= 3,
+	BTA_HH_HS_ERROR			= 5,
+	BTA_HH_ERR				= 6,
+	BTA_HH_ERR_SDP			= 7,
+	BTA_HH_ERR_PROTO		= 8,
+	BTA_HH_ERR_DB_FULL		= 9,
+	BTA_HH_ERR_NO_RES		= 11,
+	BTA_HH_ERR_AUTH_FAILED	= 12,
+	BTA_HH_ERR_HDL			= 13,
+	BTA_HH_ERR_16			= 16,
+	BTA_HH_ERR_TOD_UNSPT	= 255, // was 10
 };
 
 typedef UINT16 tBTA_HH_EVT;
-#define BTA_HH_ENABLE_EVT       0       /* HH enabled */
-#define BTA_HH_DISABLE_EVT      1       /* HH disabled */
-#define BTA_HH_OPEN_EVT         2       /* connection opened */
-#define BTA_HH_CLOSE_EVT        3       /* connection closed */
-#define BTA_HH_GET_RPT_EVT      4       /* BTA_HhGetReport callback */
-#define BTA_HH_SET_RPT_EVT      5       /* BTA_HhSetReport callback */
-#define BTA_HH_GET_PROTO_EVT    6       /* BTA_GetProtoMode callback */
-#define BTA_HH_SET_PROTO_EVT    7       /* BTA_HhSetProtoMode callback */
-#define BTA_HH_GET_IDLE_EVT     8       /* BTA_HhGetIdle comes callback */
-#define BTA_HH_SET_IDLE_EVT     9       /* BTA_HhSetIdle finish callback */
-#define BTA_HH_GET_DSCP_EVT     10      /* Get report descripotor */
-#define BTA_HH_ADD_DEV_EVT      11      /* Add Device callback */
-#define BTA_HH_RMV_DEV_EVT      12      /* remove device finished */
-#define BTA_HH_VC_UNPLUG_EVT    13      /* virtually unplugged */
-#define BTA_HH_GET_ACL_Q_EVT    15
-
-typedef UINT8 tBTA_HH_PROTO_MODE;
-#define BTA_HH_PROTO_RPT_MODE	0
-#define BTA_HH_PROTO_BOOT_MODE	1
-#define BTA_HH_PROTO_UNKNOWN	255
-
-typedef UINT8 tBTA_HH_TRANS_CTRL_TYPE;
 enum
 {
-    BTA_HH_CTRL_VIRTUAL_CABLE_UNPLUG = 5,                   /* virtual unplug   */
-    BTA_HH_CTRL_SUSPEND = 3,                               /* enter suspend    */
-    BTA_HH_CTRL_EXIT_SUSPEND = 4,                          /* exit suspend     */
+	BTA_HH_ENABLE_EVT		= 0,
+	BTA_HH_DISABLE_EVT		= 1,
+	BTA_HH_OPEN_EVT			= 2,
+	BTA_HH_CLOSE_EVT		= 3,
+	BTA_HH_GET_RPT_EVT		= 4,
+	BTA_HH_SET_RPT_EVT		= 5,
+	BTA_HH_GET_PROTO_EVT	= 6,
+	BTA_HH_SET_PROTO_EVT	= 7,
+	BTA_HH_GET_IDLE_EVT		= 8,
+	BTA_HH_SET_IDLE_EVT		= 9,
+	BTA_HH_GET_DSCP_EVT		= 10,
+	BTA_HH_ADD_DEV_EVT		= 11,
+	BTA_HH_RMV_DEV_EVT		= 12,
+	BTA_HH_VC_UNPLUG_EVT	= 13,
+	BTA_HH_GET_ACL_Q_EVT	= 15,
 };
 
-typedef UINT8 tBTA_HH_RPT_TYPE;
+typedef UINT8 tBTA_HH_PROTO_MODE;
 enum
 {
-    BTA_HH_RPTT_OUTPUT = 2,     /* output report    */
+	BTA_HH_PROTO_RPT_MODE	= 0,
+	BTA_HH_PROTO_BOOT_MODE	= 1,
+
+	BTA_HH_PROTO_UNKNOWN	= 255
 };
 
 typedef UINT8 tBTA_HH_BOOT_RPT_ID;
 enum
 {
-    BTA_HH_KEYBD_RPT_ID  =               1,
-    BTA_HH_MOUSE_RPT_ID = 2,
-
+	BTA_HH_KEYBD_RPT_ID = 1,
+	BTA_HH_MOUSE_RPT_ID,
 };
 
 typedef UINT8 tBTA_HH_DEVT;
-#define BTA_HH_DEVT_UNKNOWN      0x00
+enum
+{
+	BTA_HH_DEVT_UNKNOWN	= 0,
+};
 
 typedef UINT16 tBTA_HH_ATTR_MASK;
+#if 0
+enum
+{
+	/* ... */
+};
+#endif
+
+typedef UINT8 tBTA_HH_RPT_TYPE;
+enum
+{
+	BTA_HH_RPTT_OUTPUT	= 2,
+};
+
+typedef UINT8 tBTA_HH_TRANS_CTRL_TYPE;
+enum
+{
+	BTA_HH_CTRL_SUSPEND					= 3,
+	BTA_HH_CTRL_EXIT_SUSPEND			= 4,
+	BTA_HH_CTRL_VIRTUAL_CABLE_UNPLUG	= 5,
+};
 
 typedef struct
 {
-    BD_ADDR         bda;                /* HID device bd address    */
-    tBTA_HH_STATUS  status;             /* operation status         */
-    UINT8           handle;             /* device handle            */
-} tBTA_HH_CONN;
+	tBTA_HH_DEVT	tod;	// size 0x01, offset 0x00
+	UINT8			app_id;	// size 0x01, offset 0x01
+} tBTA_HH_SPT_TOD; // size 0x02
+
+typedef struct
+{
+	UINT8			max_devt_spt;	// size 0x01, offset 0x00
+	/* 3 bytes padding */
+	tBTA_HH_SPT_TOD	*p_devt_list;	// size 0x04, offset 0x04
+	UINT16			sdp_db_size;	// size 0x02, offset 0x08
+	/* 2 bytes padding */
+} tBTA_HH_CFG; // size 0x0c
+
+typedef struct
+{
+	BD_ADDR			bda;	// size 0x06, offset 0x00
+	tBTA_HH_STATUS	status;	// size 0x01, offset 0x06
+	UINT8			handle;	// size 0x01, offset 0x07
+} tBTA_HH_CONN; // size 0x08
 
 typedef tBTA_HH_CONN tBTA_HH_DEV_INFO;
 
 typedef struct
 {
-    tBTA_HH_STATUS              status;     /* operation status         */
-    UINT8                       handle;     /* device handle            */
-} tBTA_HH_CBDATA;
+	tBTA_HH_STATUS	status;	// size 0x01, offset 0x00
+	UINT8			handle;	// size 0x01, offset 0x01
+} tBTA_HH_CBDATA; // size 0x02
 
 typedef struct
 {
-    tBTA_HH_STATUS  status;                 /* handshake status */
-    UINT8           handle;                 /* device handle    */
-    union
-    {
-        tBTA_HH_PROTO_MODE      proto_mode; /* GET_PROTO_EVT :protocol mode */
-        BT_HDR                  rpt_data;   /* GET_RPT_EVT   : report data  */
-        UINT8                   idle_rate;  /* GET_IDLE_EVT  : idle rate    */
-    } rsp_data;
-} tBTA_HH_HSDATA;
+	UINT8	this_char;	// size 0x01, offset 0x00
+	BOOLEAN	caps_lock;	// size 0x01, offset 0x01
+	BOOLEAN	upper;		// size 0x01, offset 0x02
+	BOOLEAN	ctrl;		// size 0x01, offset 0x03
+	BOOLEAN	alt;		// size 0x01, offset 0x04
+	BOOLEAN	num_lock;	// size 0x01, offset 0x05
+} tBTA_HH_KEYBD_RPT; // size 0x06
 
 typedef struct
 {
-    // total size: 0x6
-    unsigned char handle; // offset 0x0, size 0x1
-    unsigned short num_queued; // offset 0x2, size 0x2
-    unsigned short num_not_acked; // offset 0x4, size 0x2
-} tBTA_HH_QUEUE_INFO;
+	UINT8	mouse_button;	// size 0x01, offset 0x00
+	INT8	delta_x;		// size 0x01, offset 0x01
+	INT8	delta_y;		// size 0x01, offset 0x01
+} tBTA_HH_MICE_RPT; // size 0x03
 
 typedef struct
 {
-    // total size: 0x1E
-    unsigned short num_avail_buffs; // offset 0x0, size 0x2
-    unsigned short num_buffs; // offset 0x2, size 0x2
-    unsigned short num_links; // offset 0x4, size 0x2
-    tBTA_HH_QUEUE_INFO queue_info[4]; // offset 0x6, size 0x18
-} tBTA_HH_ACL_QUEUE_INFO; // offset 0x0, size 0x1E
+	tBTA_HH_BOOT_RPT_ID	dev_type;	// size 0x01, offset 0x00
+	union
+	{
+		tBTA_HH_KEYBD_RPT	keybd_rpt;	// size 0x06
+		tBTA_HH_MICE_RPT	mice_rpt;	// size 0x03
+	} data_rpt; // size 0x06, offset 0x01
+} tBTA_HH_BOOT_RPT; // size 0x07
+
+typedef struct
+{
+	tBTA_HH_STATUS	status;	// size 0x01, offset 0x00
+	UINT8			handle;	// size 0x01, offset 0x01
+	union
+	{
+		tBTA_HH_PROTO_MODE	proto_mode;	// size 0x01
+		BT_HDR				rpt_data;	// size 0x08
+		UINT8				idle_rate;	// size 0x01
+	} rsp_data; // size 0x08, offset 0x02
+} tBTA_HH_HSDATA; // size 0x0a
+
+typedef struct
+{
+	UINT8	handle;			// size 0x01, offset 0x00
+	UINT16	num_queued;		// size 0x02, offset 0x02
+	UINT16	num_not_acked;	// size 0x02, offset 0x04
+} tBTA_HH_QUEUE_INFO; // size 0x6
+
+typedef struct
+{
+	UINT16				num_avail_buffs;	// size 0x02, offset 0x00
+	UINT16				num_buffs;			// size 0x02, offset 0x02
+	UINT16				num_links;			// size 0x02, offset 0x04
+	tBTA_HH_QUEUE_INFO	queue_info[4];		// size 0x18, offset 0x06
+} tBTA_HH_ACL_QUEUE_INFO; // size 0x1e
 
 typedef union
 {
-    tBTA_HH_DEV_INFO        dev_info;           /* BTA_HH_ADD_DEV_EVT, BTA_HH_RMV_DEV_EVT   */
-    tBTA_HH_CONN            conn;               /* BTA_HH_OPEN_EVT      */
-    tBTA_HH_CBDATA          dev_status;         /* BTA_HH_CLOSE_EVT,
-                                                   BTA_HH_SET_PROTO_EVT
-                                                   BTA_HH_SET_RPT_EVT
-                                                   BTA_HH_SET_IDLE_EVT  */
-
-    tBTA_HH_STATUS          status;             /* BTA_HH_ENABLE_EVT */
-    tHID_DEV_DSCP_INFO      dscp_info;          /* BTA_HH_GET_DSCP_EVT */
-    tBTA_HH_HSDATA          hs_data;            /* GET_ transaction callback
-                                                   BTA_HH_GET_RPT_EVT
-                                                   BTA_HH_GET_PROTO_EVT
-                                                   BTA_HH_GET_IDLE_EVT */
-    tBTA_HH_ACL_QUEUE_INFO acl_queue_info;
+	tBTA_HH_DEV_INFO		dev_info;		// size 0x08
+	tBTA_HH_CONN			conn;			// size 0x08
+	tBTA_HH_CBDATA			dev_status;		// size 0x02
+	tBTA_HH_STATUS			status;			// size 0x01
+	tHID_DEV_DSCP_INFO		dscp_info;		// size 0x08
+	tBTA_HH_HSDATA			hs_data;		// size 0x0a
+	tBTA_HH_ACL_QUEUE_INFO	acl_queue_info;	// size 0x1e
 } tBTA_HH;
 
 typedef void tBTA_HH_CBACK(tBTA_HH_EVT event, tBTA_HH *p_data);
-
-typedef struct
-{
-    UINT8               this_char;       /* virtual key code     */
-    BOOLEAN             caps_lock;          /* is caps locked       */
-    BOOLEAN             upper;
-    BOOLEAN             ctrl;
-    BOOLEAN             alt;
-    BOOLEAN             num_lock;           /* is Num key pressed   */
-} tBTA_HH_KEYBD_RPT;
-
-typedef struct
-{
-    UINT8               mouse_button;       /* mouse button is clicked   */
-    INT8                delta_x;            /* displacement x            */
-    INT8                delta_y;            /* displacement y            */
-} tBTA_HH_MICE_RPT;
-
-typedef struct
-{
-    tBTA_HH_BOOT_RPT_ID dev_type;           /* type of device report */
-    union
-    {
-        tBTA_HH_KEYBD_RPT   keybd_rpt;      /* keyboard report      */
-        tBTA_HH_MICE_RPT    mice_rpt;       /* mouse report         */
-    }                   data_rpt;
-} tBTA_HH_BOOT_RPT;
-
-/*******************************************************************************
- * external globals
- */
 
 /*******************************************************************************
  * functions

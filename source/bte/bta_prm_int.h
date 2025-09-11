@@ -11,10 +11,6 @@
 #include "bta_prm_api.h"
 
 /*******************************************************************************
- * macros
- */
-
-/*******************************************************************************
  * types
  */
 
@@ -91,7 +87,7 @@ extern tBTA_PRM_CB bta_prm_cb;
  * functions
  */
 
-UINT8 bta_prm_hdl_event(BT_HDR *);
+UINT8 bta_prm_hdl_event(BT_HDR *p_msg);
 
 #ifdef __cplusplus
 	}

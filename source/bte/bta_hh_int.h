@@ -31,9 +31,9 @@
  */
 
 #include "bt_types.h"
-#include "bta_api.h"
 #include "data_types.h"
 
+#include "bta_api.h"
 #include "bta_hh_api.h"
 #include "sdp_api.h"
 #include "hiddefs.h"
@@ -42,10 +42,10 @@
  * macros
  */
 
-#define BTA_HH_MAX_RPT_CHARS    8
+#define BTA_HH_MAX_RPT_CHARS		8
 
-#define BTA_HH_FST_TRANS_CB_EVT         BTA_HH_GET_RPT_EVT
-#define BTA_HH_FST_BTE_TRANS_EVT        HID_TRANS_GET_REPORT
+#define BTA_HH_FST_TRANS_CB_EVT		BTA_HH_GET_RPT_EVT
+#define BTA_HH_FST_BTE_TRANS_EVT	HID_TRANS_GET_REPORT
 
 /*******************************************************************************
  * types
@@ -55,153 +55,139 @@
 	extern "C" {
 #endif
 
+typedef UINT16 tBTA_HH_INT_EVT;
 enum
 {
-    BTA_HH_API_CLOSE_EVT = 5889,
-    BTA_HH_SDP_CMPL_EVT = 5895,
-    BTA_HH_OPEN_CMPL_EVT = 5899,
-    BTA_HH_INT_OPEN_EVT = 5890,
-    BTA_HH_INT_CLOSE_EVT = 5891,
-    BTA_HH_INT_DATA_EVT = 5892,
-    BTA_HH_INT_HANDSK_EVT = 5894,
-    BTA_HH_INT_CTRL_DATA = 5893,
-    BTA_HH_INVALID_EVT = 5904, // was 5903
-
-    BTA_HH_API_ENABLE_EVT = 5900,
-    BTA_HH_API_DISABLE_EVT = 5901,
-    BTA_HH_API_OPEN_EVT = 5888,
-    BTA_HH_API_WRITE_DEV_EVT = 5896,
-    BTA_HH_API_GET_DSCP_EVT = 5897,
-    BTA_HH_API_MAINT_DEV_EVT = 5898,
-    BTA_HH_API_GET_ACL_Q_EVT = 5902,
-    BTA_HH_DISC_CMPL_EVT = 5903, // was 5902
+	BTA_HH_API_OPEN_EVT			= 5888, // BTA_SYS_EVT_START(BTA_ID_HH)
+	BTA_HH_API_CLOSE_EVT		= 5889,
+	BTA_HH_INT_OPEN_EVT			= 5890,
+	BTA_HH_INT_CLOSE_EVT		= 5891,
+	BTA_HH_INT_DATA_EVT			= 5892,
+	BTA_HH_INT_CTRL_DATA		= 5893,
+	BTA_HH_INT_HANDSK_EVT		= 5894,
+	BTA_HH_SDP_CMPL_EVT			= 5895,
+	BTA_HH_API_WRITE_DEV_EVT	= 5896,
+	BTA_HH_API_GET_DSCP_EVT		= 5897,
+	BTA_HH_API_MAINT_DEV_EVT	= 5898,
+	BTA_HH_OPEN_CMPL_EVT		= 5899,
+	BTA_HH_API_ENABLE_EVT		= 5900,
+	BTA_HH_API_DISABLE_EVT		= 5901,
+	BTA_HH_API_GET_ACL_Q_EVT	= 5902,
+	BTA_HH_DISC_CMPL_EVT		= 5903, // was 5902
+	BTA_HH_INVALID_EVT			= 5904, // was 5903
 };
 
 typedef UINT8 tBTA_HH_STATE;
 enum
 {
-    BTA_HH_NULL_ST = 0,
-    BTA_HH_IDLE_ST = 1,
-    BTA_HH_W4_CONN_ST = 2,
-    BTA_HH_CONN_ST = 3,
+	BTA_HH_NULL_ST,
+	BTA_HH_IDLE_ST,
+	BTA_HH_W4_CONN_ST,
+	BTA_HH_CONN_ST,
 };
 
-typedef UINT16 tBTA_HH_INT_EVT;         /* HID host internal events */
+typedef struct
+{
+	BT_HDR			hdr;									// size 0x08, offset 0x00
+	UINT8			sec_mask;								// size 0x01, offset 0x08
+	UINT8			service_name[BTA_SERVICE_NAME_LEN + 1];	// size 0x24, offset 0x09
+	/* 3 bytes padding */
+	tBTA_HH_CBACK	*p_cback;								// size 0x08, offset 0x30
+} tBTA_HH_API_ENABLE; // size 0x34
 
 typedef struct
 {
-    tBTA_HH_DEVT        tod;        /* type of device               */
-    UINT8               app_id;     /* corresponding application ID */
-} tBTA_HH_SPT_TOD;
+	BT_HDR				hdr;		// size 0x08, offset 0x00
+	BD_ADDR				bd_addr;	// size 0x06, offset 0x08
+	UINT8				sec_mask;	// size 0x01, offset 0x0e
+	tBTA_HH_PROTO_MODE	mode;		// size 0x01, offset 0x0f
+} tBTA_HH_API_CONN; // size 0x10
 
 typedef struct
 {
-    UINT8                max_devt_spt; /* max number of types of devices spt */
-    tBTA_HH_SPT_TOD     *p_devt_list;  /* supported types of device list     */
-    UINT16               sdp_db_size;
-} tBTA_HH_CFG;
+	BT_HDR	hdr;		// size 0x08, offset 0x00
+	UINT8	t_type;		// size 0x01, offset 0x08
+	UINT8	param;		// size 0x01, offset 0x09
+	UINT8	rpt_id;		// size 0x01, offset 0x0a
+	/* 1 byte padding */
+	UINT16	data;		// size 0x02, offset 0x0c
+	/* 2 bytes padding */
+	BT_HDR	*p_data;	// size 0x04, offset 0x10
+} tBTA_HH_CMD_DATA; // size 0x14
 
 typedef struct
 {
-    BOOLEAN upper; // offset 0x0, size 0x1
-    BOOLEAN ctrl; // offset 0x1, size 0x1
-    BOOLEAN alt; // offset 0x2, size 0x1
-    BOOLEAN num_lock; // offset 0x3, size 0x1
-    BOOLEAN caps_lock; // offset 0x4, size 0x1
-    UINT8 last_report[BTA_HH_MAX_RPT_CHARS]; // offset 0x5, size 0x8
-} tBTA_HH_KB_CB;
+	BT_HDR	hdr;		// size 0x08, offset 0x00
+	UINT32	data;		// size 0x04, offset 0x08
+	BT_HDR	*p_data;	// size 0x04, offset 0x0c
+} tBTA_HH_CBACK_DATA; // size 0x10
 
 typedef struct
 {
-    tHID_DEV_DSCP_INFO  dscp_info;      /* report descriptor and DI information */
-    BD_ADDR             addr;           /* BD-Addr of the HID device */
-    UINT16              attr_mask;      /* attribute mask */
-    UINT16              w4_evt;         /* W4_handshake event name */
-    UINT8               index;          /* index number referenced to handle index */
-    UINT8               sub_class;      /* Cod sub class */
-    UINT8               sec_mask;       /* security mask */
-    UINT8               app_id;         /* application ID for this connection */
-    UINT8               hid_handle;     /* device handle */
-    BOOLEAN             vp;             /* virtually unplug flag */
-    BOOLEAN             in_use;         /* control block currently in use */
-    BOOLEAN             incoming_conn;  /* is incoming connection? */
-    BOOLEAN             opened;         /* TRUE if device successfully opened HID connection */
-    tBTA_HH_PROTO_MODE  mode;           /* protocol mode */
-    tBTA_HH_STATE       state;          /* CB state */
-} tBTA_HH_DEV_CB;
-
-typedef struct
-{
-    tBTA_HH_KB_CB           kb_cb;                  /* key board control block,
-                                                       suppose BTA will connect
-                                                       to only one keyboard at
-                                                        the same time */
-    tBTA_HH_DEV_CB          kdev[BTA_HH_MAX_KNOWN]; /* device control block */
-    tBTA_HH_DEV_CB*         p_cur;              /* current device control
-                                                       block idx, used in sdp */
-    UINT8                   cb_index[BTA_HH_MAX_KNOWN]; /* maintain a CB index
-                                                        map to dev handle */
-    tBTA_HH_CBACK          *p_cback;               /* Application callbacks */
-    tSDP_DISCOVERY_DB*      p_disc_db;
-    UINT8                   trace_level;            /* tracing level */
-    UINT8                   cnt_num;                /* connected device number */
-    BOOLEAN                 w4_disable;             /* w4 disable flag */
-} tBTA_HH_CB;
-
-typedef struct
-{
-    BT_HDR          hdr;
-    UINT8           sec_mask;
-    UINT8           service_name[BTA_SERVICE_NAME_LEN + 1];
-    tBTA_HH_CBACK   *p_cback;
-} tBTA_HH_API_ENABLE;
-
-typedef struct
-{
-    BT_HDR          hdr;
-    BD_ADDR         bd_addr;
-    UINT8           sec_mask;
-    tBTA_HH_PROTO_MODE  mode;
-} tBTA_HH_API_CONN;
-
-typedef struct
-{
-    BT_HDR          hdr;
-    UINT8           t_type;
-    UINT8           param;
-    UINT8           rpt_id;
-    UINT16          data;
-    BT_HDR          *p_data;
-} tBTA_HH_CMD_DATA;
-
-typedef struct
-{
-    BT_HDR          hdr;
-    UINT32          data;
-    BT_HDR          *p_data;
-} tBTA_HH_CBACK_DATA;
-
-typedef struct
-{
-    BT_HDR              hdr;
-    BD_ADDR             bda;
-    UINT16              attr_mask;
-    UINT16              sub_event;
-    UINT8               sub_class;
-    UINT8               app_id;
-    tHID_DEV_DSCP_INFO  dscp_info;
-} tBTA_HH_MAINT_DEV;
+	BT_HDR				hdr;		// size 0x08, offset 0x00
+	BD_ADDR				bda;		// size 0x06, offset 0x08
+	UINT16				attr_mask;	// size 0x02, offset 0x0e
+	UINT16				sub_event;	// size 0x02, offset 0x10
+	UINT8				sub_class;	// size 0x01, offset 0x12
+	UINT8				app_id;		// size 0x01, offset 0x13
+	tHID_DEV_DSCP_INFO	dscp_info;	// size 0x08, offset 0x14
+} tBTA_HH_MAINT_DEV; // size 0x1c
 
 typedef union
 {
-    BT_HDR                   hdr;
-    tBTA_HH_API_ENABLE       api_enable;
-    tBTA_HH_API_CONN         api_conn;
-    tBTA_HH_CMD_DATA         api_sndcmd;
-    tBTA_HH_CBACK_DATA       hid_cback;
-    tBTA_HH_STATUS           status;
-    tBTA_HH_MAINT_DEV        api_maintdev;
+	BT_HDR				hdr;			// size 0x08
+	tBTA_HH_API_ENABLE	api_enable;		// size 0x34
+	tBTA_HH_API_CONN	api_conn;		// size 0x10
+	tBTA_HH_CMD_DATA	api_sndcmd;		// size 0x14
+	tBTA_HH_CBACK_DATA	hid_cback;		// size 0x10
+	tBTA_HH_STATUS		status;			// size 0x01
+	tBTA_HH_MAINT_DEV	api_maintdev;	// size 0x1c
 } tBTA_HH_DATA;
+
+typedef struct
+{
+	tHID_DEV_DSCP_INFO	dscp_info;		// size 0x08, offset 0x00
+	BD_ADDR				addr;			// size 0x06, offset 0x08
+	UINT16				attr_mask;		// size 0x02, offset 0x0e
+	UINT16				w4_evt;			// size 0x02, offset 0x10
+	UINT8				index;			// size 0x01, offset 0x12
+	UINT8				sub_class;		// size 0x01, offset 0x13
+	UINT8				sec_mask;		// size 0x01, offset 0x14
+	UINT8				app_id;			// size 0x01, offset 0x15
+	UINT8				hid_handle;		// size 0x01, offset 0x16
+	BOOLEAN				vp;				// size 0x01, offset 0x17
+	BOOLEAN				in_use;			// size 0x01, offset 0x18
+	BOOLEAN				incoming_conn;	// size 0x01, offset 0x19
+	BOOLEAN				opened;			// size 0x01, offset 0x1a
+	tBTA_HH_PROTO_MODE	mode;			// size 0x01, offset 0x1b
+	tBTA_HH_STATE		state;			// size 0x01, offset 0x1c
+	/* 3 bytes padding */
+} tBTA_HH_DEV_CB; // size 0x20
+
+typedef struct
+{
+	BOOLEAN	upper;								// size 0x01, offset 0x00
+	BOOLEAN	ctrl;								// size 0x01, offset 0x01
+	BOOLEAN	alt;								// size 0x01, offset 0x02
+	BOOLEAN	num_lock;							// size 0x01, offset 0x03
+	BOOLEAN	caps_lock;							// size 0x01, offset 0x04
+	UINT8	last_report[BTA_HH_MAX_RPT_CHARS];	// size 0x08, offset 0x05
+} tBTA_HH_KB_CB; // size 0x0d
+
+typedef struct
+{
+	tBTA_HH_KB_CB			kb_cb;						// size 0x00d, offset 0x000
+	/* 3 bytes padding */
+	tBTA_HH_DEV_CB			kdev[BTA_HH_MAX_KNOWN];		// size 0x200, offset 0x010
+	tBTA_HH_DEV_CB			*p_cur;						// size 0x004, offset 0x210
+	UINT8					cb_index[BTA_HH_MAX_KNOWN];	// size 0x010, offset 0x214
+	tBTA_HH_CBACK			*p_cback;					// size 0x004, offset 0x224
+	tSDP_DISCOVERY_DB		*p_disc_db;					// size 0x004, offset 0x228
+	UINT8					trace_level;				// size 0x001, offset 0x22c
+	UINT8					cnt_num;					// size 0x001, offset 0x22d
+	BOOLEAN					w4_disable;					// size 0x001, offset 0x22e
+	/* 1 byte padding */
+} tBTA_HH_CB; // size 0x230
 
 /*******************************************************************************
  * external globals

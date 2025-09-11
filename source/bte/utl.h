@@ -43,11 +43,13 @@
 typedef UINT8 tUTL_SET_DEVICE_CLASS_CMD;
 enum
 {
-	BTA_UTL_SET_COD_MAJOR_MINOR		= 1,
-	BTA_UTL_SET_COD_SERVICE_CLASS	= 2, // only set the bits in the input
-	BTA_UTL_CLR_COD_SERVICE_CLASS	= 4,
-	BTA_UTL_SET_COD_ALL				= 8, // take service class as the input (may clear some set bits!)
-	BTA_UTL_INIT_COD				= 10,
+	BTA_UTL_SET_COD_MAJOR_MINOR		= 1 << 0,
+	BTA_UTL_SET_COD_SERVICE_CLASS	= 1 << 1,
+	BTA_UTL_CLR_COD_SERVICE_CLASS	= 1 << 2,
+	BTA_UTL_SET_COD_ALL				= 1 << 3,
+
+	BTA_UTL_INIT_COD				=
+		BTA_UTL_SET_COD_SERVICE_CLASS | BTA_UTL_SET_COD_ALL,
 };
 
 typedef struct

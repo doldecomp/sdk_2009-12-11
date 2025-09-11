@@ -42,10 +42,10 @@
 
 typedef struct
 {
-	UINT16	max_file_len;	// size 0x02, offset 0x00
-	UINT16	max_path_len;	// size 0x02, offset 0x02
-	char	path_separator;	// size 0x01, offset 0x04
-	UINT8	at_0x05[7];		// size 0x07, offset 0x05
+	UINT16			max_file_len;	// size 0x02, offset 0x00
+	UINT16			max_path_len;	// size 0x02, offset 0x02
+	char			path_separator;	// size 0x01, offset 0x04
+	char unsigned	at_0x05[7];		// size 0x07, offset 0x05
 } tBTA_FS_CFG; // size 0x0c
 
 /*******************************************************************************

@@ -35,16 +35,8 @@
 #include "data_types.h"
 
 #include "gki.h"
-#include "rfcdefs.h"
 #include "port_api.h"
-
-/*******************************************************************************
- * macros
- */
-
-#define PORT_FC_UNDEFINED       0   /* mux flow control mechanism not defined yet */
-#define PORT_FC_TS710           1   /* use TS 07.10 flow control  */
-#define PORT_FC_CREDIT          2   /* use RFCOMM credit based flow control */
+#include "rfcdefs.h"
 
 /*******************************************************************************
  * types
@@ -54,7 +46,33 @@
 	extern "C" {
 #endif
 
-enum e_port_state /* given a tag to fully match rfc_mx_fsm.o */
+typedef UINT8 tPORT_FC_MECHANISM;
+enum
+{
+	PORT_FC_UNDEFINED,
+
+	PORT_FC_TS710,
+	PORT_FC_CREDIT,
+};
+
+typedef UINT8 tPORT_CTRL_MODEM_SIGNAL;
+enum
+{
+	MODEM_SIGNAL_DTRDSR	= 1 << 0,
+	MODEM_SIGNAL_RTSCTS	= 1 << 1,
+	MODEM_SIGNAL_RI		= 1 << 2,
+	MODEM_SIGNAL_DCD	= 1 << 3,
+};
+
+typedef UINT8 tPORT_CTRL_BREAK_SIGNAL;
+enum
+{
+	RFCOMM_CTRL_BREAK_ASAP,
+	RFCOMM_CTRL_BREAK_IN_SEQ,
+};
+
+typedef UINT8 tRFC_PORT_STATE;
+enum
 {
 	RFC_PORT_STATE_IDLE,
 	RFC_PORT_STATE_WAIT_START,
@@ -63,6 +81,7 @@ enum e_port_state /* given a tag to fully match rfc_mx_fsm.o */
 	RFC_PORT_STATE_CLOSING,
 };
 
+typedef UINT8 tRFC_PORT_RSP_FLAGS;
 enum
 {
 	RFC_RSP_PN			= 1 << 0,
@@ -72,35 +91,7 @@ enum
 	RFC_RSP_RLS			= 1 << 4,
 };
 
-typedef struct
-{
-	TIMER_LIST_ENT	tle;							// size 0x18, offset 0x00
-	BUFFER_Q		cmd_q;							// size 0x0c, offset 0x18
-	UINT8			port_inx[RFCOMM_MAX_DLCI + 1];	// size 0x3e, offset 0x24
-	BD_ADDR			bd_addr;						// size 0x06, offset 0x62
-	UINT16			lcid;							// size 0x02, offset 0x68
-	UINT16			peer_l2cap_mtu;					// size 0x02, offset 0x6a
-	UINT8			state;							// size 0x01, offset 0x6c
-	BOOLEAN			is_initiator;					// size 0x01, offset 0x6d
-	BOOLEAN			local_cfg_sent;					// size 0x01, offset 0x6e
-	BOOLEAN			peer_cfg_rcvd;					// size 0x01, offset 0x6f
-	BOOLEAN			restart_required;				// size 0x01, offset 0x70
-	BOOLEAN			peer_ready;						// size 0x01, offset 0x71
-	UINT8			flow;							// size 0x01, offset 0x72
-	BOOLEAN			l2cap_congested;				// size 0x01, offset 0x73
-	BOOLEAN			is_disc_initiator;				// size 0x01, offset 0x74
-	/* 3 bytes padding */
-} tRFC_MCB; // size 0x78
-
-typedef struct t_rfc_port
-{
-	UINT8			state;			// size 0x01, offset 0x00
-	UINT8			expected_rsp;	// size 0x01, offset 0x01
-	/* 2 bytes padding */
-	tRFC_MCB		*p_mcb;			// size 0x04, offset 0x04
-	TIMER_LIST_ENT	tle;			// size 0x18, offset 0x08
-} tRFC_PORT; // size 0x20
-
+typedef UINT8 tPORT_INFO_STATE;
 enum
 {
 	PORT_STATE_CLOSED,
@@ -109,6 +100,7 @@ enum
 	PORT_STATE_CLOSING,
 };
 
+typedef UINT8 tPORT_INFO_CTRL;
 enum
 {
 	PORT_CTRL_REQ_SENT			= 1 << 0,
@@ -116,6 +108,35 @@ enum
 	PORT_CTRL_IND_RECEIVED		= 1 << 2,
 	PORT_CTRL_IND_RESPONDED		= 1 << 3,
 };
+
+typedef struct
+{
+	TIMER_LIST_ENT		tle;							// size 0x18, offset 0x00
+	BUFFER_Q			cmd_q;							// size 0x0c, offset 0x18
+	UINT8				port_inx[RFCOMM_MAX_DLCI + 1];	// size 0x3e, offset 0x24
+	BD_ADDR				bd_addr;						// size 0x06, offset 0x62
+	UINT16				lcid;							// size 0x02, offset 0x68
+	UINT16				peer_l2cap_mtu;					// size 0x02, offset 0x6a
+	UINT8				state;							// size 0x01, offset 0x6c
+	BOOLEAN				is_initiator;					// size 0x01, offset 0x6d
+	BOOLEAN				local_cfg_sent;					// size 0x01, offset 0x6e
+	BOOLEAN				peer_cfg_rcvd;					// size 0x01, offset 0x6f
+	BOOLEAN				restart_required;				// size 0x01, offset 0x70
+	BOOLEAN				peer_ready;						// size 0x01, offset 0x71
+	tPORT_FC_MECHANISM	flow;							// size 0x01, offset 0x72
+	BOOLEAN				l2cap_congested;				// size 0x01, offset 0x73
+	BOOLEAN				is_disc_initiator;				// size 0x01, offset 0x74
+	/* 3 bytes padding */
+} tRFC_MCB; // size 0x78
+
+typedef struct t_rfc_port
+{
+	tRFC_PORT_STATE		state;			// size 0x01, offset 0x00
+	tRFC_PORT_RSP_FLAGS	expected_rsp;	// size 0x01, offset 0x01
+	/* 2 bytes padding */
+	tRFC_MCB			*p_mcb;			// size 0x04, offset 0x04
+	TIMER_LIST_ENT		tle;			// size 0x18, offset 0x08
+} tRFC_PORT; // size 0x20
 
 typedef struct
 {
@@ -127,34 +148,20 @@ typedef struct
 	tPORT_CALLBACK	*p_callback;	// size 0x04, offset 0x14
 } tPORT_DATA; // size 0x18
 
-enum
-{
-	MODEM_SIGNAL_DTRDSR	= 1 << 0,
-	MODEM_SIGNAL_RTSCTS	= 1 << 1,
-	MODEM_SIGNAL_RI		= 1 << 2,
-	MODEM_SIGNAL_DCD	= 1 << 3,
-};
-
-enum
-{
-	RFCOMM_CTRL_BREAK_ASAP,
-	RFCOMM_CTRL_BREAK_IN_SEQ,
-};
-
 typedef struct
 {
-	UINT8	modem_signal;		// size 0x01, offset 0x00
-	UINT8	break_signal;		// size 0x01, offset 0x01
-	UINT8	discard_buffers;	// size 0x01, offset 0x02
-	UINT8	break_signal_seq;	// size 0x01, offset 0x03
-	BOOLEAN	fc;					// size 0x01, offset 0x04
+	tPORT_CTRL_MODEM_SIGNAL	modem_signal;		// size 0x01, offset 0x00
+	UINT8					break_signal;		// size 0x01, offset 0x01
+	UINT8					discard_buffers;	// size 0x01, offset 0x02 // TODO: fold into boolean?
+	tPORT_CTRL_BREAK_SIGNAL	break_signal_seq;	// size 0x01, offset 0x03
+	BOOLEAN					fc;					// size 0x01, offset 0x04
 } tPORT_CTRL; // size 0x05
 
 typedef struct t_port_info
 {
 	UINT8					inx;					// size 0x01, offset 0x00
 	BOOLEAN					in_use;					// size 0x01, offset 0x01
-	UINT8					state;					// size 0x01, offset 0x02
+	tPORT_INFO_STATE		state;					// size 0x01, offset 0x02
 	UINT8					scn;					// size 0x01, offset 0x03
 	UINT16					uuid;					// size 0x02, offset 0x04
 	BD_ADDR					bd_addr;				// size 0x06, offset 0x06
@@ -173,7 +180,7 @@ typedef struct t_port_info
 	tPORT_STATE				peer_port_pars;			// size 0x09, offset 0x51
 	tPORT_CTRL				local_ctrl;				// size 0x05, offset 0x5a
 	tPORT_CTRL				peer_ctrl;				// size 0x05, offset 0x5f
-	UINT8					port_ctrl;				// size 0x01, offset 0x64
+	tPORT_INFO_CTRL			port_ctrl;				// size 0x01, offset 0x64
 	BOOLEAN					rx_flag_ev_pending;		// size 0x01, offset 0x65
 	/* 2 bytes padding */
 	tRFC_PORT				rfc;					// size 0x20, offset 0x68
@@ -194,10 +201,6 @@ typedef struct
 	tPORT		port[MAX_RFC_PORTS];			// size 0x334, offset 0x000
 	tRFC_MCB	rfc_mcb[MAX_BD_CONNECTIONS];	// size 0x078, offset 0x334
 } tPORT_CB; // size 0x3ac
-
-/*******************************************************************************
- * external globals
- */
 
 /*******************************************************************************
  * functions

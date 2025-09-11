@@ -36,12 +36,6 @@
 #include "ptim.h"
 
 /*******************************************************************************
- * macros
- */
-
-#define BTA_ID_MAX	26
-
-/*******************************************************************************
  * types
  */
 
@@ -60,14 +54,6 @@ typedef struct
 	tBTA_SYS_CONN_CBACK	*ppm_cb;			// size 0x04, offset 0x84
 	tBTA_SYS_CONN_CBACK	*compress_cb;		// size 0x04, offset 0x88
 } tBTA_SYS_CB; // size 0x8c
-
-typedef struct
-{
-	UINT16	mbox_evt;		// size 0x02, offset 0x00
-	UINT8	mbox;			// size 0x01, offset 0x02
-	UINT8	timer;			// size 0x01, offset 0x03
-	UINT8	trace_level;	// size 0x01, offset 0x04
-} tBTA_SYS_CFG; // size 0x06
 
 /*******************************************************************************
  * external globals

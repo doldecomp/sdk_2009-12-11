@@ -4,6 +4,8 @@
 /* Original source:
  * bluedroid <android.googlesource.com/platform/external/bluetooth/bluedroid>
  * stack/include/profiles_api.h
+ *
+ * NOTE: This file only appears in bluedroid since commit ead3cde.
  */
 
 /******************************************************************************
@@ -27,35 +29,12 @@
 /* Includes changes by muff1n1634 */
 
 /*******************************************************************************
- * headers
- */
-
-/*******************************************************************************
  * macros
  */
 
 #define BT_PASS						0
 
+#define PORT_ERR_GROUP				0x0000
 #define GAP_ERR_GROUP				0x0100
-
-/*******************************************************************************
- * types
- */
-
-#ifdef __cplusplus
-	extern "C" {
-#endif
-
-/*******************************************************************************
- * external globals
- */
-
-/*******************************************************************************
- * functions
- */
-
-#ifdef __cplusplus
-	}
-#endif
 
 #endif // BTE_PROFILES_API_H

@@ -41,7 +41,7 @@
 #include "btm_int.h"
 #include "btu.h"
 #include "gki.h"
-#include "hcidefs.h"
+#include "hcimsgs.h"
 #include "l2c_api.h"
 #include "l2cdefs.h"
 

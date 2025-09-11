@@ -10,20 +10,12 @@
 #include "data_types.h"
 
 /*******************************************************************************
- * macros
- */
-
-/*******************************************************************************
  * types
  */
 
 #ifdef __cplusplus
 	extern "C" {
 #endif
-
-/*******************************************************************************
- * external globals
- */
 
 /*******************************************************************************
  * functions
@@ -35,7 +27,7 @@
 void __btu_interrupt_handler_debug_msg(BOOLEAN enable);
 #endif
 
-void bta_usb_close_evt(INT8 param_1);
+void bta_usb_close_evt(INT8);
 
 // uusb_ppc.c
 

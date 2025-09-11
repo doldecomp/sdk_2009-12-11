@@ -4,6 +4,8 @@
 /* Original source:
  * bluedroid <android.googlesource.com/platform/external/bluetooth/bluedroid>
  * stack/gap/gap_int.h
+ *
+ * NOTE: This file only appears in bluedroid since commit ead3cde.
  */
 
 /******************************************************************************
@@ -30,7 +32,8 @@
  * headers
  */
 
-#include "bt_types.h" // BD_ADDR
+#include "bt_target.h"
+#include "bt_types.h"
 #include "data_types.h"
 
 #include "btm_api.h"
@@ -44,7 +47,6 @@
  */
 
 #define GAP_MAX_BLOCKS				2
-#define GAP_MAX_CONNECTIONS			8
 
 #define GAP_MIN_INQUIRY_LENGTH		BTM_MIN_INQUIRY_LENGTH
 #define GAP_MAX_INQUIRY_LENGTH		BTM_MAX_INQUIRY_LENGTH
@@ -55,16 +57,6 @@
 #define GAP_PER_INQ_MIN_MAX_PERIOD	BTM_PER_INQ_MIN_MAX_PERIOD
 #define GAP_PER_INQ_MAX_MAX_PERIOD	BTM_PER_INQ_MAX_MAX_PERIOD
 
-#define GAP_CCB_STATE_IDLE			0
-#define GAP_CCB_STATE_LISTENING		1
-#define GAP_CCB_STATE_CONN_SETUP	2
-#define GAP_CCB_STATE_CFG_SETUP		3
-#define GAP_CCB_STATE_CONNECTED		4 // NOTE: not 5
-
-#define GAP_CCB_FLAGS_HER_CFG_DONE	(1 << 1)
-#define GAP_CCB_FLAGS_MY_CFG_DONE	(1 << 2)
-#define GAP_CCB_FLAGS_CONN_DONE		0x0e
-
 /*******************************************************************************
  * types
  */
@@ -72,6 +64,23 @@
 #ifdef __cplusplus
 	extern "C" {
 #endif
+
+typedef UINT8 tGAP_CCB_STATE;
+enum
+{
+	GAP_CCB_STATE_IDLE			= 0,
+	GAP_CCB_STATE_LISTENING		= 1,
+	GAP_CCB_STATE_CONN_SETUP	= 2,
+	GAP_CCB_STATE_CFG_SETUP		= 3,
+	GAP_CCB_STATE_CONNECTED		= 4, // was 5
+};
+
+typedef UINT8 tGAP_CCB_FLAGS;
+enum
+{
+	GAP_CCB_FLAGS_THEIR_CFG_DONE	= 1 << 1,
+	GAP_CCB_FLAGS_OUR_CFG_DONE		= 1 << 2,
+};
 
 typedef struct
 {
@@ -94,8 +103,8 @@ typedef struct
 
 typedef struct
 {
-	UINT8				con_state;			// size 0x01, offset 0x00
-	UINT8				con_flags;			// size 0x01, offset 0x01
+	tGAP_CCB_STATE		con_state;			// size 0x01, offset 0x00
+	tGAP_CCB_FLAGS		con_flags;			// size 0x01, offset 0x01
 	UINT8				security_flags;		// size 0x01, offset 0x02
 	/* 1 byte padding */
 	UINT16				gap_handle;			// size 0x02, offset 0x04

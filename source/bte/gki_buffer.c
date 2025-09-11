@@ -41,7 +41,6 @@
  * local function declarations
  */
 
-
 static void gki_init_free_queue(UINT8 id, UINT16 size, UINT16 total,
                                 void *p_mem);
 

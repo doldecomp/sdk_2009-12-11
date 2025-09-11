@@ -295,8 +295,7 @@ tHID_STATUS HID_DevSendData(UINT8 control_ch, UINT8 rep_type, BT_HDR *data_buf)
 {
 	tSND_DATA_PARAMS snd_data;
 
-	if (control_ch == 1 || control_ch == 0)
-		WCAssert_Line(424);
+	WCAssert_Line(424, control_ch != 1 && control_ch != 0);
 
 	if (!hd_cb.reg_flag)
 		return HID_ERR_NOT_REGISTERED;

@@ -23,6 +23,7 @@ extern char const * const bta_ss_pb_info_prop[][2];
 extern char const * const bta_ss_cal_info_prop[][2];
 extern char const * const bta_ss_note_info_prop[][2];
 extern char const * const bta_ss_msg_info_prop[][2];
+
 extern char const ***p_bta_ss_dev_info_prop;
 extern char const ***p_bta_ss_pb_info_prop;
 extern char const ***p_bta_ss_cal_info_prop;

@@ -32,22 +32,7 @@
 
 #include <decomp.h>
 
-#include "bt_types.h"
 #include "data_types.h"
-
-/*******************************************************************************
- * macros
- */
-
-#define MSG_HC_TO_STACK_HCI_EVT        0x1000 /* eq. BT_EVT_TO_BTU_HCI_EVT */
-#define MSG_HC_TO_STACK_HCI_ACL        0x1100 /* eq. BT_EVT_TO_BTU_HCI_ACL */
-#define MSG_HC_TO_STACK_HCI_SCO        0x1200 /* eq. BT_EVT_TO_BTU_HCI_SCO */
-#define MSG_HC_TO_STACK_HCI_ERR        0x1300 /* eq. BT_EVT_TO_BTU_HCIT_ERR */
-#define MSG_HC_TO_STACK_L2C_SEG_XMIT   0x1900 /* eq. BT_EVT_TO_BTU_L2C_SEG_XMIT */
-
-#define MSG_STACK_TO_HC_HCI_CMD        0x2000 /* eq. BT_EVT_TO_LM_HCI_CMD */
-#define MSG_STACK_TO_HC_HCI_ACL        0x2100 /* eq. BT_EVT_TO_LM_HCI_ACL */
-#define MSG_STACK_TO_HC_HCI_SCO        0x2200 /* eq. BT_EVT_TO_LM_HCI_SCO */
 
 /*******************************************************************************
  * types
@@ -57,7 +42,31 @@
 	extern "C" {
 #endif
 
-typedef BT_HDR HC_BT_HDR;
+enum
+{
+	MSG_HC_TO_STACK_HCI_EVT			= 0x1000,
+	MSG_HC_TO_STACK_HCI_ACL			= 0x1100,
+	MSG_HC_TO_STACK_HCI_SCO			= 0x1200,
+	MSG_HC_TO_STACK_HCI_ERR			= 0x1300,
+	MSG_HC_TO_STACK_L2C_SEG_XMIT	= 0x1900,
+};
+
+enum
+{
+	MSG_STACK_TO_HC_HCI_CMD			= 0x2000,
+	MSG_STACK_TO_HC_HCI_ACL			= 0x2100,
+	MSG_STACK_TO_HC_HCI_SCO			= 0x2200,
+};
+
+// separate anonymous struct to keep layers separate, i guess
+typedef struct
+{
+	UINT16	event;			// size 0x02, offset 0x00
+	UINT16	len;			// size 0x02, offset 0x02
+	UINT16	offset;			// size 0x02, offset 0x04
+	UINT16	layer_specific;	// size 0x02, offset 0x06
+} HC_BT_HDR; // size 0x08
+
 
 typedef struct
 {
@@ -73,12 +82,12 @@ typedef unk_t tHCI_HANDLE_EVENT(UINT16 len);
 
 typedef struct
 {
-	tHCI_INIT			*init;
-	tHCI_OPEN			*open;
-	tHCI_CLOSE			*close;
-	tHCI_SEND			*send;
-	tHCI_HANDLE_EVENT	*handle_event;
-} tHCI_IF;
+	tHCI_INIT			*init;			// size 0x04, offset 0x00
+	tHCI_OPEN			*open;			// size 0x04, offset 0x04
+	tHCI_CLOSE			*close;			// size 0x04, offset 0x08
+	tHCI_SEND			*send;			// size 0x04, offset 0x0c
+	tHCI_HANDLE_EVENT	*handle_event;	// size 0x04, offset 0x10
+} tHCI_IF; // size 0x14
 
 /*******************************************************************************
  * external globals

@@ -1382,7 +1382,7 @@ static void bta_dm_link_quality_cback(tBTM_LINK_QUALITY_RESULTS *p_result)
 	}
 }
 
-BOOLEAN bta_sys_check_compress(signed param_1, UINT8 app_id, BD_ADDR peer_addr)
+BOOLEAN bta_sys_check_compress(unk_t param_1, UINT8 app_id, BD_ADDR peer_addr)
 {
 	BOOLEAN status = FALSE;
 	int i;

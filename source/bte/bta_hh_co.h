@@ -30,28 +30,17 @@
  * headers
  */
 
-/*******************************************************************************
- * macros
- */
+#include "data_types.h"
+
+#include "bta_hh_api.h"
 
 /*******************************************************************************
  * types
  */
 
-#include "bt_types.h"
-#include "bta_hh_api.h"
-#include "data_types.h"
 #ifdef __cplusplus
 	extern "C" {
 #endif
-
-/*******************************************************************************
- * external globals
- */
-
-/*******************************************************************************
- * functions
- */
 
 extern void bta_hh_co_open(UINT8 dev_handle, UINT8 sub_class, UINT16 attr_mask,
                            UINT8 app_id);
