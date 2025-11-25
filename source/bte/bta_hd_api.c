@@ -9,7 +9,7 @@
 #include "bt_types.h"
 #include "data_types.h"
 
-#include "bd.h"
+#include "bd.h" // bdcpy
 #include "bta_hd_int.h"
 #include "bta_sys.h"
 #include "gki.h"
@@ -36,19 +36,20 @@ void BTA_HdEnable(BD_ADDR bd_addr, UINT8 sec_mask, char const *p_service_name,
 
 	GKI_sched_lock();
 
-	bta_sys_register(19, &bta_hd_reg);
+	bta_sys_register(BTA_ID_HD, &bta_hd_reg);
 
 	GKI_sched_unlock();
 
 	if ((p_buf = GKI_getbuf(sizeof *p_buf)) != NULL)
 	{
-		p_buf->hdr.event = 0x1307;
+		p_buf->hdr.event = BTA_HD_API_ENABLE_EVT;
 		p_buf->app_id = app_id;
 
 		if (p_service_name)
 		{
-			BCM_STRNCPY_S(p_buf->service_name, 36, p_service_name, 35);
-			p_buf->service_name[35] = '\0';
+			BCM_STRNCPY_S(p_buf->service_name, BTA_HD_APP_NAME_LEN + 1,
+			              p_service_name, BTA_HD_APP_NAME_LEN);
+			p_buf->service_name[BTA_HD_APP_NAME_LEN] = '\0';
 		}
 		else
 		{
@@ -69,7 +70,7 @@ void BTA_HdDisable(void)
 
 	if ((p_buf = GKI_getbuf(sizeof *p_buf)) != NULL)
 	{
-		p_buf->event = 0x1302;
+		p_buf->event = BTA_HD_API_DISABLE_EVT;
 
 		bta_sys_sendmsg(p_buf);
 	}
@@ -81,7 +82,7 @@ void BTA_HdOpen(UINT8 sec_mask)
 
 	if ((p_buf = GKI_getbuf(sizeof *p_buf)) != NULL)
 	{
-		p_buf->hdr.event = 0x1300;
+		p_buf->hdr.event = BTA_HD_API_OPEN_EVT;
 		p_buf->sec_mask = sec_mask;
 
 		bta_sys_sendmsg(p_buf);
@@ -94,7 +95,7 @@ void BTA_HdClose(void)
 
 	if ((p_buf = GKI_getbuf(sizeof *p_buf)) != NULL)
 	{
-		p_buf->event = 0x1301;
+		p_buf->event = BTA_HD_API_CLOSE_EVT;
 
 		bta_sys_sendmsg(p_buf);
 	}
@@ -106,7 +107,8 @@ void BTA_HdSendRegularKey(UINT8 modifier, UINT8 key_code)
 
 	if ((p_buf = GKI_getbuf(sizeof *p_buf)) != NULL)
 	{
-		p_buf->hdr.event = 0x1303;
+		// TODO: rid
+		p_buf->hdr.event = BTA_HD_API_SEND_EVT;
 		p_buf->rid = 1;
 		p_buf->keyCode = key_code;
 		p_buf->buttons = modifier;
@@ -121,7 +123,7 @@ void BTA_HdSendSpecialKey(UINT8 key_len, UINT8 *key_seq)
 
 	if ((p_buf = GKI_getbuf(sizeof *p_buf + key_len)) != NULL)
 	{
-		p_buf->hdr.event = 0x1303;
+		p_buf->hdr.event = BTA_HD_API_SEND_EVT;
 		p_buf->rid = 0;
 		p_buf->len = key_len;
 		p_buf->seq = (UINT8 *)(p_buf + 1);
@@ -138,7 +140,7 @@ void BTA_HdSendMouseReport(UINT8 is_left, UINT8 is_right, UINT8 is_middle,
 
 	if ((p_buf = GKI_getbuf(sizeof *p_buf)) != NULL)
 	{
-		p_buf->hdr.event = 0x1303;
+		p_buf->hdr.event = BTA_HD_API_SEND_EVT;
 		p_buf->rid = 2;
 		p_buf->keyCode = delta_x;
 		p_buf->keyCode2 = delta_y;

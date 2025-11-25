@@ -30,7 +30,9 @@
  * headers
  */
 
+#include "bt_target.h"
 #include "bt_types.h"
+
 #include "data_types.h"
 
 #include "hcidefs.h"
@@ -149,33 +151,29 @@ enum
 	BTM_DEV_STATUS_CMD_TOUT,
 };
 
+typedef UINT16 tBTM_DISC_MODE;
 enum
 {
-	BTM_NON_DISCOVERABLE		= 0,
-	BTM_LIMITED_DISCOVERABLE	= 1 << 0,
-	BTM_GENERAL_DISCOVERABLE	= 1 << 1,
-
-	BTM_MAX_DISCOVERABLE		= BTM_GENERAL_DISCOVERABLE,
-	BTM_DISCOVERABLE_MASK		= BTM_LIMITED_DISCOVERABLE | BTM_GENERAL_DISCOVERABLE
+	BTM_NON_DISCOVERABLE,
+	BTM_LIMITED_DISCOVERABLE,
+	BTM_GENERAL_DISCOVERABLE,
 };
 
+typedef UINT16 tBTM_CONN_MODE;
 enum
 {
-	BTM_NON_CONNECTABLE		= 0,
-	BTM_CONNECTABLE			= 1 << 0,
-
-	BTM_MAX_CONNECTABLE		= BTM_CONNECTABLE,
-	BTM_CONNECTABLE_MASK	= BTM_CONNECTABLE
+	BTM_NON_CONNECTABLE,
+	BTM_CONNECTABLE,
 };
 
+typedef UINT8 tBTM_INQ_TYPE;
 enum
 {
-	BTM_GENERAL_INQUIRY	= 0,
-	BTM_LIMITED_INQUIRY	= 1,
-
-	BTM_BR_INQUIRY_MASK	= 0x0f
+	BTM_GENERAL_INQUIRY,
+	BTM_LIMITED_INQUIRY,
 };
 
+typedef UINT8 tBTM_INQ_ACTIVE_STATUS;
 enum
 {
 	BTM_INQUIRY_INACTIVE		= 0,
@@ -184,18 +182,24 @@ enum
 	BTM_PERIODIC_INQUIRY_ACTIVE	= 1 << 2,
 };
 
+#define BTM_LIMITED_INQUIRY_ACTIVE	(BTM_LIMITED_INQUIRY_ACTIVE + 0)
+#define BTM_GENERAL_INQUIRY_ACTIVE	(BTM_GENERAL_INQUIRY_ACTIVE + 0)
+
+typedef UINT16 tBTM_INQ_SCAN_TYPE;
 enum
 {
 	BTM_SCAN_TYPE_STANDARD,
 	BTM_SCAN_TYPE_INTERLACED,
 };
 
+typedef UINT8 tBTM_INQ_RESULT_TYPE;
 enum
 {
 	BTM_INQ_RESULT_STANDARD,
 	BTM_INQ_RESULT_WITH_RSSI,
 };
 
+typedef UINT8 tBTM_INQ_FILT_COND_TYPE;
 enum
 {
 	BTM_CLR_INQUIRY_FILTER			= 0,
@@ -227,12 +231,14 @@ enum
 	BTM_ACL_MODE_PARK	= HCI_MODE_PARK,
 };
 
+typedef UINT8 tBTM_ROLE;
 enum
 {
 	BTM_ROLE_MASTER		= HCI_ROLE_MASTER,
 	BTM_ROLE_UNDEFINED	= 255,
 };
 
+typedef UINT16 tBTM_ACL_PACKET_TYPES;
 enum
 {
 	BTM_ACL_PKT_TYPES_MASK_DM1		= HCI_PKT_TYPES_MASK_DM1,
@@ -346,9 +352,38 @@ enum
 enum
 {
 	BTM_SEC_SERVICE_SDP_SERVER		= 0,
+	BTM_SEC_SERVICE_SERIAL_PORT		= 1,
+	BTM_SEC_SERVICE_LAN_ACCESS		= 2,
+	BTM_SEC_SERVICE_DUN				= 3,
+	BTM_SEC_SERVICE_IRMC_SYNC		= 4,
+
+	BTM_SEC_SERVICE_OBEX			= 6,
+	BTM_SEC_SERVICE_OBEX_FTP		= 7,
+
+	BTM_SEC_SERVICE_CORDLESS		= 9,
+	BTM_SEC_SERVICE_INTERCOM		= 10,
+	BTM_SEC_SERVICE_FAX				= 11,
+	BTM_SEC_SERVICE_HEADSET_AG		= 12,
+
+	BTM_SEC_SERVICE_BPP_JOB			= 22,
+
+	BTM_SEC_SERVICE_BNEP_PANU		= 25,
+	BTM_SEC_SERVICE_BNEP_GN			= 26,
+	BTM_SEC_SERVICE_BNEP_NAP		= 27,
+
+	BTM_SEC_SERVICE_AG_HANDSFREE	= 29,
+
 	BTM_SEC_SERVICE_HID_SEC_CTRL	= 32,
 	BTM_SEC_SERVICE_HID_NOSEC_CTRL	= 33,
 	BTM_SEC_SERVICE_HID_INTR		= 34,
+	BTM_SEC_SERVICE_BIP				= 35,
+
+	BTM_SEC_SERVICE_AVDTP			= 37,
+
+	BTM_SEC_SERVICE_AVCTP			= 39,
+	BTM_SEC_SERVICE_SAP				= 40,
+
+	BTM_SEC_SERVICE_PBAP			= 44, // was 41
 };
 
 typedef UINT8 tBTM_PM_STATUS;
@@ -375,9 +410,9 @@ enum
 
 enum
 {
-	BTM_PM_REG_SET		= 1,
-	BTM_PM_REG_NOTIF	= 2,
-	BTM_PM_DEREG		= 4,
+	BTM_PM_REG_SET		= 1 << 0,
+	BTM_PM_REG_NOTIF	= 1 << 1,
+	BTM_PM_DEREG		= 1 << 2,
 };
 
 enum
@@ -388,8 +423,12 @@ enum
 	BTM_CB_EVT_DELETE_STORED_LINK_KEYS,
 };
 
-// NOTE: does not seem to be BTM_MAX_REM_BD_NAME_LEN + 1
-typedef UINT8 tBTM_BD_NAME[64 + 1];
+typedef UINT8 tBTM_SCN;
+
+typedef UINT8 tBTM_AFH_CHANNEL;
+#define BTM_AFH_NO_CHANNEL	255
+
+typedef UINT8 tBTM_BD_NAME[BTM_MAX_REM_BD_NAME_LEN + 1];
 
 typedef void tBTM_DEV_STATUS_CB(tBTM_DEV_STATUS status);
 typedef void tBTM_VS_EVT_CB(UINT8 len, UINT8 *p);
@@ -419,7 +458,7 @@ typedef void tBTM_MKEY_CALLBACK(BD_ADDR bd_addr, UINT8 status, UINT8 key_flag);
 typedef void tBTM_SEC_CBACK(BD_ADDR bd_addr, void *p_ref_data,
                             tBTM_STATUS result);
 typedef void tBTM_PM_STATUS_CBACK(BD_ADDR p_bda, tBTM_PM_STATUS status,
-                                  UINT16 value, UINT8 hci_status);
+                                  UINT16 value, tHCI_STATUS hci_status);
 
 typedef struct
 {
@@ -456,11 +495,11 @@ typedef union
 
 typedef struct
 {
-	UINT8				mode;				// size 0x01, offset 0x00
-	UINT8				duration;			// size 0x01, offset 0x01
-	UINT8				max_resps;			// size 0x01, offset 0x02
-	UINT8				filter_cond_type;	// size 0x01, offset 0x03
-	tBTM_INQ_FILT_COND	filter_cond;		// size 0x03, offset 0x04
+	tBTM_INQ_TYPE			mode;				// size 0x01, offset 0x00
+	UINT8					duration;			// size 0x01, offset 0x01
+	UINT8					max_resps;			// size 0x01, offset 0x02
+	tBTM_INQ_FILT_COND_TYPE	filter_cond_type;	// size 0x01, offset 0x03
+	tBTM_INQ_FILT_COND		filter_cond;		// size 0x03, offset 0x04
 } tBTM_INQ_PARMS; // size 0x0a
 
 typedef struct
@@ -497,16 +536,16 @@ typedef struct
 typedef struct
 {
 	tBTM_STATUS	status;		// size 0x01, offset 0x00
-	UINT8		hci_status;	// size 0x01, offset 0x01
+	tHCI_STATUS	hci_status;	// size 0x01, offset 0x01
 	BD_ADDR		rem_bda;	// size 0x06, offset 0x02
 	UINT16		settings;	// size 0x02, offset 0x08
 } tBTM_LINK_POLICY_RESULTS; // size 0x0a
 
 typedef struct
 {
-	UINT8	hci_status;		// size 0x01, offset 0x00
-	UINT8	role;			// size 0x01, offset 0x01
-	BD_ADDR	remote_bd_addr;	// size 0x06, offset 0x02
+	tHCI_STATUS	hci_status;		// size 0x01, offset 0x00
+	tBTM_ROLE	role;			// size 0x01, offset 0x01
+	BD_ADDR		remote_bd_addr;	// size 0x06, offset 0x02
 } tBTM_ROLE_SWITCH_CMPL; // size 0x08
 
 typedef struct
@@ -686,7 +725,7 @@ char *BTM_SecReadDevName(BD_ADDR bd_addr);
 void BTM_DeviceReset(tBTM_CMPL_CB *p_cb);
 void BTM_SendHciReset(tBTM_CMPL_CB *p_cb);
 BOOLEAN BTM_IsDeviceUp(void);
-tBTM_STATUS BTM_SetAfhChannels(UINT8 first, UINT8 last);
+tBTM_STATUS BTM_SetAfhChannels(tBTM_AFH_CHANNEL first, tBTM_AFH_CHANNEL last);
 tBTM_STATUS BTM_SetAfhChannelAssessment(BOOLEAN enable_or_disable);
 void BTM_ContinueReset(void);
 /**/

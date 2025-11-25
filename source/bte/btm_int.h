@@ -31,6 +31,7 @@
  */
 
 #include "bt_target.h"
+#include "bt_trace.h"
 #include "bt_types.h"
 #include "data_types.h"
 
@@ -89,6 +90,8 @@
 #define BTM_SEC_MAX_LINK_KEY_CALLBACKS	2
 #define BTM_SEC_MAX_RMT_NAME_CALLBACKS	2
 
+#define BTM_DISC_DB_SIZE				4000
+
 /*******************************************************************************
  * types
  */
@@ -97,6 +100,7 @@
 	extern "C" {
 #endif
 
+typedef UINT8 tBTM_ACL_SWKEY_STATE;
 enum
 {
 	BTM_ACL_SWKEY_STATE_IDLE,
@@ -114,21 +118,27 @@ enum
 	TT_DEV_RLNKP	= 4,
 };
 
+typedef UINT8 tBTM_DEV_STATE;
 enum
 {
 	BTM_DEV_STATE_WAIT_RESET_CMPLT	= 0,
 	BTM_DEV_STATE_WAIT_AFTER_RESET	= 1,
-	BTM_DEV_STATE_READY				= 2,
+	BTM_DEV_STATE_2					= 2,
+	BTM_DEV_STATE_3					= 3,
+	BTM_DEV_STATE_4					= 4,
+	BTM_DEV_STATE_READY				= 5,
 };
 
+typedef UINT8 tBTM_RMT_NAME_ACTIVE_FLAGS;
 enum
 {
 	BTM_RMT_NAME_INACTIVE	= 0,
-	BTM_RMT_NAME_EXT		= 0x1,
-	BTM_RMT_NAME_SEC		= 0x2,
-	BTM_RMT_NAME_INQ		= 0x4,
+	BTM_RMT_NAME_EXT		= 1 << 0,
+	BTM_RMT_NAME_SEC		= 1 << 1,
+	BTM_RMT_NAME_INQ		= 1 << 2,
 };
 
+typedef UINT8 tBTM_INQ_STATE;
 enum
 {
 	BTM_INQ_INACTIVE_STATE	= 0,
@@ -173,22 +183,22 @@ typedef void tBTM_SCO_IND_CBACK(UINT16);
 
 typedef struct
 {
-	UINT16		hci_handle;			// size 0x002, offset 0x000
-	UINT16		pkt_types_mask;		// size 0x002, offset 0x002
-	UINT16		restore_pkt_types;	// size 0x002, offset 0x004
-	UINT16		clock_offset;		// size 0x002, offset 0x006
-	BD_ADDR		remote_addr;		// size 0x006, offset 0x008
-	DEV_CLASS	remote_dc;			// size 0x003, offset 0x00e
-	BD_NAME		remote_name;		// size 0x0f8, offset 0x011
+	tHCI_HANDLE				hci_handle;			// size 0x002, offset 0x000
+	UINT16					pkt_types_mask;		// size 0x002, offset 0x002
+	UINT16					restore_pkt_types;	// size 0x002, offset 0x004
+	UINT16					clock_offset;		// size 0x002, offset 0x006
+	BD_ADDR					remote_addr;		// size 0x006, offset 0x008
+	DEV_CLASS				remote_dc;			// size 0x003, offset 0x00e
+	BD_NAME					remote_name;		// size 0x0f8, offset 0x011
 	/* 1 byte padding */
-	UINT16		manufacturer;		// size 0x002, offset 0x10a
-	UINT16		lmp_subversion;		// size 0x002, offset 0x10c
-	UINT16		link_super_tout;	// size 0x002, offset 0x10e
-	BD_FEATURES	features;			// size 0x008, offset 0x110
-	UINT8		lmp_version;		// size 0x001, offset 0x118
-	BOOLEAN		in_use;				// size 0x001, offset 0x119
-	UINT8		link_role;			// size 0x001, offset 0x11a
-	UINT8		switch_role_state;	// size 0x001, offset 0x11b
+	UINT16					manufacturer;		// size 0x002, offset 0x10a
+	UINT16					lmp_subversion;		// size 0x002, offset 0x10c
+	UINT16					link_super_tout;	// size 0x002, offset 0x10e
+	BD_FEATURES				features;			// size 0x008, offset 0x110
+	UINT8					lmp_version;		// size 0x001, offset 0x118
+	BOOLEAN					in_use;				// size 0x001, offset 0x119
+	tBTM_ROLE				link_role;			// size 0x001, offset 0x11a
+	tBTM_ACL_SWKEY_STATE	switch_role_state;	// size 0x001, offset 0x11b
 } tACL_CONN; // size 0x11c
 
 typedef struct
@@ -218,7 +228,7 @@ typedef struct
 	DEV_CLASS				dev_class;					// size 0x03, offset 0xe0
 	/* 1 byte padding */
 	UINT16					page_timeout;				// size 0x02, offset 0xe4
-	UINT8					state;						// size 0x01, offset 0xe6
+	tBTM_DEV_STATE			state;						// size 0x01, offset 0xe6
 	UINT8					retry_count;				// size 0x01, offset 0xe7
 	UINT8					vsc_busy;					// size 0x01, offset 0xe8
 	/* 3 bytes padding */
@@ -242,38 +252,38 @@ typedef struct
 
 typedef struct
 {
-	tBTM_CMPL_CB			*p_remname_cmpl_cb;				// size 0x004, offset 0x000
-	TIMER_LIST_ENT			rmt_name_timer_ent;				// size 0x018, offset 0x004
-	UINT16					discoverable_mode;				// size 0x002, offset 0x01c
-	UINT16					connectable_mode;				// size 0x002, offset 0x01e
-	UINT16					page_scan_window;				// size 0x002, offset 0x020
-	UINT16					page_scan_period;				// size 0x002, offset 0x022
-	UINT16					inq_scan_window;				// size 0x002, offset 0x024
-	UINT16					inq_scan_period;				// size 0x002, offset 0x026
-	UINT16					inq_scan_type;					// size 0x002, offset 0x028
-	UINT16					page_scan_type;					// size 0x002, offset 0x02a
-	BD_ADDR					remname_bda;					// size 0x006, offset 0x02c
-	BOOLEAN					remname_active;					// size 0x001, offset 0x032
+	tBTM_CMPL_CB				*p_remname_cmpl_cb;				// size 0x004, offset 0x000
+	TIMER_LIST_ENT				rmt_name_timer_ent;				// size 0x018, offset 0x004
+	tBTM_DISC_MODE				discoverable_mode;				// size 0x002, offset 0x01c
+	tBTM_CONN_MODE				connectable_mode;				// size 0x002, offset 0x01e
+	UINT16						page_scan_window;				// size 0x002, offset 0x020
+	UINT16						page_scan_period;				// size 0x002, offset 0x022
+	UINT16						inq_scan_window;				// size 0x002, offset 0x024
+	UINT16						inq_scan_period;				// size 0x002, offset 0x026
+	tBTM_INQ_SCAN_TYPE			inq_scan_type;					// size 0x002, offset 0x028
+	tBTM_INQ_SCAN_TYPE			page_scan_type;					// size 0x002, offset 0x02a
+	BD_ADDR						remname_bda;					// size 0x006, offset 0x02c
+	tBTM_RMT_NAME_ACTIVE_FLAGS	remname_active;					// size 0x001, offset 0x032
 	/* 1 byte padding */
-	tBTM_CMPL_CB			*p_inq_cmpl_cb;					// size 0x004, offset 0x034
-	tBTM_INQ_RESULTS_CB		*p_inq_results_cb;				// size 0x004, offset 0x038
-	tBTM_CMPL_CB			*p_inqfilter_cmpl_cb;			// size 0x004, offset 0x03c
-	tBTM_INQ_DB_CHANGE_CB	*p_inq_change_cb;				// size 0x004, offset 0x040
-	UINT32					inq_counter;					// size 0x004, offset 0x044
-	TIMER_LIST_ENT			inq_timer_ent;					// size 0x018, offset 0x048
-	tINQ_BDADDR				*p_bd_db;						// size 0x004, offset 0x060
-	UINT16					num_bd_entries;					// size 0x002, offset 0x064
-	UINT16					max_bd_entries;					// size 0x002, offset 0x066
-	tINQ_DB_ENT				inq_db[BTM_INQ_DB_SIZE];		// size 0x150, offset 0x068
-	tBTM_INQ_PARMS			inqparms;						// size 0x00a, offset 0x1b8
-	tBTM_INQUIRY_CMPL		inq_cmpl_info;					// size 0x002, offset 0x1c2
-	UINT16					per_min_delay;					// size 0x002, offset 0x1c4
-	UINT16					per_max_delay;					// size 0x002, offset 0x1c6
-	BOOLEAN					inqfilt_active;					// size 0x001, offset 0x1c8
-	UINT8					pending_filt_complete_event;	// size 0x001, offset 0x1c9
-	UINT8					inqfilt_type;					// size 0x001, offset 0x1ca
-	UINT8					state;							// size 0x001, offset 0x1cb
-	UINT8					inq_active;						// size 0x001, offset 0x1cc
+	tBTM_CMPL_CB				*p_inq_cmpl_cb;					// size 0x004, offset 0x034
+	tBTM_INQ_RESULTS_CB			*p_inq_results_cb;				// size 0x004, offset 0x038
+	tBTM_CMPL_CB				*p_inqfilter_cmpl_cb;			// size 0x004, offset 0x03c
+	tBTM_INQ_DB_CHANGE_CB		*p_inq_change_cb;				// size 0x004, offset 0x040
+	UINT32						inq_counter;					// size 0x004, offset 0x044
+	TIMER_LIST_ENT				inq_timer_ent;					// size 0x018, offset 0x048
+	tINQ_BDADDR					*p_bd_db;						// size 0x004, offset 0x060
+	UINT16						num_bd_entries;					// size 0x002, offset 0x064
+	UINT16						max_bd_entries;					// size 0x002, offset 0x066
+	tINQ_DB_ENT					inq_db[BTM_INQ_DB_SIZE];		// size 0x150, offset 0x068
+	tBTM_INQ_PARMS				inqparms;						// size 0x00a, offset 0x1b8
+	tBTM_INQUIRY_CMPL			inq_cmpl_info;					// size 0x002, offset 0x1c2
+	UINT16						per_min_delay;					// size 0x002, offset 0x1c4
+	UINT16						per_max_delay;					// size 0x002, offset 0x1c6
+	BOOLEAN						inqfilt_active;					// size 0x001, offset 0x1c8
+	UINT8						pending_filt_complete_event;	// size 0x001, offset 0x1c9
+	tBTM_INQ_FILT_COND_TYPE		inqfilt_type;					// size 0x001, offset 0x1ca
+	tBTM_INQ_STATE				state;							// size 0x001, offset 0x1cb
+	tBTM_INQ_ACTIVE_STATUS		inq_active;						// size 0x001, offset 0x1cc
 	/* 3 bytes padding */
 } tBTM_INQUIRY_VAR_ST; // size 0x1d0
 
@@ -282,7 +292,7 @@ typedef struct
 	tBTM_ESCO_CBACK		*p_esco_cback;	// size 0x04, offset 0x00
 	tBTM_ESCO_PARAMS	setup;			// size 0x10, offset 0x04
 	tBTM_ESCO_DATA		data;			// size 0x0e, offset 0x14
-	UINT8				hci_status;		// size 0x01, offset 0x22
+	tHCI_STATUS			hci_status;		// size 0x01, offset 0x22
 	/* 1 byte padding */
 } tBTM_ESCO_INFO; // size 0x24
 
@@ -291,7 +301,7 @@ typedef struct
 	tBTM_SCO_CB		*p_conn_cb;		// size 0x04, offset 0x00
 	tBTM_SCO_CB		*p_disc_cb;		// size 0x04, offset 0x04
 	UINT16			state;			// size 0x02, offset 0x08
-	UINT16			hci_handle;		// size 0x02, offset 0x0a
+	tHCI_HANDLE		hci_handle;		// size 0x02, offset 0x0a
 	BOOLEAN			is_orig;		// size 0x01, offset 0x0c
 	BOOLEAN			rem_bd_known;	// size 0x01, offset 0x0d
 	/* 2 bytes padding */
@@ -378,17 +388,17 @@ typedef tSDP_DISCOVERY_DB tBTM_DISCOVERY_DB;
 
 typedef struct
 {
-	TIMER_LIST_ENT	disc_timer_ent;		// size 0x0018, offset 0x0000
-	UINT16			num_uuid_filters;	// size 0x0002, offset 0x0018
+	TIMER_LIST_ENT		disc_timer_ent;						// size 0x0018, offset 0x0000
+	UINT16				num_uuid_filters;					// size 0x0002, offset 0x0018
 	/* 2 bytes padding */
-	tBT_UUID		uuid_filters[3];	// size 0x003c, offset 0x001c
-	UINT16			num_attr_filters;	// size 0x0002, offset 0x0058
-	UINT16			attr_filters[12];	// size 0x0018, offset 0x005a
+	tBT_UUID			uuid_filters[SDP_MAX_UUID_FILTERS];	// size 0x003c, offset 0x001c
+	UINT16				num_attr_filters;					// size 0x0002, offset 0x0058
+	UINT16				attr_filters[SDP_MAX_ATTR_FILTERS];	// size 0x0018, offset 0x005a
 	/* 2 bytes padding */
-	tBTM_INQ_INFO	*p_cur_ii;			// size 0x0004, offset 0x0074
-	tBTM_CMPL_CB	*p_disc_cmpl_cb;	// size 0x0004, offset 0x0078 // TODO: is this actually something else?
-	UINT8			btm_db_area[4000];	// size 0x0fa0, offset 0x007c
-	UINT8			disc_active;		// size 0x0001, offset 0x101c
+	tBTM_INQ_INFO		*p_cur_ii;							// size 0x0004, offset 0x0074
+	tBTM_CMPL_CB		*p_disc_cmpl_cb;					// size 0x0004, offset 0x0078 // TODO: is this actually something else? (probably not?)
+	UINT8				btm_db_area[BTM_DISC_DB_SIZE];		// size 0x0fa0, offset 0x007c
+	UINT8				disc_active;						// size 0x0001, offset 0x101c // tBTM_DISC_MODE
 	/* 3 bytes padding */
 } tBTM_DISCOVERY_VAR_ST; // size 0x1020
 
@@ -438,10 +448,10 @@ typedef struct
 	tBTM_MKEY_CALLBACK		*mkey_cback;											// size 0x0004, offset 0x27b0
 	BD_ADDR					connecting_bda;											// size 0x0006, offset 0x27b4
 	DEV_CLASS				connecting_dc;											// size 0x0003, offset 0x27ba
-	UINT8					first_disabled_channel;									// size 0x0001, offset 0x27bd
-	UINT8					last_disabled_channel;									// size 0x0001, offset 0x27be
+	tBTM_AFH_CHANNEL		first_disabled_channel;									// size 0x0001, offset 0x27bd
+	tBTM_AFH_CHANNEL		last_disabled_channel;									// size 0x0001, offset 0x27be
 	UINT8					acl_disc_reason;										// size 0x0001, offset 0x27bf
-	UINT8					trace_level;											// size 0x0001, offset 0x27c0
+	tBT_TRACE_LEVEL			trace_level;											// size 0x0001, offset 0x27c0
 	/* 3 bytes padding */
 } tBTM_CB; // size 0x27c4
 

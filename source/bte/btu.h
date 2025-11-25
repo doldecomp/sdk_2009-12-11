@@ -39,6 +39,8 @@
  * macros
  */
 
+#define BTU_HCI_RCV_MBOX				TASK_MBOX_0
+
 #define BTU_MAX_REG_TIMER				2
 #define BTU_MAX_REG_EVENT				6
 

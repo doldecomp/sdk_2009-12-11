@@ -29,20 +29,19 @@
  * headers
  */
 
-#include <stddef.h>
+#include <stddef.h> // NULL
 
-#include "bt_types.h"
 #include "data_types.h"
 
 #include "bta_fs_co.h"
-#include "bta_sys.h"
-#include "gki.h"
+#include "bta_sys.h" // bta_sys_sendmsg
+#include "gki.h" // GKI_getbuf
 
 /*******************************************************************************
  * functions
  */
 
-void bta_fs_ci_write(int fd, tBTA_FS_CO_STATUS status, UINT16 evt)
+void bta_fs_ci_write(tBTA_FS_FD fd, tBTA_FS_CO_STATUS status, UINT16 evt)
 {
 	tBTA_FS_CI_WRITE_EVT *p_evt;
 
@@ -56,12 +55,12 @@ void bta_fs_ci_write(int fd, tBTA_FS_CO_STATUS status, UINT16 evt)
 	}
 }
 
-void bta_fs_ci_read(int fd, UINT16 num_bytes_read, tBTA_FS_CO_STATUS status,
-                    UINT16 evt)
+void bta_fs_ci_read(tBTA_FS_FD fd, UINT16 num_bytes_read,
+                    tBTA_FS_CO_STATUS status, UINT16 evt)
 {
 	tBTA_FS_CI_READ_EVT *p_evt;
 
-	if ((p_evt = GKI_getbuf(sizeof(tBTA_FS_CI_READ_EVT))) != NULL)
+	if ((p_evt = GKI_getbuf(sizeof *p_evt)) != NULL)
 	{
 		p_evt->hdr.event = evt;
 		p_evt->fd = fd;
@@ -72,7 +71,7 @@ void bta_fs_ci_read(int fd, UINT16 num_bytes_read, tBTA_FS_CO_STATUS status,
 	}
 }
 
-void bta_fs_ci_open(int fd, tBTA_FS_CO_STATUS status, UINT32 file_size,
+void bta_fs_ci_open(tBTA_FS_FD fd, tBTA_FS_CO_STATUS status, UINT32 file_size,
                     UINT16 evt)
 {
 	tBTA_FS_CI_OPEN_EVT *p_evt;
@@ -96,6 +95,7 @@ void bta_fs_ci_direntry(tBTA_FS_CO_STATUS status, UINT16 evt)
 	{
 		p_evt->hdr.event = evt;
 		p_evt->status = status;
+
 		bta_sys_sendmsg(p_evt);
 	}
 }

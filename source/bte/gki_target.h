@@ -32,6 +32,9 @@
 
 /* Tasks */
 
+// possibly? but then this ID conflicts with PPC_TASK
+#define BTU_TASK					2
+
 #ifndef BTU_TASK
 # define BTU_TASK					0
 #endif

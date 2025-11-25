@@ -253,12 +253,9 @@ extern void bta_hh_co_close(UINT8 dev_handle ATTR_UNUSED,
 	/* ... */
 }
 
-extern BOOLEAN bta_dm_co_get_compress_memory(tBTA_SYS_ID id
-                                             ATTR_UNUSED,
-                                             UINT8 **memory_p
-                                             ATTR_UNUSED,
-                                             UINT32 *memory_size
-                                             ATTR_UNUSED)
+extern BOOLEAN bta_dm_co_get_compress_memory(tBTA_SYS_ID id ATTR_UNUSED,
+                                             UINT8 **memory_p ATTR_UNUSED,
+                                             UINT32 *memory_size ATTR_UNUSED)
 {
 	BOOLEAN ret = false;
 

@@ -172,13 +172,14 @@ typedef UINT8 tBTA_DM_PM_ACTION;
 enum
 {
 	BTA_DM_PM_NO_ACTION	= 0,
-	BTA_DM_PM_NO_PREF	= 1 << 0,
-	BTA_DM_PM_PARK		= 1 << 4,
-	BTA_DM_PM_SNIFF		= 1 << 5,
-	BTA_DM_PM_ACTIVE	= 1 << 6,
+	BTA_DM_PM_PARK		= 1 << 0, // was 1 << 4
+	BTA_DM_PM_SNIFF		= 1 << 1, // was 1 << 5
+	BTA_DM_PM_ACTIVE	= 1 << 2, // was 1 << 6
+
+	BTA_DM_PM_NO_PREF	= 1 << 4, // was 1 << 0
 };
 
-typedef void tBTA_CLEAN_UP_CBACK(tBTA_STATUS status);
+typedef void tBTA_APP_INFO_CBACK(tBTA_STATUS status);
 
 typedef struct
 {
@@ -330,7 +331,7 @@ void BTA_DmSendHciReset(void);
 
 /* bte_main.c */
 tBTA_STATUS BTA_Init(void);
-void BTA_CleanUp(tBTA_CLEAN_UP_CBACK *p_cb);
+void BTA_CleanUp(tBTA_APP_INFO_CBACK *p_cb);
 
 #ifdef __cplusplus
 	}

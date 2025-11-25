@@ -32,38 +32,64 @@
 #include <string.h>
 
 #include "bt_trace.h"
-#include "bt_types.h"
+#include "bt_types.h" // BT_HDR
 #include "data_types.h"
 
-#include "bd.h"
+#include "bd.h" // bdcpy
 #include "bta_hh_api.h"
-#include "bta_sys.h"
 #include "hiddefs.h"
 
 /*******************************************************************************
  * macros
  */
 
-#define BTA_HH_ACTION		0
-#define BTA_HH_NEXT_STATE	1
-#define BTA_HH_NUM_COLS		2
+#define BTA_HH_NUM_COLS			2
 
-#define BTA_HH_IGNORE		12
+#define BTA_HH_IGNORE			BTA_HH_MAX_ACTION
+
+#define BTA_HH_ACTION_INDEX		0
+#define BTA_HH_NEXT_STATE_INDEX	1
 
 /*******************************************************************************
  * types
  */
 
-typedef UINT8 tBTA_HH_ST[BTA_HH_NUM_COLS];
+/* typedef UINT8 tBTA_HH_ACTION_TYPE; */
+enum
+{
+	BTA_HH_API_DISC_ACT,
+	BTA_HH_OPEN_ACT,
+	BTA_HH_CLOSE_ACT,
+	BTA_HH_DATA_ACT,
+	BTA_HH_CTRL_DAT_ACT,
+	BTA_HH_HANDSK_ACT,
+	BTA_HH_START_SDP,
+	BTA_HH_SDP_CMPL,
+	BTA_HH_WRITE_DEV_ACT,
+	BTA_HH_GET_DSCP_ACT,
+	BTA_HH_MAINT_DEV_ACT,
+	BTA_HH_OPEN_CMPL_ACT,
+
+	BTA_HH_MAX_ACTION
+};
+
+// NOTE: state table typedef is not an array to match dwarf
 
 typedef void tBTA_HH_ACTION(tBTA_HH_DEV_CB *p_cb, tBTA_HH_DATA *p_data);
+typedef UINT8 tBTA_HH_STATE_TABLE_ENTRY[BTA_HH_NUM_COLS];
+
+#if 0
+typedef tBTA_HH_STATE_TABLE_ENTRY tBTA_HH_STATE_TABLE[];
+#else
+typedef tBTA_HH_STATE_TABLE_ENTRY tBTA_HH_STATE_TABLE;
+#endif
 
 /*******************************************************************************
  * local function declarations
  */
 
-static char *bta_hh_evt_code(tBTA_HH_INT_EVT evt_code);
-static char *bta_hh_state_code(tBTA_HH_STATE state_code);
+static char const *bta_hh_evt_code(tBTA_HH_INT_EVT evt_code);
+static char const *bta_hh_state_code(tBTA_HH_STATE state_code);
 
 /*******************************************************************************
  * variables
@@ -86,64 +112,65 @@ tBTA_HH_ACTION * const bta_hh_action[] =
 	&bta_hh_open_cmpl_act,
 };
 
-tBTA_HH_ST const bta_hh_st_idle[] =
+// clang-format off
+tBTA_HH_STATE_TABLE_ENTRY const bta_hh_st_idle[] =
 {
-	{ 6, 2},
-	{12, 1},
-	{ 1, 2},
-	{ 2, 1},
-	{12, 1},
-	{12, 1},
-	{12, 1},
-	{12, 1},
-	{12, 1},
-	{12, 1},
-	{10, 1},
-	{12, 1},
+	{BTA_HH_START_SDP,     BTA_HH_W4_CONN_ST},
+	{BTA_HH_IGNORE,        BTA_HH_IDLE_ST   },
+	{BTA_HH_OPEN_ACT,      BTA_HH_W4_CONN_ST},
+	{BTA_HH_CLOSE_ACT,     BTA_HH_IDLE_ST   },
+	{BTA_HH_IGNORE,        BTA_HH_IDLE_ST   },
+	{BTA_HH_IGNORE,        BTA_HH_IDLE_ST   },
+	{BTA_HH_IGNORE,        BTA_HH_IDLE_ST   },
+	{BTA_HH_IGNORE,        BTA_HH_IDLE_ST   },
+	{BTA_HH_IGNORE,        BTA_HH_IDLE_ST   },
+	{BTA_HH_IGNORE,        BTA_HH_IDLE_ST   },
+	{BTA_HH_MAINT_DEV_ACT, BTA_HH_IDLE_ST   },
+	{BTA_HH_IGNORE,        BTA_HH_IDLE_ST   },
 };
 
-tBTA_HH_ST const bta_hh_st_w4_conn[] =
+tBTA_HH_STATE_TABLE_ENTRY const bta_hh_st_w4_conn[] =
 {
-	{12, 2},
-	{12, 1},
-	{ 1, 2},
-	{ 2, 1},
-	{12, 2},
-	{12, 2},
-	{12, 2},
-	{ 7, 2},
-	{12, 2},
-	{12, 2},
-	{10, 1},
-	{11, 3},
+	{BTA_HH_IGNORE,        BTA_HH_W4_CONN_ST},
+	{BTA_HH_IGNORE,        BTA_HH_IDLE_ST   },
+	{BTA_HH_OPEN_ACT,      BTA_HH_W4_CONN_ST},
+	{BTA_HH_CLOSE_ACT,     BTA_HH_IDLE_ST   },
+	{BTA_HH_IGNORE,        BTA_HH_W4_CONN_ST},
+	{BTA_HH_IGNORE,        BTA_HH_W4_CONN_ST},
+	{BTA_HH_IGNORE,        BTA_HH_W4_CONN_ST},
+	{BTA_HH_SDP_CMPL,      BTA_HH_W4_CONN_ST},
+	{BTA_HH_IGNORE,        BTA_HH_W4_CONN_ST},
+	{BTA_HH_IGNORE,        BTA_HH_W4_CONN_ST},
+	{BTA_HH_MAINT_DEV_ACT, BTA_HH_IDLE_ST   },
+	{BTA_HH_OPEN_CMPL_ACT, BTA_HH_CONN_ST   },
 };
 
-tBTA_HH_ST const bta_hh_st_connected[] =
+tBTA_HH_STATE_TABLE_ENTRY const bta_hh_st_connected[] =
 {
-	{12, 3},
-	{ 0, 3},
-	{ 1, 3},
-	{ 2, 1},
-	{ 3, 3},
-	{ 4, 3},
-	{ 5, 3},
-	{12, 3},
-	{ 8, 3},
-	{ 9, 3},
-	{10, 3},
-	{12, 3},
+	{BTA_HH_IGNORE,        BTA_HH_CONN_ST   },
+	{BTA_HH_API_DISC_ACT,  BTA_HH_CONN_ST   },
+	{BTA_HH_OPEN_ACT,      BTA_HH_CONN_ST   },
+	{BTA_HH_CLOSE_ACT,     BTA_HH_IDLE_ST   },
+	{BTA_HH_DATA_ACT,      BTA_HH_CONN_ST   },
+	{BTA_HH_CTRL_DAT_ACT,  BTA_HH_CONN_ST   },
+	{BTA_HH_HANDSK_ACT,    BTA_HH_CONN_ST   },
+	{BTA_HH_IGNORE,        BTA_HH_CONN_ST   },
+	{BTA_HH_WRITE_DEV_ACT, BTA_HH_CONN_ST   },
+	{BTA_HH_GET_DSCP_ACT,  BTA_HH_CONN_ST   },
+	{BTA_HH_MAINT_DEV_ACT, BTA_HH_CONN_ST   },
+	{BTA_HH_IGNORE,        BTA_HH_CONN_ST   },
 };
+// clang-format on
 
-// .bss
-tBTA_HH_CB bta_hh_cb;
-
-// .sdata2
-tBTA_HH_ST const * const bta_hh_st_tbl[] =
+tBTA_HH_STATE_TABLE const * const bta_hh_st_tbl[] =
 {
 	bta_hh_st_idle,
 	bta_hh_st_w4_conn,
 	bta_hh_st_connected,
 };
+
+// .bss
+tBTA_HH_CB bta_hh_cb;
 
 /*******************************************************************************
  * functions
@@ -151,7 +178,7 @@ tBTA_HH_ST const * const bta_hh_st_tbl[] =
 
 void bta_hh_sm_execute(tBTA_HH_DEV_CB *p_cb, UINT16 event, tBTA_HH_DATA *p_data)
 {
-	tBTA_HH_ST const *state_table;
+	tBTA_HH_STATE_TABLE const *state_table;
 	UINT8 action;
 	tBTA_HH cback_data;
 	tBTA_HH_EVT cback_event = 0;
@@ -242,9 +269,9 @@ void bta_hh_sm_execute(tBTA_HH_DEV_CB *p_cb, UINT16 event, tBTA_HH_DATA *p_data)
 
 		event &= 0xff;
 
-		p_cb->state = state_table[event][BTA_HH_NEXT_STATE];
+		p_cb->state = state_table[event][BTA_HH_NEXT_STATE_INDEX];
 
-		if ((action = state_table[event][BTA_HH_ACTION]) != BTA_HH_IGNORE)
+		if ((action = state_table[event][BTA_HH_ACTION_INDEX]) != BTA_HH_IGNORE)
 			(*bta_hh_action[action])(p_cb, p_data);
 
 		if (in_state != p_cb->state)
@@ -281,14 +308,20 @@ BOOLEAN bta_hh_hdl_event(BT_HDR *p_msg)
 
 	default:
 		if (p_msg->event == BTA_HH_API_OPEN_EVT)
+		{
 			index = bta_hh_find_cb(((tBTA_HH_API_CONN *)p_msg)->bd_addr);
+		}
 		else if (p_msg->event == BTA_HH_API_MAINT_DEV_EVT)
+		{
 			if (((tBTA_HH_MAINT_DEV *)p_msg)->sub_event == BTA_HH_ADD_DEV_EVT)
 				index = bta_hh_find_cb(((tBTA_HH_MAINT_DEV *)p_msg)->bda);
 			else
 				index = bta_hh_cb.cb_index[p_msg->layer_specific];
+		}
 		else if (p_msg->layer_specific < BTA_HH_MAX_KNOWN)
+		{
 			index = bta_hh_cb.cb_index[p_msg->layer_specific];
+		}
 
 		if (index != BTA_HH_MAX_KNOWN)
 			p_cb = &bta_hh_cb.kdev[index];
@@ -302,7 +335,7 @@ BOOLEAN bta_hh_hdl_event(BT_HDR *p_msg)
 	return TRUE;
 }
 
-static char *bta_hh_evt_code(tBTA_HH_INT_EVT evt_code)
+static char const *bta_hh_evt_code(tBTA_HH_INT_EVT evt_code)
 {
 	switch (evt_code)
 	{
@@ -359,7 +392,7 @@ static char *bta_hh_evt_code(tBTA_HH_INT_EVT evt_code)
 	}
 }
 
-static char *bta_hh_state_code(tBTA_HH_STATE state_code)
+static char const *bta_hh_state_code(tBTA_HH_STATE state_code)
 {
 	switch (state_code)
 	{

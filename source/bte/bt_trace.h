@@ -42,19 +42,17 @@
 
 // clang-format off
 
-extern void LogMsg_0(UINT32 trace_mask, char const *fmt_str);
-extern void LogMsg_1(UINT32 trace_mask, char const *fmt_str, UINT32 p1);
-extern void LogMsg_2(UINT32 trace_mask, char const *fmt_str, UINT32 p1, UINT32 p2);
-extern void LogMsg_3(UINT32 trace_mask, char const *fmt_str, UINT32 p1, UINT32 p2, UINT32 p3);
-extern void LogMsg_4(UINT32 trace_mask, char const *fmt_str, UINT32 p1, UINT32 p2, UINT32 p3, UINT32 p4);
-extern void LogMsg_5(UINT32 trace_mask, char const *fmt_str, UINT32 p1, UINT32 p2, UINT32 p3, UINT32 p4, UINT32 p5);
-extern void LogMsg_6(UINT32 trace_mask, char const *fmt_str, UINT32 p1, UINT32 p2, UINT32 p3, UINT32 p4, UINT32 p5, UINT32 p6);
+extern void LogMsg(UINT32 trace_set_mask, char const *fmt_str, ...);
+
+extern void LogMsg_0(UINT32 trace_set_mask, char const *fmt_str);
+extern void LogMsg_1(UINT32 trace_set_mask, char const *fmt_str, UINT32 p1);
+extern void LogMsg_2(UINT32 trace_set_mask, char const *fmt_str, UINT32 p1, UINT32 p2);
+extern void LogMsg_3(UINT32 trace_set_mask, char const *fmt_str, UINT32 p1, UINT32 p2, UINT32 p3);
+extern void LogMsg_4(UINT32 trace_set_mask, char const *fmt_str, UINT32 p1, UINT32 p2, UINT32 p3, UINT32 p4);
+extern void LogMsg_5(UINT32 trace_set_mask, char const *fmt_str, UINT32 p1, UINT32 p2, UINT32 p3, UINT32 p4, UINT32 p5);
+extern void LogMsg_6(UINT32 trace_set_mask, char const *fmt_str, UINT32 p1, UINT32 p2, UINT32 p3, UINT32 p4, UINT32 p5, UINT32 p6);
 
 // clang-format on
-
-#ifdef __cplusplus
-	}
-#endif
 
 /*******************************************************************************
  * main macro work
@@ -104,19 +102,26 @@ extern void LogMsg_6(UINT32 trace_mask, char const *fmt_str, UINT32 p1, UINT32 p
 
 // clang-format off
 
-#define BT_TRACE_LEVEL_NONE			0	/* No trace messages to be generated */
-#define BT_TRACE_LEVEL_ERROR		1	/* Error condition trace messages    */
-#define BT_TRACE_LEVEL_WARNING		2	/* Warning condition trace messages  */
-#define BT_TRACE_LEVEL_API			3	/* API traces                        */
-#define BT_TRACE_LEVEL_EVENT		4	/* Debug messages for events         */
-#define BT_TRACE_LEVEL_DEBUG		5	/* Full debug messages               */
-#define BT_MAX_TRACE_LEVEL			BT_TRACE_LEVEL_DEBUG
+typedef UINT8 tBT_TRACE_LEVEL;
+enum
+{
+	BT_TRACE_LEVEL_NONE			= 0,	/* No trace messages to be generated  */
+	BT_TRACE_LEVEL_ERROR		= 1,	/* Error condition trace messages     */
+	BT_TRACE_LEVEL_WARNING		= 2,	/* Warning condition trace messages   */
+	BT_TRACE_LEVEL_API			= 3,	/* API traces                         */
+	BT_TRACE_LEVEL_EVENT		= 4,	/* Debug messages for events          */
+	BT_TRACE_LEVEL_DEBUG		= 5,	/* Full debug messages                */
+
+	BT_MAX_TRACE_LEVEL			= BT_TRACE_LEVEL_DEBUG,
+	BT_READ_TRACE_LEVEL			= 0xff,
+};
 
 // TRACE_CTRL						0xcc......
 #define TRACE_CTRL(x)				(((UINT32)(x) << 24) & 0xff000000)
 #define TRACE_GET_CTRL(x)			(((UINT32)(x) & 0xff000000) >> 24)
 
 #define TRACE_CTRL_GENERAL			0
+
 #define TRACE_CTRL_MAX_NUM			3
 
 // TRACE_LAYER						0x..ll....
@@ -133,6 +138,7 @@ extern void LogMsg_6(UINT32 trace_mask, char const *fmt_str, UINT32 p1, UINT32 p
 #define TRACE_LAYER_GOEP			16
 #define TRACE_LAYER_XML				16 // ?
 #define TRACE_LAYER_HID				30
+
 #define TRACE_LAYER_MAX_NUM			49
 
 // TRACE_ORIGIN						0x....oo..
@@ -141,6 +147,7 @@ extern void LogMsg_6(UINT32 trace_mask, char const *fmt_str, UINT32 p1, UINT32 p
 
 #define TRACE_ORIGIN_STACK			0
 #define TRACE_ORIGIN_APPL			5
+
 #define TRACE_ORIGIN_MAX_NUM		10
 
 // TRACE_TYPE						0x......tt
@@ -152,6 +159,7 @@ extern void LogMsg_6(UINT32 trace_mask, char const *fmt_str, UINT32 p1, UINT32 p
 #define TRACE_TYPE_API				2
 #define TRACE_TYPE_EVENT			3
 #define TRACE_TYPE_DEBUG			4
+
 #define TRACE_TYPE_MAX_NUM			20
 
 #define TRACE_MASK(ctrl_, layer_, origin_, type_)	\
@@ -190,6 +198,10 @@ extern void LogMsg_6(UINT32 trace_mask, char const *fmt_str, UINT32 p1, UINT32 p
 
 #ifndef APPL_INITIAL_TRACE_LEVEL
 # define APPL_INITIAL_TRACE_LEVEL	BT_TRACE_LEVEL_WARNING
+#endif
+
+#ifdef __cplusplus
+	}
 #endif
 
 #endif // BT_TRACE_H

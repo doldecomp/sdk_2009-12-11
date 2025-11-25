@@ -27,6 +27,12 @@
 /* Includes changes by muff1n1634 */
 
 /*******************************************************************************
+ * headers
+ */
+
+#include "data_types.h"
+
+/*******************************************************************************
  * macros
  */
 
@@ -50,7 +56,7 @@
 
 #define HCI_MIN_INQUIRYSCAN_INTERVAL				18
 #define HCI_MAX_INQUIRYSCAN_INTERVAL				4096
-#define HCI_DEF_INQUIRYSCAN_INTERVAL				HCI_MAX_INQUIRYSCAN_INTERVAL
+#define HCI_DEF_INQUIRYSCAN_INTERVAL				2048
 
 #define HCI_MIN_INQUIRYSCAN_WINDOW					18
 #define HCI_MAX_INQUIRYSCAN_WINDOW					4096
@@ -375,6 +381,7 @@ enum
 	HCI_VENDOR_SPECIFIC_EVT				= 255
 };
 
+typedef UINT8 tHCI_STATUS;
 enum
 {
 	HCI_SUCCESS									= 0,
@@ -478,6 +485,7 @@ enum
 	HCI_SCAN_TYPE_STANDARD	= 0,
 };
 
+typedef UINT16 tHCI_LINK_POLICY;
 enum
 {
 	HCI_DISABLE_ALL_LM_MODES		= 0,
@@ -510,10 +518,12 @@ enum
 	HCI_PIN_TYPE_FIXED	= 1,
 };
 
+typedef UINT8 tHCI_SCAN_MODE;
 enum
 {
-	HCI_INQUIRY_SCAN_ENABLED	= 1,
-	HCI_PAGE_SCAN_ENABLED		= 2,
+	HCI_NO_SCAN_ENABLED			= 0,
+	HCI_INQUIRY_SCAN_ENABLED	= 1 << 0,
+	HCI_PAGE_SCAN_ENABLED		= 1 << 1,
 };
 
 enum
@@ -532,6 +542,10 @@ enum
 enum
 {
 	LMP_COMPID_BROADCOM	= 15,
+	LMP_COMPID_ZEEVO	= 18, // What
 };
+
+typedef UINT16 tHCI_HANDLE;
+#define HCI_HANDLE_INVALID	0xffff
 
 #endif // BTE_HCI_DEFS_H

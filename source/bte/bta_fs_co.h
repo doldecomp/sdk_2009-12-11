@@ -41,13 +41,20 @@
 #endif
 
 typedef UINT16 tBTA_FS_CO_STATUS;
+
 typedef int tBTA_FS_OPEN_FLAGS;
+enum
+{
+	BTA_FS_O_RDONLY	= 0,
+};
+
 typedef int tBTA_FS_FD;
 
 /*******************************************************************************
  * functions
  */
 
+/* WARNING: These callouts are not defined. */
 extern void bta_fs_co_open(char const *p_path, tBTA_FS_OPEN_FLAGS oflags,
                            UINT32 size, UINT16 evt, UINT8 app_id);
 extern tBTA_FS_CO_STATUS bta_fs_co_close(tBTA_FS_FD fd, UINT8 app_id);

@@ -36,6 +36,12 @@
 #include "gki.h"
 
 /*******************************************************************************
+ * macros
+ */
+
+#define BTA_SYS_EVT_START(id)	((id) << 8)
+
+/*******************************************************************************
  * types
  */
 
@@ -51,6 +57,7 @@ enum
 	BTA_ID_DM_SEARCH	= 2,
 	BTA_ID_PAN			= 14,
 	BTA_ID_AV			= 18,
+	BTA_ID_HD			= 19,
 	BTA_ID_PRM			= 22,
 	BTA_ID_HH			= 23,
 
@@ -60,14 +67,14 @@ enum
 typedef UINT8 tBTA_SYS_CONN_STATUS;
 enum
 {
-	BTA_SYS_CONN_OPEN	= 0,
-	BTA_SYS_CONN_CLOSE	= 1,
-	BTA_SYS_APP_OPEN	= 2,
-	BTA_SYS_APP_CLOSE	= 3,
-	BTA_SYS_SCO_OPEN	= 4,
-	BTA_SYS_SCO_CLOSE	= 5,
-	BTA_SYS_CONN_IDLE	= 6,
-	BTA_SYS_CONN_BUSY	= 7,
+	BTA_SYS_CONN_OPEN,
+	BTA_SYS_CONN_CLOSE,
+	BTA_SYS_APP_OPEN,
+	BTA_SYS_APP_CLOSE,
+	BTA_SYS_SCO_OPEN,
+	BTA_SYS_SCO_CLOSE,
+	BTA_SYS_CONN_IDLE,
+	BTA_SYS_CONN_BUSY,
 };
 
 typedef BOOLEAN tBTA_SYS_EVT_HDLR(BT_HDR *p_msg);

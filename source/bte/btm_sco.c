@@ -76,9 +76,9 @@ static tBTM_ESCO_PARAMS const btm_esco_defaults =
 	BTM_64KBITS_RATE,
 	0x000a,
 	0x0060,
-	BTM_SCO_PKT_TYPES_MASK_HV1 + BTM_SCO_PKT_TYPES_MASK_HV2
-		+ BTM_SCO_PKT_TYPES_MASK_HV3 + BTM_SCO_PKT_TYPES_MASK_EV3
-		+ BTM_SCO_PKT_TYPES_MASK_EV4 + BTM_SCO_PKT_TYPES_MASK_EV5,
+	BTM_SCO_PKT_TYPES_MASK_HV1 | BTM_SCO_PKT_TYPES_MASK_HV2
+		| BTM_SCO_PKT_TYPES_MASK_HV3 | BTM_SCO_PKT_TYPES_MASK_EV3
+		| BTM_SCO_PKT_TYPES_MASK_EV4 | BTM_SCO_PKT_TYPES_MASK_EV5,
 	BTM_ESCO_RETRANS_POWER
 };
 
@@ -101,7 +101,7 @@ static void btm_esco_conn_rsp(UINT16 sco_inx, UINT8 hci_status, BD_ADDR bda,
 	BT_HDR *p_buf;
 	UINT16 temp_pkt_types;
 
-	if ((p_buf = GKI_getpoolbuf(2)) == NULL)
+	if ((p_buf = HCI_GET_CMD_BUF(HCIC_PARAM_SIZE_REJECT_ESCO)) == NULL)
 	{
 		BTM_TRACE(ERROR, "btm_esco_conn_rsp -> No Resources");
 		return;
@@ -129,7 +129,8 @@ static void btm_esco_conn_rsp(UINT16 sco_inx, UINT8 hci_status, BD_ADDR bda,
 
 		p_sco->state = SCO_ST_CONNECTING;
 
-		if (btm_cb.sco_cb.esco_supported && p_sco->esco.data.link_type == 2)
+		if (btm_cb.sco_cb.esco_supported
+		    && p_sco->esco.data.link_type == BTM_LINK_TYPE_ESCO)
 		{
 			p_setup = &p_sco->esco.setup;
 
@@ -138,14 +139,17 @@ static void btm_esco_conn_rsp(UINT16 sco_inx, UINT8 hci_status, BD_ADDR bda,
 
 			p_setup->packet_types = btm_cb.sco_cb.def_esco_parms.packet_types;
 
-			temp_pkt_types = p_setup->packet_types & BTM_SCO_SUPPORTED_PKTS_MASK
+			temp_pkt_types = BTM_SCO_SUPPORTED_PKTS_MASK & p_setup->packet_types
 			               & btm_cb.btm_sco_pkt_types_supported;
 
-			if ((temp_pkt_types & 0x38) == BTM_LINK_TYPE_SCO)
-				temp_pkt_types |= 0x08;
+			if (!(temp_pkt_types
+			      & (HCI_ESCO_PKT_TYPES_MASK_EV3 | HCI_ESCO_PKT_TYPES_MASK_EV4
+			         | HCI_ESCO_PKT_TYPES_MASK_EV5)))
+			{
+				temp_pkt_types |= HCI_ESCO_PKT_TYPES_MASK_EV3;
+			}
 
-			if (btm_cb.devcb.local_version.hci_version
-			         >= HCI_PROTO_VERSION_2_0)
+			if (btm_cb.devcb.local_version.hci_version >= HCI_PROTO_VERSION_2_0)
 			{
 				temp_pkt_types |=
 					(p_setup->packet_types & BTM_SCO_EXCEPTION_PKTS_MASK)
@@ -162,7 +166,7 @@ static void btm_esco_conn_rsp(UINT16 sco_inx, UINT8 hci_status, BD_ADDR bda,
 		}
 		else
 		{
-			btsnd_hcic_accept_conn(p_buf, bda, 0);
+			btsnd_hcic_accept_conn(p_buf, bda, HCI_ROLE_MASTER);
 		}
 	}
 }
@@ -184,7 +188,7 @@ static tBTM_STATUS btm_send_connect_request(UINT16 acl_handle,
 	}
 	else
 	{
-		temp_pkt_types = p_setup->packet_types & BTM_SCO_SUPPORTED_PKTS_MASK
+		temp_pkt_types = BTM_SCO_SUPPORTED_PKTS_MASK & p_setup->packet_types
 		               & btm_cb.btm_sco_pkt_types_supported;
 
 		if (btm_cb.devcb.local_version.hci_version >= HCI_PROTO_VERSION_2_0)
@@ -275,12 +279,11 @@ tBTM_STATUS BTM_CreateSco(BD_ADDR remote_bda, BOOLEAN is_orig, UINT16 pkt_types,
 		/* explicitly post-increment */
 		for (xx = 0; xx < BTM_MAX_SCO_LINKS; xx++, p++)
 		{
-			if ((p->state == SCO_ST_CONNECTING
-			     || p->state == SCO_ST_LISTENING
+			if ((p->state == SCO_ST_CONNECTING || p->state == SCO_ST_LISTENING
 			     || p->state == SCO_ST_PEND_UNPARK)
 			    && memcmp(p->esco.data.bd_addr, remote_bda, BD_ADDR_LEN) == 0)
 			{
-				return (BTM_BUSY);
+				return BTM_BUSY;
 			}
 		}
 	}
@@ -294,9 +297,8 @@ tBTM_STATUS BTM_CreateSco(BD_ADDR remote_bda, BOOLEAN is_orig, UINT16 pkt_types,
 		}
 	}
 
-	/* explicitly multiple-assignment and post-increment */
-	for (xx = 0, p = btm_cb.sco_cb.sco_db; xx < BTM_MAX_SCO_LINKS;
-	     xx++, p++)
+	/* explicitly post-increment */
+	for (xx = 0, p = btm_cb.sco_cb.sco_db; xx < BTM_MAX_SCO_LINKS; xx++, p++)
 	{
 		if (p->state == SCO_ST_UNUSED)
 		{
@@ -335,9 +337,8 @@ tBTM_STATUS BTM_CreateSco(BD_ADDR remote_bda, BOOLEAN is_orig, UINT16 pkt_types,
 					? pkt_types & BTM_SCO_LINK_ONLY_MASK
 					: pkt_types;
 
-			temp_pkt_types =
-				(p_setup->packet_types & BTM_SCO_SUPPORTED_PKTS_MASK
-			     & btm_cb.btm_sco_pkt_types_supported);
+			temp_pkt_types = BTM_SCO_SUPPORTED_PKTS_MASK & p_setup->packet_types
+			               & btm_cb.btm_sco_pkt_types_supported;
 
 			if (btm_cb.devcb.local_version.hci_version >= HCI_PROTO_VERSION_2_0)
 			{
@@ -345,8 +346,8 @@ tBTM_STATUS BTM_CreateSco(BD_ADDR remote_bda, BOOLEAN is_orig, UINT16 pkt_types,
 				{
 					temp_pkt_types |=
 						(p_setup->packet_types & BTM_SCO_EXCEPTION_PKTS_MASK)
-					     | (btm_cb.btm_sco_pkt_types_supported
-					        & BTM_SCO_EXCEPTION_PKTS_MASK);
+						| (btm_cb.btm_sco_pkt_types_supported
+					       & BTM_SCO_EXCEPTION_PKTS_MASK);
 				}
 				else
 				{
@@ -368,7 +369,7 @@ tBTM_STATUS BTM_CreateSco(BD_ADDR remote_bda, BOOLEAN is_orig, UINT16 pkt_types,
 					          "handle 0x%04x, Desired Type %d",
 					          acl_handle, btm_cb.sco_cb.desired_sco_mode);
 
-					if ((btm_send_connect_request(acl_handle, p_setup))
+					if (btm_send_connect_request(acl_handle, p_setup)
 					    != BTM_CMD_STARTED)
 					{
 						return BTM_NO_RESOURCES;
@@ -391,42 +392,33 @@ tBTM_STATUS BTM_CreateSco(BD_ADDR remote_bda, BOOLEAN is_orig, UINT16 pkt_types,
 	return BTM_NO_RESOURCES;
 }
 
-void btm_sco_chk_pend_unpark(UINT8 hci_status, UINT16 hci_handle, UINT8 mode)
+// NOTE for future reference: mode is the mode of tHID_DEV_PWR_MD
+void btm_sco_chk_pend_unpark(tHCI_STATUS hci_status, tHCI_HANDLE hci_handle,
+                             UINT8 mode)
 {
 	UINT16 xx;
-	UINT16 acl_handle;
+	tHCI_HANDLE acl_handle;
 	tSCO_CONN *p = btm_cb.sco_cb.sco_db;
 
 	/* explicitly post-increment */
 	for (xx = 0; xx < BTM_MAX_SCO_LINKS; xx++, p++)
 	{
-		if (p->state != SCO_ST_PEND_UNPARK)
-			continue;
-
-		if (mode != 0)
-			continue;
-
-		if (hci_status != 0)
-			continue;
-
-		if ((acl_handle = BTM_GetHCIConnHandle(p->esco.data.bd_addr))
-		    != hci_handle)
+		if (p->state == SCO_ST_PEND_UNPARK && mode == 0
+		    && hci_status == HCI_SUCCESS
+		    && ((acl_handle = BTM_GetHCIConnHandle(p->esco.data.bd_addr))
+		        == hci_handle))
 		{
-			continue;
+			BTM_TRACE(API,
+			          "btm_sco_chk_pend_unpark -> (e)SCO Link for ACL handle "
+			          "0x%04x, Desired Type %d",
+			          acl_handle, btm_cb.sco_cb.desired_sco_mode);
+
+			if (btm_send_connect_request(acl_handle, &p->esco.setup)
+			    == BTM_CMD_STARTED)
+			{
+				p->state = SCO_ST_CONNECTING;
+			}
 		}
-
-		BTM_TRACE(API,
-		          "btm_sco_chk_pend_unpark -> (e)SCO Link for ACL handle "
-		          "0x%04x, Desired Type %d",
-		          acl_handle, btm_cb.sco_cb.desired_sco_mode);
-
-		if (btm_send_connect_request(acl_handle, &p->esco.setup)
-		    != BTM_CMD_STARTED)
-		{
-			continue;
-		}
-
-		p->state = SCO_ST_CONNECTING;
 	}
 }
 
@@ -440,55 +432,50 @@ void btm_sco_conn_req(BD_ADDR bda, DEV_CLASS dev_class, UINT8 link_type)
 	/* explicitly post-increment */
 	for (xx = 0; xx < BTM_MAX_SCO_LINKS; xx++, p++)
 	{
-		if ((p->state != SCO_ST_LISTENING || !p->rem_bd_known)
-		    && p->state != SCO_ST_CONNECTING)
+		if (((p->state == SCO_ST_LISTENING && p->rem_bd_known)
+		     || p->state == SCO_ST_CONNECTING)
+		    && memcmp(p->esco.data.bd_addr, bda, BD_ADDR_LEN) == 0)
 		{
-			continue;
+			p->rem_bd_known = TRUE;
+			p->esco.data.link_type = link_type;
+			memcpy(p->esco.data.bd_addr, bda, BD_ADDR_LEN);
+
+			if (!p->esco.p_esco_cback)
+			{
+				btm_esco_conn_rsp(xx, HCI_SUCCESS, bda, NULL);
+			}
+			else
+			{
+				memcpy(evt_data.bd_addr, bda, BD_ADDR_LEN);
+				memcpy(evt_data.dev_class, dev_class, DEV_CLASS_LEN);
+				evt_data.link_type = link_type;
+				evt_data.sco_inx = xx;
+
+				p->state = SCO_ST_W4_CONN_RSP;
+				(*p->esco.p_esco_cback)(BTM_ESCO_CONN_REQ_EVT,
+				                        (tBTM_ESCO_EVT_DATA *)&evt_data);
+			}
+
+			return;
 		}
-
-		if (memcmp(p->esco.data.bd_addr, bda, BD_ADDR_LEN) != 0)
-			continue;
-
-		p->rem_bd_known = TRUE;
-		p->esco.data.link_type = link_type;
-		memcpy(p->esco.data.bd_addr, bda, BD_ADDR_LEN);
-
-		if (!p->esco.p_esco_cback)
-		{
-			btm_esco_conn_rsp(xx, HCI_SUCCESS, bda, NULL);
-		}
-		else
-		{
-			memcpy(evt_data.bd_addr, bda, BD_ADDR_LEN);
-			memcpy(evt_data.dev_class, dev_class, DEV_CLASS_LEN);
-			evt_data.link_type = link_type;
-			evt_data.sco_inx = xx;
-
-			p->state = SCO_ST_W4_CONN_RSP;
-			(*p->esco.p_esco_cback)(BTM_ESCO_CONN_REQ_EVT,
-			                     (tBTM_ESCO_EVT_DATA *)&evt_data);
-		}
-
-		return;
 	}
 
 	if (btm_cb.sco_cb.app_sco_ind_cb)
 	{
-		/* explicitly multiple-assignment and post-increment */
+		/* explicitly post-increment */
 		for (xx = 0, p = btm_cb.sco_cb.sco_db; xx < BTM_MAX_SCO_LINKS;
 		     xx++, p++)
 		{
-			if (p->state != SCO_ST_UNUSED)
-				continue;
+			if (p->state == SCO_ST_UNUSED)
+			{
+				p->is_orig = FALSE;
+				p->state = SCO_ST_LISTENING;
 
-			p->is_orig = FALSE;
-			p->state = SCO_ST_LISTENING;
-
-			p->esco.data.link_type = link_type;
-			memcpy(p->esco.data.bd_addr, bda, BD_ADDR_LEN);
-			p->rem_bd_known = TRUE;
-			break;
-
+				p->esco.data.link_type = link_type;
+				memcpy(p->esco.data.bd_addr, bda, BD_ADDR_LEN);
+				p->rem_bd_known = TRUE;
+				break;
+			}
 		}
 
 		if (xx < BTM_MAX_SCO_LINKS)
@@ -506,8 +493,8 @@ void btm_sco_conn_req(BD_ADDR bda, DEV_CLASS dev_class, UINT8 link_type)
 	                  NULL);
 }
 
-void btm_sco_connected(UINT8 hci_status, BD_ADDR bda, UINT16 hci_handle,
-                       tBTM_ESCO_DATA *p_esco_data)
+void btm_sco_connected(tHCI_STATUS hci_status, BD_ADDR bda,
+                       tHCI_HANDLE hci_handle, tBTM_ESCO_DATA *p_esco_data)
 {
 	tSCO_CONN *p = btm_cb.sco_cb.sco_db;
 	UINT16 xx;
@@ -857,7 +844,7 @@ tBTM_STATUS BTM_ChangeEScoLinkParms(UINT16 sco_inx,
 	}
 	else
 	{
-		temp_pkt_types = p_parms->packet_types & BTM_SCO_SUPPORTED_PKTS_MASK
+		temp_pkt_types = BTM_SCO_SUPPORTED_PKTS_MASK & p_parms->packet_types
 		               & btm_cb.btm_sco_pkt_types_supported;
 
 		if (btm_cb.devcb.local_version.hci_version >= HCI_PROTO_VERSION_2_0)
@@ -903,8 +890,7 @@ void BTM_EScoConnRsp(UINT16 sco_inx, UINT8 hci_status,
 		return;
 
 	btm_esco_conn_rsp(sco_inx, hci_status,
-	                  btm_cb.sco_cb.sco_db[sco_inx].esco.data.bd_addr,
-	                  p_parms);
+	                  btm_cb.sco_cb.sco_db[sco_inx].esco.data.bd_addr, p_parms);
 }
 
 tBTM_SCO_TYPE btm_read_def_esco_mode(tBTM_ESCO_PARAMS *p_parms)
@@ -959,10 +945,8 @@ BOOLEAN btm_is_sco_active(UINT16 handle)
 
 	/* explicitly post-increment */
 	for (xx = 0; xx < BTM_MAX_SCO_LINKS; xx++, p++)
-	{
 		if (handle == p->hci_handle && p->state == SCO_ST_CONNECTED)
 			return TRUE;
-	}
 
 	return FALSE;
 }
@@ -998,10 +982,8 @@ BOOLEAN btm_is_any_sco_active(void)
 
 	/* explicitly post-increment */
 	for (xx = 0; xx < BTM_MAX_SCO_LINKS; xx++, p++)
-	{
 		if (p->state == SCO_ST_CONNECTED)
 			return TRUE;
-	}
 
 	return FALSE;
 }

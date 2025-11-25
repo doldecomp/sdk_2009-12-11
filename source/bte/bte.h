@@ -37,16 +37,26 @@
 #include "hci.h"
 
 /*******************************************************************************
- * external globals
+ * types
  */
 
 #ifdef __cplusplus
 	extern "C" {
 #endif
 
+typedef UINT8 tBTE_TARGET_MODE;
+enum
+{
+	BTE_MODE_SERIAL_APP	= 0,
+};
+
+/*******************************************************************************
+ * external globals
+ */
+
 extern char const bte_version_string[];
 
-extern UINT8 volatile bte_target_mode;
+extern tBTE_TARGET_MODE volatile bte_target_mode;
 
 extern tHCI_IF *p_hcisu_if;
 extern tHCI_CFG *p_hcisu_cfg;

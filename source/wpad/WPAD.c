@@ -47,7 +47,7 @@
 	" (" STR(__CWCC__) "_" STR(__CWBUILD__) ") >>"
 #else
 #define RVL_SDK_WPAD_VERSION_STRING	\
-	"<< RVL_SDK - WPAD \tdebug build: Dec 11 2009 15:55:10"\
+	"<< RVL_SDK - WPAD \tdebug build: Dec 11 2009 15:55:10" \
 	" (" STR(__CWCC__) "_" STR(__CWBUILD__) ") >>"
 #endif
 

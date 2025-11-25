@@ -31,46 +31,28 @@
 
 #include <string.h>
 
-#include <decomp.h>
+#include <decomp.h> // unk_t
 
 #include "bt_target.h"
-#include "bt_trace.h"
+#include "bt_trace.h" // APPL_TRACE
 #include "bt_types.h"
 #include "data_types.h"
 
 #include "bd.h"
 #include "bta_api.h"
-#include "bta_dm_co.h"
+#include "bta_dm_co.h" // bta_dm_co_get_compress_memory
 #include "bta_sys.h"
-#include "bta_sys_int.h"
+#include "bta_sys_int.h" // bta_sys_cb
 #include "btm_api.h"
 #include "btm_int.h"
-#include "btu.h"
+#include "btu.h" // BT_BD_ANY
 #include "gki.h"
 #include "hcidefs.h"
-#include "hcimsgs.h"
+#include "hcimsgs.h" // btsnd_hcic_write_scan_enable
 #include "l2c_api.h"
 #include "sdp_api.h"
 #include "sdpdefs.h"
 #include "wbt_api.h"
-
-/*******************************************************************************
- * macros
- */
-
-#define BTA_DM_NUM_COMPRESS_SRVS	5
-
-/*******************************************************************************
- * types
- */
-
-typedef struct
-{
-	BD_ADDR		peer_bdaddr;	// size 0x06, offset 0x00
-	tBTA_SYS_ID	id;				// size 0x01, offset 0x06
-	UINT8		app_id;			// size 0x01, offset 0x07
-	UINT8		state;			// size 0x01, offset 0x08
-} tBTA_DM_COMPRESS_SRVCS; // size 0x09
 
 /*******************************************************************************
  * local function declarations
@@ -93,19 +75,22 @@ static void bta_dm_start_remote_name_response_timer(void);
 static void bta_dm_stop_remote_name_response_timer(void);
 static void bta_dm_remote_name_request_cmd_failed(UINT8 *bd_addr);
 
-static UINT8 bta_dm_authorize_cback(BD_ADDR bd_addr, DEV_CLASS dev_class,
-                                    BD_NAME bd_name, UINT8 *service_name,
-                                    UINT8 service_id, BOOLEAN is_originator);
+static tBTM_STATUS bta_dm_authorize_cback(BD_ADDR bd_addr, DEV_CLASS dev_class,
+                                          BD_NAME bd_name, UINT8 *service_name,
+                                          UINT8 service_id,
+                                          BOOLEAN is_originator);
 static void bta_dm_pinname_cback(void *p_data);
-static UINT8 bta_dm_pin_cback(BD_ADDR bd_addr, DEV_CLASS dev_class,
-                              BD_NAME bd_name);
-static UINT8 bta_dm_link_key_request_cback(BD_ADDR bd_addr, LINK_KEY key);
-static UINT8 bta_dm_new_link_key_cback(BD_ADDR bd_addr, DEV_CLASS dev_class,
-                                       BD_NAME bd_name, LINK_KEY key,
-                                       UINT8 key_type);
-static UINT8 bta_dm_authentication_complete_cback(BD_ADDR bd_addr,
-                                                  DEV_CLASS dev_class,
-                                                  BD_NAME bd_name, int result);
+static tBTM_STATUS bta_dm_pin_cback(BD_ADDR bd_addr, DEV_CLASS dev_class,
+                                    BD_NAME bd_name);
+static tBTM_STATUS bta_dm_link_key_request_cback(BD_ADDR bd_addr, LINK_KEY key);
+static tBTM_STATUS bta_dm_new_link_key_cback(BD_ADDR bd_addr,
+                                             DEV_CLASS dev_class,
+                                             BD_NAME bd_name, LINK_KEY key,
+                                             UINT8 key_type);
+static tBTM_STATUS bta_dm_authentication_complete_cback(BD_ADDR bd_addr,
+                                                        DEV_CLASS dev_class,
+                                                        BD_NAME bd_name,
+                                                        int result);
 static void bta_dm_local_addr_cback(BD_ADDR bd_addr);
 
 static void bta_dm_signal_strength_timer_cback(TIMER_LIST_ENT *p_tle);
@@ -113,19 +98,17 @@ static void bta_dm_acl_change_cback(BD_ADDR p_bda, DEV_CLASS p_dc,
                                     BD_NAME p_bdn, BD_FEATURES features,
                                     BOOLEAN is_new);
 
-static void bta_dm_disable_conn_down_timer_cback (TIMER_LIST_ENT *p_tle);
+static void bta_dm_disable_conn_down_timer_cback(TIMER_LIST_ENT *p_tle);
 static void bta_dm_rssi_cback(tBTM_RSSI_RESULTS *p_result);
 static void bta_dm_link_quality_cback(tBTM_LINK_QUALITY_RESULTS *p_result);
 
-static BOOLEAN bta_dm_l2cap_server_compress_cback(BD_ADDR peer_addr, signed,
-                                                  signed, signed, signed,
-                                                  signed, signed,
-                                                  UINT8 **p_mem_pool,
+static BOOLEAN bta_dm_l2cap_server_compress_cback(BD_ADDR peer_addr, unk_t,
+                                                  unk_t, unk_t, unk_t, unk_t,
+                                                  unk_t, UINT8 **p_mem_pool,
                                                   UINT32 *mem_pool_size);
 static void bta_dm_init_compress(void);
-static void bta_dm_compress_cback(UINT8 status, UINT8 id,
-                                  UINT8 app_id,
-                                  BD_ADDR peer_addr);
+static void bta_dm_compress_cback(tBTA_SYS_CONN_STATUS status, UINT8 id,
+                                  UINT8 app_id, BD_ADDR peer_addr);
 static void bta_dm_rm_cback(tBTA_SYS_CONN_STATUS status, UINT8 id, UINT8 app_id,
                             BD_ADDR peer_addr);
 static void bta_dm_adjust_roles(BOOLEAN delay_role_switch);
@@ -138,56 +121,56 @@ static char *bta_dm_get_remname(void);
 // .rodata
 UINT16 const bta_service_id_to_uuid_lkup_tbl[BTA_MAX_SERVICE_ID] =
 {
-	0x1200,
-	0x1101,
-	0x1103,
-	0x1111,
-	0x1102,
-	0x1108,
-	0x111e,
-	0x1105,
-	0x1106,
-	0x1109,
-	0x1110,
-	0x1104,
-	0x1118,
-	0x111b,
-	0x1115,
-	0x1116,
-	0x1117,
-	0x112d,
-	0x110b,
-	0x110e,
-	0x1124,
-	0x1304,
-	0x112f,
+	UUID_SERVCLASS_PNP_INFORMATION,
+	UUID_SERVCLASS_SERIAL_PORT,
+	UUID_SERVCLASS_DIALUP_NETWORKING,
+	UUID_SERVCLASS_FAX, // this slot is UUID_SERVCLASS_AUDIO_SOURCE in bluedroid
+	UUID_SERVCLASS_LAN_ACCESS_USING_PPP,
+	UUID_SERVCLASS_HEADSET,
+	UUID_SERVCLASS_HF_HANDSFREE,
+	UUID_SERVCLASS_OBEX_OBJECT_PUSH,
+	UUID_SERVCLASS_OBEX_FILE_TRANSFER,
+	UUID_SERVCLASS_CORDLESS_TELEPHONY,
+	UUID_SERVCLASS_INTERCOM,
+	UUID_SERVCLASS_IRMC_SYNC,
+	UUID_SERVCLASS_DIRECT_PRINTING,
+	UUID_SERVCLASS_IMAGING_RESPONDER,
+	UUID_SERVCLASS_PANU,
+	UUID_SERVCLASS_NAP,
+	UUID_SERVCLASS_GN,
+	UUID_SERVCLASS_SAP,
+	UUID_SERVCLASS_AUDIO_SINK,
+	UUID_SERVCLASS_AV_REMOTE_CONTROL,
+	UUID_SERVCLASS_HUMAN_INTERFACE,
+	UUID_SERVCLASS_VIDEO_SINK,
+	UUID_SERVCLASS_PBAP_PSE,
 };
 
 UINT32 const bta_service_id_to_btm_srv_id_lkup_tbl[BTA_MAX_SERVICE_ID] =
 {
-	0x0000,
-	0x0001,
-	0x0003,
-	0x000b,
-	0x0002,
-	0x000c,
-	0x001d,
-	0x0006,
-	0x0007,
-	0x0009,
-	0x000a,
-	0x0004,
-	0x0016,
-	0x0023,
-	0x0019,
-	0x001b,
-	0x001a,
-	0x0028,
-	0x0025,
-	0x0027,
-	0x0020,
-	0x0025,
-	0x002c,
+	0,
+	BTM_SEC_SERVICE_SERIAL_PORT,
+	BTM_SEC_SERVICE_DUN,
+	BTM_SEC_SERVICE_FAX, // this slot is BTM_SEC_SERVICE_AVDTP in bluedroid
+	BTM_SEC_SERVICE_LAN_ACCESS,
+	BTM_SEC_SERVICE_HEADSET_AG,
+	BTM_SEC_SERVICE_AG_HANDSFREE,
+	BTM_SEC_SERVICE_OBEX,
+	BTM_SEC_SERVICE_OBEX_FTP,
+	BTM_SEC_SERVICE_CORDLESS,
+	BTM_SEC_SERVICE_INTERCOM,
+	BTM_SEC_SERVICE_IRMC_SYNC,
+	BTM_SEC_SERVICE_BPP_JOB,
+	BTM_SEC_SERVICE_BIP,
+	BTM_SEC_SERVICE_BNEP_PANU,
+	BTM_SEC_SERVICE_BNEP_NAP,
+	BTM_SEC_SERVICE_BNEP_GN,
+	BTM_SEC_SERVICE_SAP,
+	BTM_SEC_SERVICE_AVDTP,
+	BTM_SEC_SERVICE_AVCTP,
+	BTM_SEC_SERVICE_HID_SEC_CTRL,
+	BTM_SEC_SERVICE_AVDTP,
+	BTM_SEC_SERVICE_PBAP,
 };
 
 tBTM_APPL_INFO const bta_security =
@@ -238,6 +221,7 @@ void bta_dm_enable(tBTA_DM_MSG *p_data)
 
 void bta_dm_disable(tBTA_DM_MSG *p_data)
 {
+	// casting away constness
 	L2CA_SetIdleTimeoutByBdAddr((BD_ADDR_PTR)BT_BD_ANY, 0);
 
 	bta_sys_disable();
@@ -356,12 +340,12 @@ void bta_dm_auth_reply(tBTA_DM_MSG *p_data)
 				btm_mask_index =
 					bta_service_id_to_btm_srv_id_lkup_tbl[p_data->auth_reply
 				                                              .service]
-					/ 32;
+					/ BTM_SEC_ARRAY_BITS;
 
 				trusted_mask[btm_mask_index] |=
 					1 << (bta_service_id_to_btm_srv_id_lkup_tbl
 				              [p_data->auth_reply.service]
-				          - btm_mask_index * 32);
+				          - btm_mask_index * BTM_SEC_ARRAY_BITS);
 			}
 		}
 
@@ -498,7 +482,7 @@ void bta_dm_inq_cmpl(tBTA_DM_MSG *p_data)
 					disc_res.services = 0;
 
 					(*bta_dm_search_cb.p_search_cback)(
-						2, (tBTA_DM_SEARCH *)&disc_res);
+						BTA_DM_DISC_RES_EVT, (tBTA_DM_SEARCH *)&disc_res);
 				}
 				else
 				{
@@ -530,7 +514,7 @@ void bta_dm_inq_cmpl(tBTA_DM_MSG *p_data)
 
 		if ((p_msg = GKI_getbuf(sizeof *p_msg)) != NULL)
 		{
-			p_msg->hdr.event = 0x207;
+			p_msg->hdr.event = BTA_DM_SEARCH_CMPL_EVT;
 
 			bta_sys_sendmsg(p_msg);
 		}
@@ -538,7 +522,7 @@ void bta_dm_inq_cmpl(tBTA_DM_MSG *p_data)
 
 	data.inq_cmpl.num_resps = p_data->inq_cmpl.num;
 
-	(*bta_dm_search_cb.p_search_cback)(1, &data);
+	(*bta_dm_search_cb.p_search_cback)(BTA_DM_INQ_CMPL_EVT, &data);
 }
 
 void bta_dm_rmt_name(tBTA_DM_MSG *p_data)
@@ -559,7 +543,8 @@ void bta_dm_rmt_name(tBTA_DM_MSG *p_data)
 			disc_res.bd_name[0] = '\0';
 			disc_res.services = 0;
 
-			(*bta_dm_search_cb.p_search_cback)(2, (tBTA_DM_SEARCH *)&disc_res);
+			(*bta_dm_search_cb.p_search_cback)(BTA_DM_DISC_RES_EVT,
+			                                   (tBTA_DM_SEARCH *)&disc_res);
 		}
 		else
 		{
@@ -585,13 +570,14 @@ void bta_dm_rmt_name(tBTA_DM_MSG *p_data)
 	{
 		if ((p_msg = GKI_getbuf(sizeof *p_msg)) != NULL)
 		{
-			p_msg->hdr.event = 0x207;
+			p_msg->hdr.event = BTA_DM_SEARCH_CMPL_EVT;
 
 			bta_sys_sendmsg(p_msg);
 		}
 	}
 
-	(*bta_dm_search_cb.p_search_cback)(2, &p_data->disc_result.result);
+	(*bta_dm_search_cb.p_search_cback)(BTA_DM_DISC_RES_EVT,
+	                                   &p_data->disc_result.result);
 }
 
 void bta_dm_disc_rmt_name(tBTA_DM_MSG *p_data)
@@ -600,14 +586,15 @@ void bta_dm_disc_rmt_name(tBTA_DM_MSG *p_data)
 
 	if ((p_msg = GKI_getbuf(sizeof *p_msg)) != NULL)
 	{
-		p_msg->hdr.event = 0x207;
+		p_msg->hdr.event = BTA_DM_SEARCH_CMPL_EVT;
 
 		bta_sys_sendmsg(p_msg);
 	}
 
 	p_data->disc_result.result.disc_res.services = 0;
 
-	(*bta_dm_search_cb.p_search_cback)(2, &p_data->disc_result.result);
+	(*bta_dm_search_cb.p_search_cback)(BTA_DM_DISC_RES_EVT,
+	                                   &p_data->disc_result.result);
 }
 
 void bta_dm_sdp_result(tBTA_DM_MSG *p_data)
@@ -648,7 +635,8 @@ void bta_dm_sdp_result(tBTA_DM_MSG *p_data)
 			if (service_found)
 			{
 				bta_dm_search_cb.services_found |=
-					1 << (bta_dm_search_cb.service_index - 1);
+					BTA_SERVICE_ID_TO_SERVICE_MASK(
+						bta_dm_search_cb.service_index - 1);
 			}
 		}
 
@@ -676,7 +664,8 @@ void bta_dm_sdp_result(tBTA_DM_MSG *p_data)
 				      bta_dm_search_cb.peer_bdaddr);
 				BCM_STRNCPY_S(
 					(char *)p_msg->disc_result.result.disc_res.bd_name,
-					sizeof(BD_NAME), bta_dm_get_remname(), 32);
+					sizeof(BD_NAME), bta_dm_get_remname(),
+					BTA_DM_REMOTE_DEVICE_NAME_LENGTH);
 
 				bta_sys_sendmsg(p_msg);
 			}
@@ -707,7 +696,8 @@ void bta_dm_sdp_result(tBTA_DM_MSG *p_data)
 			bdcpy(p_msg->disc_result.result.disc_res.bd_addr,
 			      bta_dm_search_cb.peer_bdaddr);
 			BCM_STRNCPY_S((char *)p_msg->disc_result.result.disc_res.bd_name,
-			              sizeof(BD_NAME), bta_dm_get_remname(), 32);
+			              sizeof(BD_NAME), bta_dm_get_remname(),
+			              BTA_DM_REMOTE_DEVICE_NAME_LENGTH);
 
 			bta_sys_sendmsg(p_msg);
 		}
@@ -831,31 +821,37 @@ void bta_dm_search_cancel_notify(tBTA_DM_MSG *p_data)
 static void bta_dm_find_services(BD_ADDR bd_addr)
 {
 	tSDP_UUID uuid;
-	UINT16 attr_list[] = {ATTR_ID_SERVICE_CLASS_ID_LIST,
-	                      ATTR_ID_EXT_BRCM_VERSION};
+	UINT16 attr_list[] =
+	{
+		ATTR_ID_SERVICE_CLASS_ID_LIST,
+		ATTR_ID_EXT_BRCM_VERSION,
+	};
 	UINT16 num_attrs = 1;
 	tBTA_DM_MSG *p_msg;
 
 	while (bta_dm_search_cb.service_index < BTA_MAX_SERVICE_ID)
 	{
 		if (bta_dm_search_cb.services_to_search
-		    & (1 << bta_dm_search_cb.service_index))
+		    & BTA_SERVICE_ID_TO_SERVICE_MASK(bta_dm_search_cb.service_index))
 		{
-			if ((bta_dm_search_cb.p_sdp_db = GKI_getbuf(250)) != NULL)
+			if ((bta_dm_search_cb.p_sdp_db = GKI_getbuf(BTA_DM_SDP_DB_SIZE))
+			    != NULL)
 			{
 				bta_dm_search_cb.services_to_search &=
-					~(1 << bta_dm_search_cb.service_index);
+					~BTA_SERVICE_ID_TO_SERVICE_MASK(
+						bta_dm_search_cb.service_index);
 
 				uuid.len = LEN_UUID_16;
 				uuid.uu.uuid16 =
 					bta_service_id_to_uuid_lkup_tbl[bta_dm_search_cb
 				                                        .service_index];
 
-				if (uuid.uu.uuid16 == 0x1200)
+				if (uuid.uu.uuid16 == UUID_SERVCLASS_PNP_INFORMATION)
 					num_attrs = 2;
 
-				SDP_InitDiscoveryDb(bta_dm_search_cb.p_sdp_db, 250, 1, &uuid,
-				                    num_attrs, attr_list);
+				SDP_InitDiscoveryDb(bta_dm_search_cb.p_sdp_db,
+				                    BTA_DM_SDP_DB_SIZE, 1, &uuid, num_attrs,
+				                    attr_list);
 
 				if (!SDP_ServiceSearchAttributeRequest(
 						bd_addr, bta_dm_search_cb.p_sdp_db,
@@ -887,7 +883,8 @@ static void bta_dm_find_services(BD_ADDR bd_addr)
 			bdcpy(p_msg->disc_result.result.disc_res.bd_addr,
 			      bta_dm_search_cb.peer_bdaddr);
 			BCM_STRNCPY_S((char *)p_msg->disc_result.result.disc_res.bd_name,
-			              sizeof(BD_NAME), bta_dm_get_remname(), 32);
+			              sizeof(BD_NAME), bta_dm_get_remname(),
+			              BTA_DM_REMOTE_DEVICE_NAME_LENGTH);
 
 			bta_sys_sendmsg(p_msg);
 		}
@@ -986,7 +983,7 @@ static void bta_dm_service_search_remname_cback(BD_ADDR bd_addr, DEV_CLASS dc,
                                                 tBTM_BD_NAME bd_name)
 {
 	BCM_STRNCPY_S((char *)bta_dm_search_cb.peer_name, sizeof(BD_NAME),
-	              (char *)bd_name, 31);
+	              (char *)bd_name, BTA_DM_REMOTE_DEVICE_NAME_LENGTH - 1);
 	BTM_SecDeleteRmtNameNotifyCallback(&bta_dm_service_search_remname_cback);
 }
 
@@ -1001,7 +998,8 @@ static void bta_dm_remname_cback(tBTM_REMOTE_DEV_NAME *p_remote_name)
 		bdcpy(p_msg->result.disc_res.bd_addr,
 		      bta_dm_search_cb.p_btm_inq_info->results.remote_bd_addr);
 		BCM_STRNCPY_S((char *)p_msg->result.disc_res.bd_name, sizeof(BD_NAME),
-		              (char *)p_remote_name->remote_bd_name, 32);
+		              (char *)p_remote_name->remote_bd_name,
+		              BTA_DM_REMOTE_DEVICE_NAME_LENGTH);
 
 		p_msg->hdr.event = BTA_DM_REMT_NAME_EVT;
 		bta_sys_sendmsg(p_msg);
@@ -1018,7 +1016,8 @@ static void bta_dm_disc_remname_cback(tBTM_REMOTE_DEV_NAME *p_remote_name)
 	{
 		bdcpy(p_msg->result.disc_res.bd_addr, bta_dm_search_cb.peer_bdaddr);
 		BCM_STRNCPY_S((char *)p_msg->result.disc_res.bd_name, sizeof(BD_NAME),
-		              (char *)p_remote_name->remote_bd_name, 32);
+		              (char *)p_remote_name->remote_bd_name,
+		              BTA_DM_REMOTE_DEVICE_NAME_LENGTH);
 
 		p_msg->hdr.event = BTA_DM_REMT_NAME_EVT;
 		bta_sys_sendmsg(p_msg);
@@ -1029,7 +1028,8 @@ static void bta_dm_start_remote_name_response_timer(void)
 {
 	if (btm_cb.devcb.page_timeout < 30000)
 	{
-		bta_sys_start_timer(&bta_dm_search_cb.rnr_timer, 0x205,
+		bta_sys_start_timer(&bta_dm_search_cb.rnr_timer,
+		                    BTA_DM_REMT_NAME_RESP_EVT,
 		                    btm_cb.devcb.page_timeout + 100);
 	}
 }
@@ -1058,7 +1058,7 @@ void bta_dm_cancel_rmt_name(tBTA_DM_MSG *p_data)
 	BTM_CancelRemoteDeviceName();
 }
 
-static UINT8 bta_dm_authorize_cback(BD_ADDR bd_addr, DEV_CLASS dev_class,
+static tBTM_STATUS bta_dm_authorize_cback(BD_ADDR bd_addr, DEV_CLASS dev_class,
                                     BD_NAME bd_name, UINT8 *service_name,
                                     UINT8 service_id, BOOLEAN is_originator)
 {
@@ -1068,7 +1068,7 @@ static UINT8 bta_dm_authorize_cback(BD_ADDR bd_addr, DEV_CLASS dev_class,
 	bdcpy(sec_event.authorize.bd_addr, bd_addr);
 
 	BCM_STRNCPY_S((char *)sec_event.authorize.bd_name, sizeof(BD_NAME),
-	              (char *)bd_name, 32);
+	              (char *)bd_name, BTA_DM_REMOTE_DEVICE_NAME_LENGTH);
 
 	while (index <= BTA_MAX_SERVICE_ID)
 	{
@@ -1103,21 +1103,23 @@ static void bta_dm_pinname_cback(void *p_data)
 
 	if (p_result && p_result->status == BTM_SUCCESS)
 	{
-		bytes_to_copy = p_result->length < 32 ? p_result->length : 32;
+		bytes_to_copy = p_result->length < BTA_DM_REMOTE_DEVICE_NAME_LENGTH
+		                  ? p_result->length
+		                  : BTA_DM_REMOTE_DEVICE_NAME_LENGTH;
 		memcpy(sec_event.pin_req.bd_name, p_result->remote_bd_name,
 		       bytes_to_copy);
-		sec_event.pin_req.bd_name[32] = '\0';
+		sec_event.pin_req.bd_name[BTA_DM_REMOTE_DEVICE_NAME_LENGTH] = '\0';
 	}
 	else
 	{
 		sec_event.pin_req.bd_name[0] = '\0';
 	}
 
-	(*bta_dm_cb.p_sec_cback)(2, &sec_event);
+	(*bta_dm_cb.p_sec_cback)(BTA_DM_PIN_REQ_EVT, &sec_event);
 }
 
-static UINT8 bta_dm_pin_cback(BD_ADDR bd_addr, DEV_CLASS dev_class,
-                              BD_NAME bd_name)
+static tBTM_STATUS bta_dm_pin_cback(BD_ADDR bd_addr, DEV_CLASS dev_class,
+                                    BD_NAME bd_name)
 {
 	tBTA_DM_SEC sec_event;
 
@@ -1143,28 +1145,30 @@ static UINT8 bta_dm_pin_cback(BD_ADDR bd_addr, DEV_CLASS dev_class,
 	bdcpy(sec_event.pin_req.bd_addr, bd_addr);
 	BTA_COPY_DEVICE_CLASS(sec_event.pin_req.dev_class, dev_class);
 	BCM_STRNCPY_S((char *)sec_event.pin_req.bd_name, sizeof(BD_NAME),
-	              (char *)bd_name, 32);
-	sec_event.pin_req.bd_name[32] = '\0';
+	              (char *)bd_name, BTA_DM_REMOTE_DEVICE_NAME_LENGTH);
+	sec_event.pin_req.bd_name[BTA_DM_REMOTE_DEVICE_NAME_LENGTH] = '\0';
 
 	(*bta_dm_cb.p_sec_cback)(BTA_DM_PIN_REQ_EVT, &sec_event);
 
 	return BTM_CMD_STARTED;
 }
 
-static UINT8 bta_dm_link_key_request_cback(BD_ADDR bd_addr, LINK_KEY key)
+static tBTM_STATUS bta_dm_link_key_request_cback(BD_ADDR bd_addr, LINK_KEY key)
 {
 	return BTM_NOT_AUTHORIZED;
 }
 
-static UINT8 bta_dm_new_link_key_cback(BD_ADDR bd_addr, DEV_CLASS dev_class,
-                                       BD_NAME bd_name, LINK_KEY key,
-                                       UINT8 key_type)
+static tBTM_STATUS bta_dm_new_link_key_cback(BD_ADDR bd_addr,
+                                             DEV_CLASS dev_class,
+                                             BD_NAME bd_name, LINK_KEY key,
+                                             UINT8 key_type)
 {
 	tBTA_DM_SEC sec_event;
 
 	bdcpy(sec_event.auth_cmpl.bd_addr, bd_addr);
-	memcpy(sec_event.auth_cmpl.bd_name, bd_name, 31);
-	sec_event.auth_cmpl.bd_name[31] = '\0';
+	memcpy(sec_event.auth_cmpl.bd_name, bd_name,
+	       BTA_DM_REMOTE_DEVICE_NAME_LENGTH - 1);
+	sec_event.auth_cmpl.bd_name[BTA_DM_REMOTE_DEVICE_NAME_LENGTH - 1] = '\0';
 	memcpy(sec_event.auth_cmpl.key, key, LINK_KEY_LEN);
 	sec_event.auth_cmpl.key_present = TRUE;
 	sec_event.auth_cmpl.success = TRUE;
@@ -1175,9 +1179,10 @@ static UINT8 bta_dm_new_link_key_cback(BD_ADDR bd_addr, DEV_CLASS dev_class,
 	return BTM_CMD_STARTED;
 }
 
-static UINT8 bta_dm_authentication_complete_cback(BD_ADDR bd_addr,
-                                                  DEV_CLASS dev_class,
-                                                  BD_NAME bd_name, int result)
+static tBTM_STATUS bta_dm_authentication_complete_cback(BD_ADDR bd_addr,
+                                                        DEV_CLASS dev_class,
+                                                        BD_NAME bd_name,
+                                                        int result)
 {
 	tBTA_DM_SEC sec_event;
 
@@ -1185,8 +1190,10 @@ static UINT8 bta_dm_authentication_complete_cback(BD_ADDR bd_addr,
 	{
 		bdcpy(sec_event.auth_cmpl.bd_addr, bd_addr);
 
-		memcpy(sec_event.auth_cmpl.bd_name, bd_name, 31);
-		sec_event.auth_cmpl.bd_name[31] = '\0';
+		memcpy(sec_event.auth_cmpl.bd_name, bd_name,
+		       BTA_DM_REMOTE_DEVICE_NAME_LENGTH - 1);
+		sec_event.auth_cmpl.bd_name[BTA_DM_REMOTE_DEVICE_NAME_LENGTH - 1] =
+			'\0';
 		sec_event.auth_cmpl.success = FALSE;
 		sec_event.auth_cmpl.key_present = FALSE;
 
@@ -1229,6 +1236,7 @@ static void bta_dm_signal_strength_timer_cback(TIMER_LIST_ENT *p_tle)
 			             (tBTM_CMPL_CB *)bta_dm_rssi_cback);
 		}
 	}
+
 	if (bta_dm_cb.signal_strength_mask & BTA_SIG_STRENGTH_LINK_QUALITY_MASK)
 	{
 		for (i = 0; i < bta_dm_cb.device_list.count; ++i)
@@ -1302,23 +1310,24 @@ void bta_dm_acl_change(tBTA_DM_MSG *p_data)
 	{
 		for (i = 0; i < bta_dm_cb.device_list.count; i++)
 		{
-			if (bdcmp(bta_dm_cb.device_list.peer_device[i].peer_bdaddr, p_bda))
-				continue;
-
-			for (; i < bta_dm_cb.device_list.count; i++)
+			if (bdcmp(bta_dm_cb.device_list.peer_device[i].peer_bdaddr, p_bda)
+			    == 0)
 			{
-				memcpy(&bta_dm_cb.device_list.peer_device[i],
-				       &bta_dm_cb.device_list.peer_device[i + 1],
-				       sizeof bta_dm_cb.device_list.peer_device[i]);
-			}
+				for (; i < bta_dm_cb.device_list.count; i++)
+				{
+					memcpy(&bta_dm_cb.device_list.peer_device[i],
+					       &bta_dm_cb.device_list.peer_device[i + 1],
+					       sizeof bta_dm_cb.device_list.peer_device[i]);
+				}
 
-			break;
+				break;
+			}
 		}
 
 		--bta_dm_cb.device_list.count;
 
 		if (bta_dm_search_cb.wait_disc
-		    && !bdcmp(bta_dm_search_cb.peer_bdaddr, p_bda))
+		    && bdcmp(bta_dm_search_cb.peer_bdaddr, p_bda) == 0)
 		{
 			bta_dm_search_cb.wait_disc = FALSE;
 
@@ -1392,28 +1401,24 @@ BOOLEAN bta_sys_check_compress(unk_t param_1, UINT8 app_id, BD_ADDR peer_addr)
 
 	for (i = 0; i < BTA_DM_NUM_COMPRESS_SRVS; ++i)
 	{
-		if (bta_dm_compress_srvcs[i].state != 1)
-			continue;
+		if (bta_dm_compress_srvcs[i].state == BTA_COMPRESS_STATE_1
+		    && bdcmp(bta_dm_compress_srvcs[i].peer_bdaddr, peer_addr) == 0
+		    && bta_dm_compress_srvcs[i].app_id == app_id)
+		{
+			APPL_TRACE(EVENT, "bta_sys_check_compress OK, BTA ID %d",
+			           bta_dm_compress_srvcs[i].id);
 
-		if (bdcmp(bta_dm_compress_srvcs[i].peer_bdaddr, peer_addr) != 0)
-			continue;
-
-		if (bta_dm_compress_srvcs[i].app_id != app_id)
-			continue;
-
-		APPL_TRACE(EVENT, "bta_sys_check_compress OK, BTA ID %d",
-		           bta_dm_compress_srvcs[i].id);
-
-		status = TRUE;
-		break;
+			status = TRUE;
+			break;
+		}
 	}
 
 	return status;
 }
 
 static BOOLEAN bta_dm_l2cap_server_compress_cback(
-	BD_ADDR peer_addr, signed param_2, signed param_3, signed param_4,
-	signed param_5, signed param_6, signed param_7, UINT8 **p_mem_pool,
+	BD_ADDR peer_addr, unk_t param_2, unk_t param_3, unk_t param_4,
+	unk_t param_5, unk_t param_6, unk_t param_7, UINT8 **p_mem_pool,
 	UINT32 *mem_pool_size)
 {
 	BOOLEAN status = FALSE;
@@ -1421,18 +1426,16 @@ static BOOLEAN bta_dm_l2cap_server_compress_cback(
 
 	for (i = 0; i < BTA_DM_NUM_COMPRESS_SRVS; ++i)
 	{
-		if (bta_dm_compress_srvcs[i].state != 1)
-			continue;
+		if (bta_dm_compress_srvcs[i].state == BTA_COMPRESS_STATE_1
+		    && bdcmp(bta_dm_compress_srvcs[i].peer_bdaddr, peer_addr) == 0)
+		{
+			APPL_TRACE(EVENT, "bta_dm_l2cap_server_compress_cback, BTA ID %d",
+			           bta_dm_compress_srvcs[i].id);
 
-		if (bdcmp(bta_dm_compress_srvcs[i].peer_bdaddr, peer_addr) != 0)
-			continue;
-
-		APPL_TRACE(EVENT, "bta_dm_l2cap_server_compress_cback, BTA ID %d",
-		           bta_dm_compress_srvcs[i].id);
-
-		status = bta_dm_co_get_compress_memory(bta_dm_compress_srvcs[i].id,
-		                                       p_mem_pool, mem_pool_size);
-		break;
+			status = bta_dm_co_get_compress_memory(bta_dm_compress_srvcs[i].id,
+			                                       p_mem_pool, mem_pool_size);
+			break;
+		}
 	}
 
 	return status;
@@ -1445,88 +1448,79 @@ static void bta_dm_init_compress(void)
 	L2CA_RegisterCompression(&bta_dm_l2cap_server_compress_cback, 0);
 }
 
-static void bta_dm_compress_cback(UINT8 status, UINT8 id, UINT8 app_id,
-                                  BD_ADDR peer_addr)
+static void bta_dm_compress_cback(tBTA_SYS_CONN_STATUS status, UINT8 id,
+                                  UINT8 app_id, BD_ADDR peer_addr)
 {
+	// Yes, they are defined like this.
 	UINT8 j;
 	UINT8 k;
 	UINT8 i;
 	BOOLEAN disallow = FALSE;
 
-	if (status == 0)
+	if (status == BTA_SYS_CONN_OPEN)
 	{
 		for (j = 1; j <= p_bta_dm_compress_cfg->app_id; ++j)
 		{
-			if (app_id != p_bta_dm_compress_cfg[j].app_id
-			    && 0xff != p_bta_dm_compress_cfg[j].app_id)
+			if ((app_id == p_bta_dm_compress_cfg[j].app_id
+			     || BTA_ALL_APP_ID == p_bta_dm_compress_cfg[j].app_id)
+			    && id == p_bta_dm_compress_cfg[j].id
+			    && p_bta_dm_compress_cfg[j].mask == 1)
 			{
-				continue;
-			}
+				disallow = FALSE;
 
-			if (id != p_bta_dm_compress_cfg[j].id)
-				continue;
-
-			if (p_bta_dm_compress_cfg[j].mask != 1)
-				continue;
-
-			disallow = FALSE;
-
-			for (k = 1; k <= p_bta_dm_compress_cfg->app_id; ++k)
-			{
-				if (p_bta_dm_compress_cfg[k].mask != 2)
-					continue;
-
-				for (i = 0; i < bta_dm_conn_srvcs.count; ++i)
+				for (k = 1; k <= p_bta_dm_compress_cfg->app_id; ++k)
 				{
-					if (bta_dm_conn_srvcs.conn_srvc[i].id
-					    == p_bta_dm_compress_cfg[k].id)
+					if (p_bta_dm_compress_cfg[k].mask == 2)
 					{
-						disallow = 1;
+						for (i = 0; i < bta_dm_conn_srvcs.count; ++i)
+						{
+							if (bta_dm_conn_srvcs.conn_srvc[i].id
+							    == p_bta_dm_compress_cfg[k].id)
+							{
+								disallow = TRUE;
+							}
+						}
 					}
 				}
+
+				if (disallow)
+					return;
+
+				bta_dm_compress_srvcs[j - 1].app_id = app_id;
+				bta_dm_compress_srvcs[j - 1].id = id;
+				bdcpy(bta_dm_compress_srvcs[j - 1].peer_bdaddr, peer_addr);
+				bta_dm_compress_srvcs[j - 1].state = BTA_COMPRESS_STATE_1;
+
+				APPL_TRACE(
+					EVENT,
+					"bta_dm_compress_cback open app_id %d, BTA id %d, state %d",
+					bta_dm_compress_srvcs[j - 1].app_id,
+					bta_dm_compress_srvcs[j - 1].id,
+					bta_dm_compress_srvcs[j - 1].state);
+
+				break;
 			}
-
-			if (disallow)
-				return;
-
-			bta_dm_compress_srvcs[j - 1].app_id = app_id;
-			bta_dm_compress_srvcs[j - 1].id = id;
-			bdcpy(bta_dm_compress_srvcs[j - 1].peer_bdaddr, peer_addr);
-			bta_dm_compress_srvcs[j - 1].state = 1;
-
-			APPL_TRACE(
-				EVENT,
-				"bta_dm_compress_cback open app_id %d, BTA id %d, state %d",
-				bta_dm_compress_srvcs[j - 1].app_id,
-				bta_dm_compress_srvcs[j - 1].id,
-				bta_dm_compress_srvcs[j - 1].state);
-
-			break;
 		}
 	}
-	else if (status == 1)
+	else if (status == BTA_SYS_CONN_CLOSE)
 	{
 		for (j = 1; j <= p_bta_dm_compress_cfg->app_id; ++j)
 		{
-			if (app_id != p_bta_dm_compress_cfg[j].app_id
-			    && 0xff != p_bta_dm_compress_cfg[j].app_id)
+			if ((app_id == p_bta_dm_compress_cfg[j].app_id
+			     || BTA_ALL_APP_ID == p_bta_dm_compress_cfg[j].app_id)
+			    && id == p_bta_dm_compress_cfg[j].id)
 			{
-				continue;
+				bta_dm_compress_srvcs[j - 1].state = BTA_COMPRESS_STATE_0;
+
+				APPL_TRACE(EVENT,
+				           "bta_dm_compress_cback close app_id %d, BTA id %d, "
+				           "state %d",
+				           bta_dm_compress_srvcs[j - 1].app_id,
+				           bta_dm_compress_srvcs[j - 1].id,
+				           bta_dm_compress_srvcs[j - 1].state);
+
+				break;
 			}
-
-			if (id != p_bta_dm_compress_cfg[j].id)
-				continue;
-
-			bta_dm_compress_srvcs[j - 1].state = 0;
-
-			APPL_TRACE(
-				EVENT,
-				"bta_dm_compress_cback close app_id %d, BTA id %d, state %d",
-				bta_dm_compress_srvcs[j - 1].app_id,
-				bta_dm_compress_srvcs[j - 1].id,
-				bta_dm_compress_srvcs[j - 1].state);
-
-			break;
 		}
 	}
 }
@@ -1538,39 +1532,39 @@ static void bta_dm_rm_cback(tBTA_SYS_CONN_STATUS status, UINT8 id, UINT8 app_id,
 	UINT8 j;
 	tBTA_PREF_ROLES role;
 
-	if (status != 0)
-		return;
-
-	for (i = 0; i < bta_dm_cb.device_list.count; ++i)
+	if (status == BTA_SYS_CONN_OPEN)
 	{
-		if (bdcmp(bta_dm_cb.device_list.peer_device[i].peer_bdaddr, peer_addr)
-		    != 0)
+		for (i = 0; i < bta_dm_cb.device_list.count; ++i)
 		{
-			continue;
-		}
-
-		bta_dm_cb.device_list.peer_device[i].conn_state = 1;
-
-		for (j = 1; j <= p_bta_dm_rm_cfg->app_id; ++j)
-		{
-			if (app_id != p_bta_dm_rm_cfg[j].app_id
-			    && 0xff != p_bta_dm_rm_cfg[j].app_id)
+			if (bdcmp(bta_dm_cb.device_list.peer_device[i].peer_bdaddr,
+			          peer_addr)
+			    == 0)
 			{
-				continue;
+				bta_dm_cb.device_list.peer_device[i].conn_state =
+					BTA_DM_CONNECTED;
+
+				for (j = 1; j <= p_bta_dm_rm_cfg->app_id; ++j)
+				{
+					if ((app_id == p_bta_dm_rm_cfg[j].app_id
+					     || BTA_ALL_APP_ID == p_bta_dm_rm_cfg[j].app_id)
+					    && id == p_bta_dm_rm_cfg[j].id)
+					{
+						role = p_bta_dm_rm_cfg[j].cfg;
+
+						if (role
+						    > bta_dm_cb.device_list.peer_device[i].pref_role)
+						{
+							bta_dm_cb.device_list.peer_device[i].pref_role =
+								role;
+						}
+
+						break;
+					}
+				}
+
+				break;
 			}
-
-			if (id != p_bta_dm_rm_cfg[j].id)
-				continue;
-
-			role = p_bta_dm_rm_cfg[j].cfg;
-
-			if (role > bta_dm_cb.device_list.peer_device[i].pref_role)
-				bta_dm_cb.device_list.peer_device[i].pref_role = role;
-
-			break;
 		}
-
-		break;
 	}
 }
 
@@ -1628,8 +1622,7 @@ static char *bta_dm_get_remname(void)
 
 	if (*p_name == '\0')
 	{
-		p_temp = BTM_SecReadDevName(bta_dm_search_cb.peer_bdaddr);
-		if (p_temp)
+		if ((p_temp = BTM_SecReadDevName(bta_dm_search_cb.peer_bdaddr)) != NULL)
 			p_name = p_temp;
 	}
 
@@ -1643,12 +1636,12 @@ void bta_dm_keep_acl(tBTA_DM_MSG *p_data)
 	if (bta_dm_cb.keep_acl_on_shut_down)
 	{
 		L2CA_SetIdleTimeoutByBdAddr((BD_ADDR_PTR)BT_BD_ANY, 0xffff);
-		L2CA_SetIdleTimeout(0, 0xffff, 1);
+		L2CA_SetIdleTimeout(0, 0xffff, TRUE);
 	}
 	else
 	{
 		L2CA_SetIdleTimeoutByBdAddr((BD_ADDR_PTR)BT_BD_ANY, 2);
-		L2CA_SetIdleTimeout(0, 2, 1);
+		L2CA_SetIdleTimeout(0, 2, TRUE);
 	}
 }
 
@@ -1668,9 +1661,8 @@ void bta_dm_send_hci_reset(tBTA_DM_MSG *p_data)
 
 	bta_sys_cb.events_disabled = TRUE;
 
-	p_buf = GKI_getpoolbuf(2);
-	if (p_buf)
-		btsnd_hcic_write_scan_enable(p_buf, 0);
+	if ((p_buf = HCI_GET_CMD_BUF(sizeof *p_buf)) != NULL)
+		btsnd_hcic_write_scan_enable(p_buf, HCI_NO_SCAN_ENABLED);
 
 	BTM_SendHciReset(&bta_dm_reset_complete);
 }

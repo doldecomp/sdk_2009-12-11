@@ -456,7 +456,7 @@ BOOLEAN hcisu_h2_open(tHCI_CFG *_p_cfg)
 	hcisu_h2_cb.at_0x1e = 2;
 
 	UUSB_Register(&uusb);
-	UUSB_Open(&uusb, hcisu_h2_usb_cback);
+	UUSB_Open(&uusb, &hcisu_h2_usb_cback);
 
 	return TRUE;
 }

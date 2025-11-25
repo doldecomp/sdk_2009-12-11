@@ -47,14 +47,21 @@
  * macros
  */
 
+#ifndef BTM_INIT_CLASS_OF_DEVICE
+# define BTM_INIT_CLASS_OF_DEVICE	"\x00\x1f\x00"
+#endif
+
 #ifndef BTM_DEV_RESET_TIMEOUT
 # define BTM_DEV_RESET_TIMEOUT		4
 #endif
 
 #define BTM_DEV_REPLY_TIMEOUT		1
+#define BTM_INFO_TIMEOUT			5
 
-#ifndef BTM_INIT_CLASS_OF_DEVICE
-# define BTM_INIT_CLASS_OF_DEVICE	"\x00\x1f\x00"
+#define BTM_SCO_HOST_BUF_SIZE		30
+
+#ifndef BTM_SCO_HOST_BUF_SIZE
+# define BTM_SCO_HOST_BUF_SIZE		255
 #endif
 
 /*******************************************************************************
@@ -77,6 +84,7 @@ void btm_dev_init(void)
 	memcpy(btm_cb.devcb.dev_class, (UINT8 *)BTM_INIT_CLASS_OF_DEVICE,
 	       DEV_CLASS_LEN);
 
+	// TODO: constant?
 	btm_cb.devcb.page_timeout = 0x1400;
 
 	btm_cb.devcb.reset_timer.param = (TIMER_PARAM_TYPE)TT_DEV_RESET;
@@ -84,17 +92,17 @@ void btm_dev_init(void)
 	btm_cb.devcb.rlinkp_timer.param = (TIMER_PARAM_TYPE)TT_DEV_RLNKP;
 
 	btm_cb.btm_acl_pkt_types_supported =
-		BTM_ACL_PKT_TYPES_MASK_DH1 + BTM_ACL_PKT_TYPES_MASK_DM1
-		+ BTM_ACL_PKT_TYPES_MASK_DH3 + BTM_ACL_PKT_TYPES_MASK_DM3
-		+ BTM_ACL_PKT_TYPES_MASK_DH5 + BTM_ACL_PKT_TYPES_MASK_DM5;
+		BTM_ACL_PKT_TYPES_MASK_DH1 | BTM_ACL_PKT_TYPES_MASK_DM1
+		| BTM_ACL_PKT_TYPES_MASK_DH3 | BTM_ACL_PKT_TYPES_MASK_DM3
+		| BTM_ACL_PKT_TYPES_MASK_DH5 | BTM_ACL_PKT_TYPES_MASK_DM5;
 
 	btm_cb.btm_sco_pkt_types_supported =
-		BTM_SCO_PKT_TYPES_MASK_HV1 + BTM_SCO_PKT_TYPES_MASK_HV2
-		+ BTM_SCO_PKT_TYPES_MASK_HV3 + BTM_SCO_PKT_TYPES_MASK_EV3
-		+ BTM_SCO_PKT_TYPES_MASK_EV4 + BTM_SCO_PKT_TYPES_MASK_EV5;
+		BTM_SCO_PKT_TYPES_MASK_HV1 | BTM_SCO_PKT_TYPES_MASK_HV2
+		| BTM_SCO_PKT_TYPES_MASK_HV3 | BTM_SCO_PKT_TYPES_MASK_EV3
+		| BTM_SCO_PKT_TYPES_MASK_EV4 | BTM_SCO_PKT_TYPES_MASK_EV5;
 
-	btm_cb.first_disabled_channel = 0xff;
-	btm_cb.last_disabled_channel = 0xff;
+	btm_cb.first_disabled_channel = BTM_AFH_NO_CHANNEL;
+	btm_cb.last_disabled_channel = BTM_AFH_NO_CHANNEL;
 
 	btm_dev_reset();
 }
@@ -182,10 +190,10 @@ void BTM_SendHciReset(tBTM_CMPL_CB *p_cb)
 
 BOOLEAN BTM_IsDeviceUp(void)
 {
-	return btm_cb.devcb.state == 5;
+	return btm_cb.devcb.state == BTM_DEV_STATE_READY;
 }
 
-tBTM_STATUS BTM_SetAfhChannels(UINT8 first, UINT8 last)
+tBTM_STATUS BTM_SetAfhChannels(tBTM_AFH_CHANNEL first, tBTM_AFH_CHANNEL last)
 {
 	BTM_TRACE(API, "BTM_SetAfhChannels first: %d (%d) last: %d (%d)", first,
 	          btm_cb.first_disabled_channel, last,
@@ -249,14 +257,15 @@ void btm_get_hci_buf_size(void)
 	if (--btm_cb.devcb.retry_count == 0)
 	{
 		btm_dev_reset();
-		return;
 	}
+	else
+	{
+		btu_start_timer(&btm_cb.devcb.reset_timer, BTU_TTYPE_BTM_DEV_CTL,
+		                BTM_DEV_REPLY_TIMEOUT);
 
-	btu_start_timer(&btm_cb.devcb.reset_timer, BTU_TTYPE_BTM_DEV_CTL,
-	                BTM_DEV_REPLY_TIMEOUT);
-
-	if ((p_buf = GKI_getpoolbuf(2)) != NULL)
-		btsnd_hcic_read_buffer_size(p_buf);
+		if ((p_buf = HCI_GET_CMD_BUF(HCIC_PARAM_SIZE_READ_CMD)) != NULL)
+			btsnd_hcic_read_buffer_size(p_buf);
+	}
 }
 
 void btm_get_local_version(void)
@@ -264,16 +273,17 @@ void btm_get_local_version(void)
 	if (--btm_cb.devcb.retry_count == 0)
 	{
 		btm_dev_reset();
-		return;
 	}
+	else
+	{
+		btu_start_timer(&btm_cb.devcb.reset_timer, BTU_TTYPE_BTM_DEV_CTL,
+		                BTM_DEV_REPLY_TIMEOUT);
 
-	btu_start_timer(&btm_cb.devcb.reset_timer, BTU_TTYPE_BTM_DEV_CTL,
-	                BTM_DEV_REPLY_TIMEOUT);
+		btsnd_hcic_read_local_ver();
+		btsnd_hcic_read_bd_addr();
 
-	btsnd_hcic_read_local_ver();
-	btsnd_hcic_read_bd_addr();
-
-	btm_pm_reset();
+		btm_pm_reset();
+	}
 }
 
 void btm_get_local_features(void)
@@ -281,36 +291,37 @@ void btm_get_local_features(void)
 	if (--btm_cb.devcb.retry_count == 0)
 	{
 		btm_dev_reset();
-		return;
 	}
+	else
+	{
+		btu_start_timer(&btm_cb.devcb.reset_timer, BTU_TTYPE_BTM_DEV_CTL,
+		                BTM_DEV_REPLY_TIMEOUT);
 
-	btu_start_timer(&btm_cb.devcb.reset_timer, BTU_TTYPE_BTM_DEV_CTL,
-	                BTM_DEV_REPLY_TIMEOUT);
-
-	btsnd_hcic_read_local_features();
+		btsnd_hcic_read_local_features();
+	}
 }
 
 void btm_dev_timeout(TIMER_LIST_ENT *p_tle)
 {
-	TIMER_PARAM_TYPE timer_type = (TIMER_PARAM_TYPE)p_tle->param;
+	TIMER_PARAM_TYPE timer_type = p_tle->param;
 
 	if (timer_type == (TIMER_PARAM_TYPE)TT_DEV_RESET)
 	{
 		switch (btm_cb.devcb.state)
 		{
-		case 0:
+		case BTM_DEV_STATE_WAIT_RESET_CMPLT:
 			btm_dev_reset();
 			break;
 
-		case 1:
+		case BTM_DEV_STATE_WAIT_AFTER_RESET:
 			btm_after_reset_hold_complete();
 			break;
 
-		case 2:
+		case BTM_DEV_STATE_2:
 			btm_get_hci_buf_size();
 			break;
 
-		case 3:
+		case BTM_DEV_STATE_3:
 			btm_get_local_version();
 			break;
 		}
@@ -343,7 +354,7 @@ void btm_reset_complete(void)
 		l2cu_device_reset();
 
 		btm_cb.btm_inq_vars.inq_scan_window = HCI_DEF_INQUIRYSCAN_WINDOW;
-		btm_cb.btm_inq_vars.inq_scan_period = 0x800;
+		btm_cb.btm_inq_vars.inq_scan_period = HCI_DEF_INQUIRYSCAN_INTERVAL;
 		btm_cb.btm_inq_vars.inq_scan_type = HCI_DEF_SCAN_TYPE;
 
 		btm_cb.btm_inq_vars.page_scan_window = HCI_DEF_PAGESCAN_WINDOW;
@@ -356,7 +367,7 @@ void btm_reset_complete(void)
 
 static void btm_continue_reset(void)
 {
-	btm_cb.devcb.state = 2;
+	btm_cb.devcb.state = BTM_DEV_STATE_2;
 	btm_cb.devcb.retry_count = 5;
 
 	btm_get_hci_buf_size();
@@ -396,11 +407,11 @@ void btm_read_hci_buf_size_complete(UINT8 *p, UINT16 evt_len)
 
 		acl_buf_size = L2CAP_MTU_SIZE;
 
-		btsnd_hcic_set_host_buf_size(acl_buf_size, 30, L2CAP_HOST_FC_ACL_BUFS,
-		                             10);
+		btsnd_hcic_set_host_buf_size(acl_buf_size, BTM_SCO_HOST_BUF_SIZE,
+		                             L2CAP_HOST_FC_ACL_BUFS, 10);
 	}
 
-	btm_cb.devcb.state = 3;
+	btm_cb.devcb.state = BTM_DEV_STATE_3;
 	btm_cb.devcb.retry_count = 5;
 
 	btm_get_local_version();
@@ -422,7 +433,7 @@ void btm_read_local_version_complete(UINT8 *p, UINT16 evt_len)
 		STREAM_TO_UINT16(p, &p_vi->lmp_subversion);
 	}
 
-	btm_cb.devcb.state = 4;
+	btm_cb.devcb.state = BTM_DEV_STATE_4;
 	btm_cb.devcb.retry_count = 5;
 
 	btm_get_local_features();
@@ -444,24 +455,24 @@ void btm_read_local_features_complete(UINT8 *p, UINT16 evt_len)
 	if (status != HCI_SUCCESS)
 		return;
 
-	p_devcb->state = 5;
+	p_devcb->state = BTM_DEV_STATE_READY;
 
 	for (xx = 0; xx < HCI_NUM_FEATURE_BYTES; ++xx)
 		STREAM_TO_UINT8(p, &p_devcb->local_features[xx]);
 
 	btm_cb.btm_acl_pkt_types_supported =
-		BTM_ACL_PKT_TYPES_MASK_DH1 + BTM_ACL_PKT_TYPES_MASK_DM1;
+		BTM_ACL_PKT_TYPES_MASK_DH1 | BTM_ACL_PKT_TYPES_MASK_DM1;
 
 	if (HCI_3_SLOT_PACKETS_SUPPORTED(p_devcb->local_features))
 	{
 		btm_cb.btm_acl_pkt_types_supported |=
-			BTM_ACL_PKT_TYPES_MASK_DH3 + BTM_ACL_PKT_TYPES_MASK_DM3;
+			BTM_ACL_PKT_TYPES_MASK_DH3 | BTM_ACL_PKT_TYPES_MASK_DM3;
 	}
 
 	if (HCI_5_SLOT_PACKETS_SUPPORTED(p_devcb->local_features))
 	{
 		btm_cb.btm_acl_pkt_types_supported |=
-			BTM_ACL_PKT_TYPES_MASK_DH5 + BTM_ACL_PKT_TYPES_MASK_DM5;
+			BTM_ACL_PKT_TYPES_MASK_DH5 | BTM_ACL_PKT_TYPES_MASK_DM5;
 	}
 
 	if (btm_cb.devcb.local_version.hci_version >= HCI_PROTO_VERSION_2_0)
@@ -470,16 +481,16 @@ void btm_read_local_features_complete(UINT8 *p, UINT16 evt_len)
 		{
 			btm_cb.btm_acl_pkt_types_supported |=
 				BTM_ACL_PKT_TYPES_MASK_NO_2_DH1
-				+ BTM_ACL_PKT_TYPES_MASK_NO_2_DH3
-				+ BTM_ACL_PKT_TYPES_MASK_NO_2_DH5;
+				| BTM_ACL_PKT_TYPES_MASK_NO_2_DH3
+				| BTM_ACL_PKT_TYPES_MASK_NO_2_DH5;
 		}
 
 		if (!HCI_EDR_ACL_3MPS_SUPPORTED(p_devcb->local_features))
 		{
 			btm_cb.btm_acl_pkt_types_supported |=
 				BTM_ACL_PKT_TYPES_MASK_NO_3_DH1
-				+ BTM_ACL_PKT_TYPES_MASK_NO_3_DH3
-				+ BTM_ACL_PKT_TYPES_MASK_NO_3_DH5;
+				| BTM_ACL_PKT_TYPES_MASK_NO_3_DH3
+				| BTM_ACL_PKT_TYPES_MASK_NO_3_DH5;
 		}
 
 		if (HCI_EDR_ACL_2MPS_SUPPORTED(p_devcb->local_features)
@@ -489,14 +500,14 @@ void btm_read_local_features_complete(UINT8 *p, UINT16 evt_len)
 			{
 				btm_cb.btm_acl_pkt_types_supported |=
 					BTM_ACL_PKT_TYPES_MASK_NO_2_DH3
-					+ BTM_ACL_PKT_TYPES_MASK_NO_3_DH3;
+					| BTM_ACL_PKT_TYPES_MASK_NO_3_DH3;
 			}
 
 			if (!HCI_5_SLOT_EDR_ACL_SUPPORTED(p_devcb->local_features))
 			{
 				btm_cb.btm_acl_pkt_types_supported |=
 					BTM_ACL_PKT_TYPES_MASK_NO_2_DH5
-					+ BTM_ACL_PKT_TYPES_MASK_NO_3_DH5;
+					| BTM_ACL_PKT_TYPES_MASK_NO_3_DH5;
 			}
 		}
 	}
@@ -543,7 +554,7 @@ void btm_read_local_features_complete(UINT8 *p, UINT16 evt_len)
 		{
 			btm_cb.btm_sco_pkt_types_supported |=
 				BTM_SCO_PKT_TYPES_MASK_NO_2_EV3
-				+ BTM_SCO_PKT_TYPES_MASK_NO_2_EV5;
+				| BTM_SCO_PKT_TYPES_MASK_NO_2_EV5;
 		}
 
 		if (HCI_EDR_ESCO_3MPS_SUPPORTED(p_devcb->local_features))
@@ -558,7 +569,7 @@ void btm_read_local_features_complete(UINT8 *p, UINT16 evt_len)
 		{
 			btm_cb.btm_sco_pkt_types_supported |=
 				BTM_SCO_PKT_TYPES_MASK_NO_3_EV3
-				+ BTM_SCO_PKT_TYPES_MASK_NO_3_EV5;
+				| BTM_SCO_PKT_TYPES_MASK_NO_3_EV5;
 		}
 	}
 
@@ -587,12 +598,12 @@ void btm_read_local_features_complete(UINT8 *p, UINT16 evt_len)
 
 	btm_sec_dev_reset();
 
-	if (btm_cb.last_disabled_channel != 0xff)
+	if (btm_cb.last_disabled_channel != BTM_AFH_NO_CHANNEL)
 	{
 		last = btm_cb.last_disabled_channel;
 		first = btm_cb.first_disabled_channel;
-		btm_cb.last_disabled_channel = 0xff;
-		btm_cb.first_disabled_channel = 0xff;
+		btm_cb.last_disabled_channel = BTM_AFH_NO_CHANNEL;
+		btm_cb.first_disabled_channel = BTM_AFH_NO_CHANNEL;
 		BTM_SetAfhChannels(first, last);
 	}
 
@@ -610,16 +621,18 @@ void btm_read_local_features_complete(UINT8 *p, UINT16 evt_len)
 
 UINT8 btm_get_voice_coding_support(void)
 {
+	// No names for these constants in bluedroid and I don't care
+
 	UINT8 code = 0;
 
 	if (HCI_LMP_CVSD_SUPPORTED(btm_cb.devcb.local_features))
-		code |= 0x01;
+		code |= 1 << 0;
 
 	if (HCI_LMP_A_LAW_SUPPORTED(btm_cb.devcb.local_features))
-		code |= 0x02;
+		code |= 1 << 1;
 
 	if (HCI_LMP_U_LAW_SUPPORTED(btm_cb.devcb.local_features))
-		code |= 0x04;
+		code |= 1 << 2;
 
 	return code;
 }
@@ -638,13 +651,13 @@ tBTM_STATUS BTM_SetLocalDeviceName(char *p_name)
 		return BTM_DEV_RESET;
 	}
 
-	if ((p_buf = GKI_getpoolbuf(2)) != NULL)
+	if ((p_buf = HCI_GET_CMD_BUF(HCIC_PARAM_SIZE_CHANGE_NAME)) != NULL)
 	{
 		p = (UINT8 *)btm_cb.cfg.bd_name;
 		if (p != (UINT8 *)p_name)
 		{
-			memset(btm_cb.cfg.bd_name, 0, 32);
-			BCM_STRNCPY_S(btm_cb.cfg.bd_name, sizeof(btm_cb.cfg.bd_name),
+			memset(btm_cb.cfg.bd_name, 0, BTM_MAX_LOC_BD_NAME_LEN + 1);
+			BCM_STRNCPY_S(btm_cb.cfg.bd_name, BTM_MAX_LOC_BD_NAME_LEN + 1,
 			              p_name, BTM_MAX_LOC_BD_NAME_LEN);
 		}
 
@@ -662,20 +675,21 @@ tBTM_STATUS BTM_ReadLocalDeviceName(tBTM_CMPL_CB *p_cb)
 	void *p_buf;
 
 	if (btm_cb.devcb.p_rln_cmpl_cb)
-		return 2;
+		return BTM_BUSY;
 
-	if ((p_buf = GKI_getpoolbuf(2)) != NULL)
+	// NOTE: HCIC_PARAM_SIZE_READ_NAME is not defined
+	if ((p_buf = HCI_GET_CMD_BUF(HCIC_PARAM_SIZE_READ_NAME)) != NULL)
 	{
-		btu_start_timer(&btm_cb.devcb.rln_timer, 1, 5);
+		btu_start_timer(&btm_cb.devcb.rln_timer, BTU_TTYPE_BTM_DEV_CTL,
+		                BTM_INFO_TIMEOUT);
 
 		btm_cb.devcb.p_rln_cmpl_cb = p_cb;
 
 		btsnd_hcic_read_name(p_buf);
-
-		return 1;
+		return BTM_CMD_STARTED;
 	}
 
-	return 3;
+	return BTM_NO_RESOURCES;
 }
 
 void btm_read_local_name_complete(UINT8 *p, UINT16 evt_len)
@@ -718,7 +732,7 @@ void btm_read_local_addr_complete(UINT8 *p, UINT16 evt_len)
 
 tBTM_STATUS BTM_ReadLocalVersion(tBTM_VERSION_INFO *p_vers)
 {
-	if (btm_cb.devcb.state < 4)
+	if (btm_cb.devcb.state < BTM_DEV_STATE_4)
 		return BTM_DEV_RESET;
 
 	*p_vers = btm_cb.devcb.local_version;
@@ -738,7 +752,7 @@ tBTM_STATUS BTM_SetDeviceClass(DEV_CLASS dev_class)
 		return BTM_DEV_RESET;
 	}
 
-	if ((p_buf = GKI_getpoolbuf(2)) != NULL)
+	if ((p_buf = HCI_GET_CMD_BUF(HCIC_PARAM_SIZE_WRITE_PARAM3)) != NULL)
 	{
 		btsnd_hcic_write_dev_class(p_buf, dev_class);
 		return BTM_SUCCESS;
@@ -780,10 +794,11 @@ tBTM_STATUS BTM_VendorSpecificCommand(UINT16 opcode, UINT8 param_len,
 		BTM_TRACE(EVENT, "BTM: Unable to send vendor specific command "
 		                 "(controller is busy).");
 
-		return 2;
+		return BTM_BUSY;
 	}
 
-	if ((p_buf = GKI_getbuf(11 + param_len)) != NULL)
+	if ((p_buf = GKI_getbuf(sizeof(BT_HDR) + param_len + HCIC_PREAMBLE_SIZE))
+	    != NULL)
 	{
 		btm_cb.devcb.p_vsc_cmpl_cb = p_cb;
 
@@ -817,6 +832,7 @@ void btm_vsc_complete(UINT8 *p, UINT16 opcode, UINT16 evt_len)
 		vcs_cplt_params.opcode = opcode;
 		vcs_cplt_params.param_len = evt_len;
 		memcpy(p_dest, p, evt_len);
+
 		(*p_cb)(&vcs_cplt_params);
 	}
 }
@@ -824,21 +840,23 @@ void btm_vsc_complete(UINT8 *p, UINT16 opcode, UINT16 evt_len)
 tBTM_STATUS BTM_RegisterForVSEvents(tBTM_VS_EVT_CB *p_cb)
 {
 	if (btm_cb.devcb.p_vend_spec_cb && p_cb)
-		return 2;
+		return BTM_BUSY;
 
 	btm_cb.devcb.p_vend_spec_cb = p_cb;
 
-	return 0;
+	return BTM_SUCCESS;
 }
 
 void btm_vendor_specific_evt(UINT8 *p, UINT8 evt_len)
 {
 	tBTM_DEVCB *p_devcb = &btm_cb.devcb;
 
-	if (p_devcb->local_version.manufacturer != 18)
+	if (p_devcb->local_version.manufacturer != LMP_COMPID_ZEEVO) // ???
+	{
 		BTM_TRACE(
 			EVENT,
 			"BTM Event: Received a vendor specific event from controller");
+	}
 
 	p_devcb->p_vsc_cmpl_cb = NULL;
 	p_devcb->vsc_busy = FALSE;
@@ -855,7 +873,7 @@ tBTM_STATUS BTM_WritePageTimeout(UINT16 timeout)
 
 	btm_cb.devcb.page_timeout = timeout * 625 / 1000;
 
-	if ((p_buf = GKI_getpoolbuf(2)) != NULL)
+	if ((p_buf = HCI_GET_CMD_BUF(HCIC_PARAM_SIZE_WRITE_PARAM2)) != NULL)
 	{
 		btsnd_hcic_write_page_tout(p_buf, timeout);
 		return BTM_SUCCESS;
@@ -873,7 +891,7 @@ tBTM_STATUS BTM_WriteVoiceSettings(UINT16 settings)
 	BTM_TRACE(EVENT, "BTM: BTM_WriteVoiceSettings: Settings: 0x%04x.",
 	          settings);
 
-	if ((p_buf = GKI_getpoolbuf(2)) != NULL)
+	if ((p_buf = HCI_GET_CMD_BUF(HCIC_PARAM_SIZE_WRITE_PARAM2)) != NULL)
 	{
 		btsnd_hcic_write_voice_settings(p_buf, settings & 0x03ff);
 		return BTM_SUCCESS;
@@ -891,7 +909,7 @@ tBTM_STATUS BTM_EnableTestMode(void)
 
 	BTM_TRACE(EVENT, "BTM: BTM_EnableTestMode");
 
-	if ((p_buf = GKI_getpoolbuf(2)) != NULL)
+	if ((p_buf = HCI_GET_CMD_BUF(2 + sizeof cond)) != NULL)
 	{
 		cond = HCI_DO_AUTO_ACCEPT_CONNECT;
 		btsnd_hcic_set_event_filter(p_buf, HCI_FILTER_CONNECTION_SETUP,
@@ -918,7 +936,7 @@ tBTM_STATUS BTM_EnableTestMode(void)
 		return BTM_NO_RESOURCES;
 	}
 
-	if ((p_buf = GKI_getpoolbuf(2)) != NULL)
+	if ((p_buf = HCI_GET_CMD_BUF(HCIC_PARAM_SIZE_READ_CMD)) != NULL)
 	{
 		btsnd_hcic_enable_test_mode(p_buf);
 		return BTM_SUCCESS;
@@ -953,7 +971,7 @@ tBTM_STATUS BTM_ReadStoredLinkKey(BD_ADDR bd_addr, tBTM_CMPL_CB *p_cb)
 	BTM_TRACE(EVENT, "BTM: BTM_ReadStoredLinkKey: Read_All: %s",
 	          read_all_flag ? "TRUE" : "FALSE");
 
-	if ((p_buf = GKI_getpoolbuf(2)) != NULL)
+	if ((p_buf = HCI_GET_CMD_BUF(HCIC_PARAM_SIZE_READ_STORED_KEY)) != NULL)
 	{
 		btm_cb.devcb.p_stored_link_key_cmpl_cb = p_cb;
 
@@ -979,7 +997,8 @@ tBTM_STATUS BTM_WriteStoredLinkKey(UINT8 num_keys, BD_ADDR *bd_addr,
 	if (num_keys > HCI_MAX_NUM_OF_LINK_KEYS_PER_CMD)
 		num_keys = HCI_MAX_NUM_OF_LINK_KEYS_PER_CMD;
 
-	if ((p_buf = GKI_getpoolbuf(2)) != NULL)
+	if ((p_buf = HCI_GET_CMD_BUF(1 + num_keys * (BD_ADDR_LEN + LINK_KEY_LEN)))
+	    != NULL)
 	{
 		btm_cb.devcb.p_stored_link_key_cmpl_cb = p_cb;
 		btsnd_hcic_write_stored_key(p_buf, num_keys, bd_addr, link_key);

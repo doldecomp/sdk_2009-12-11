@@ -29,9 +29,11 @@
  * headers
  */
 
-#include <string.h>
+#include <string.h> // memset
 
 #include "bt_trace.h"
+
+#include "btm_api.h" // BTM_SEC_MODE_SERVICE
 
 /*******************************************************************************
  * variables
@@ -52,7 +54,7 @@ void btm_init(void)
 
 	btm_inq_db_init();
 	btm_acl_init();
-	btm_sec_init(2);
+	btm_sec_init(BTM_SEC_MODE_SERVICE);
 	btm_sco_init();
 	btm_dev_init();
 }

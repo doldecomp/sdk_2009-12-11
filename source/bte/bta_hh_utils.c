@@ -32,46 +32,51 @@
 #include <string.h>
 
 #include "bt_trace.h"
-#include "bt_types.h"
+#include "bt_types.h" // BD_ADDR
 #include "data_types.h"
 
 #include "bd.h"
 #include "bta_hh_api.h"
-#include "bta_sys.h"
-#include "gki.h"
-#include "hiddefs.h"
-#include "utl.h"
+#include "gki.h" // GKI_getbuf
+#include "hiddefs.h" // tHID_DEV_DSCP_INFO
+#include "utl.h" // utl_freebuf
 
 /*******************************************************************************
  * macros
  */
 
-#define BTA_HH_KB_CAPS_LOCK      0x39           /* caps lock */
-#define BTA_HH_KB_NUM_LOCK       0x53           /* num lock */
+#define BTA_HH_KB_CTRL_MASK		0x11
+#define BTA_HH_KB_SHIFT_MASK	0x22
+#define BTA_HH_KB_ALT_MASK		0x44
+
+#define BTA_HH_KB_CAPS_LOCK		0x39
+#define BTA_HH_KB_NUM_LOCK		0x53
 
 /*******************************************************************************
  * variables
  */
 
+// TODO: Are these USB HID key codes?
+
 // .rodata
 static UINT8 const vir_key_tbl_1[(0x38 + 1) - 0x27] =
 {
-	0x30, 0x0D, 0x1B, 0x08,
-	0x09, 0x20, 0xBD, 0xBB,
-	0xDB, 0xDD, 0xDC, 0xDC,
-	0xBA, 0xDE, 0xC0, 0xBC,
-	0xBE, 0xBF,
+	0x30, 0x0d, 0x1b, 0x08,
+	0x09, 0x20, 0xbd, 0xbb,
+	0xdb, 0xdd, 0xdc, 0xdc,
+	0xba, 0xde, 0xc0, 0xbc,
+	0xbe, 0xbf,
 };
 
 static UINT8 const vir_key_tbl_2[(0x63 + 1) - 0x49] =
 {
-	0x2D, 0x24, 0x21, 0x2E,
+	0x2d, 0x24, 0x21, 0x2e,
 	0x23, 0x22, 0x27, 0x25,
-	0x28, 0x26, 0xFF, 0xBF,
-	0x6A, 0x6D, 0x6B, 0x0D,
+	0x28, 0x26, 0xff, 0xbf,
+	0x6a, 0x6d, 0x6b, 0x0d,
 	0x23, 0x28, 0x22, 0x25,
 	0x00, 0x27, 0x24, 0x26,
-	0x21, 0x2D, 0x2E,
+	0x21, 0x2d, 0x2e,
 };
 
 /*******************************************************************************
@@ -208,17 +213,17 @@ void bta_hh_parse_keybd_rpt(tBTA_HH_BOOT_RPT *p_kb_data, UINT8 *p_report,
 	memset(this_report, 0, BTA_HH_MAX_RPT_CHARS);
 	memcpy(this_report, p_report, report_len);
 
-	if (ctl_shift & 0x22)
+	if (ctl_shift & BTA_HH_KB_SHIFT_MASK)
 		p_kb->upper = TRUE;
 	else if (p_kb->upper)
 		p_kb->upper = FALSE;
 
-	if (ctl_shift & 0x11)
+	if (ctl_shift & BTA_HH_KB_CTRL_MASK)
 		p_kb->ctrl = TRUE;
 	else if (p_kb->ctrl)
 		p_kb->ctrl = FALSE;
 
-	if (ctl_shift & 0x44)
+	if (ctl_shift & BTA_HH_KB_ALT_MASK)
 	{
 		APPL_TRACE(ERROR, "Alt key pressed");
 
@@ -238,8 +243,10 @@ void bta_hh_parse_keybd_rpt(tBTA_HH_BOOT_RPT *p_kb_data, UINT8 *p_report,
 	for (xx = 0; xx < report_len; ++xx)
 	{
 		for (yy = 0; yy < BTA_HH_MAX_RPT_CHARS; ++yy)
+		{
 			if (this_report[xx] == p_kb->last_report[yy])
 				this_report[xx] = 0;
+		}
 	}
 
 	for (xx = 0; xx < report_len; ++xx)
@@ -247,6 +254,10 @@ void bta_hh_parse_keybd_rpt(tBTA_HH_BOOT_RPT *p_kb_data, UINT8 *p_report,
 		APPL_TRACE(DEBUG, "this_char = %02x", this_report[xx]);
 
 		this_char = this_report[xx];
+
+		/* TODO: The constants here are USB HID key codes. Clean this up with
+		 * named constants.
+		 */
 
 		if (this_char == 0x00)
 			continue;
@@ -300,6 +311,7 @@ void bta_hh_parse_keybd_rpt(tBTA_HH_BOOT_RPT *p_kb_data, UINT8 *p_report,
 		}
 		else
 		{
+			// NOTE: Do not touch
 			APPL_TRACE(ERROR,
 			           "BTA_HhParseKeybdRpt:  Cannot interpret scan code \
                 0x%02x",
@@ -322,6 +334,7 @@ void bta_hh_parse_mice_rpt(tBTA_HH_BOOT_RPT *p_mice_data, UINT8 *p_report,
 	tBTA_HH_MICE_RPT *p_data = &p_mice_data->data_rpt.mice_rpt;
 	UINT8 xx;
 
+	// NOTE: Do not touch
 	APPL_TRACE(DEBUG, "bta_hh_parse_mice_rpt:  bta_keybd_rpt_rcvd(report=%p, \
                 report_len=%d) called",
 	           p_report, report_len);

@@ -32,6 +32,7 @@
 
 #include <decomp.h>
 
+#include "bt_target.h"
 #include "bt_types.h"
 #include "data_types.h"
 
@@ -39,18 +40,19 @@
 #include "bta_sys.h"
 #include "btm_api.h"
 #include "gki.h"
+#include "hcidefs.h"
 #include "sdp_api.h"
 
 /*******************************************************************************
  * macros
  */
 
-#define BTA_ALL_APP_ID			0xff
+#define BTA_ALL_APP_ID				255
 
-// constexpr
-#define BTA_DM_NUM_PEER_DEVICE	7
-#define BTA_DM_NUM_CONN_SRVS	5
-#define BTA_DM_NUM_PM_TIMER		3
+#define BTA_DM_NUM_PEER_DEVICE		7
+#define BTA_DM_NUM_CONN_SRVS		5
+#define BTA_DM_NUM_COMPRESS_SRVS	5
+#define BTA_DM_NUM_PM_TIMER			3
 
 #define BTA_COPY_DEVICE_CLASS(coddst, codsrc)				\
 	do														\
@@ -60,6 +62,8 @@
 		((UINT8 *)(coddst))[2] = ((UINT8 *)(codsrc))[2];	\
 	} while (FALSE)
 
+#define BTA_SERVICE_ID_TO_SERVICE_MASK(id)	(1 << (id))
+
 /*******************************************************************************
  * types
  */
@@ -68,6 +72,38 @@
 	extern "C" {
 #endif
 
+enum
+{
+	BTA_DM_API_ENABLE_EVT = BTA_SYS_EVT_START(BTA_ID_DM),
+	BTA_DM_API_DISABLE_EVT,
+	BTA_DM_API_SET_NAME_EVT,
+	BTA_DM_API_SET_VISIBILITY_EVT,
+	BTA_DM_API_SIG_STRENGTH_EVT,	// was 5
+	BTA_DM_ACL_CHANGE_EVT,			// was 8
+	BTA_DM_API_BOND_EVT,			// was 10
+	BTA_DM_API_PIN_REPLY_EVT,		// was 12
+	BTA_DM_API_AUTH_REPLY_EVT,		// was 14
+	BTA_DM_PM_BTM_STATUS_EVT,		// was 15
+	BTA_DM_PM_TIMER_EVT,			// was 16
+	BTA_DM_API_KEEP_ACL_LINKS,		// did not exist
+	BTA_DM_API_RESET_HCI,			// did not exist
+
+	BTA_DM_MAX_EVENT
+};
+
+enum
+{
+	BTA_DM_API_SEARCH_EVT = BTA_SYS_EVT_START(BTA_ID_DM_SEARCH),
+	BTA_DM_API_SEARCH_CANCEL_EVT,
+	BTA_DM_API_DISCOVER_EVT,
+	BTA_DM_INQUIRY_CMPL_EVT,
+	BTA_DM_REMT_NAME_EVT,
+	BTA_DM_REMT_NAME_RESP_EVT,	// did not exist
+	BTA_DM_SDP_RESULT_EVT,		// was 5
+	BTA_DM_SEARCH_CMPL_EVT,		// was 6
+	BTA_DM_DISCOVERY_RESULT_EVT,
+};
+
 typedef UINT8 tBTA_DM_CONN_STATE;
 enum
 {
@@ -75,33 +111,19 @@ enum
 	BTA_DM_UNPAIRING	= 2,
 };
 
+typedef UINT8 tBTA_DM_COMPRESS_STATE;
 enum
 {
-	BTA_DM_API_ENABLE_EVT			= 256, // BTA_SYS_EVT_START(BTA_ID_DM)
-	BTA_DM_API_DISABLE_EVT			= 257,
-	BTA_DM_API_SET_NAME_EVT			= 258,
-	BTA_DM_API_SET_VISIBILITY_EVT	= 259,
-	BTA_DM_API_SIG_STRENGTH_EVT		= 260, // was 261
-	BTA_DM_ACL_CHANGE_EVT			= 261, // was 264
-	BTA_DM_API_BOND_EVT				= 262, // was 266
-	BTA_DM_API_PIN_REPLY_EVT		= 263, // was 268
-	BTA_DM_API_AUTH_REPLY_EVT		= 264, // was 270
-	BTA_DM_PM_BTM_STATUS_EVT		= 265, // was 271
-	BTA_DM_PM_TIMER_EVT				= 266, // was 272
-	BTA_DM_API_KEEP_ACL_LINKS		= 267, // did not exist
-	BTA_DM_API_RESET_HCI			= 268, // did not exist
+	BTA_COMPRESS_STATE_0	= 0,
+	BTA_COMPRESS_STATE_1	= 1,
 };
 
 enum
 {
-	BTA_DM_API_SEARCH_EVT			= 512, // BTA_SYS_EVT_START(BTA_ID_DM_SEARCH)
-	BTA_DM_API_SEARCH_CANCEL_EVT	= 513,
-	BTA_DM_API_DISCOVER_EVT			= 514,
-	BTA_DM_INQUIRY_CMPL_EVT			= 515,
-	BTA_DM_REMT_NAME_EVT			= 516,
-	BTA_DM_SDP_RESULT_EVT			= 518, // was 517
-	BTA_DM_SEARCH_CMPL_EVT			= 519, // was 518
-	BTA_DM_DISCOVERY_RESULT_EVT		= 520,
+	BTA_DM_SEARCH_IDLE,
+	BTA_DM_SEARCH_ACTIVE,
+	BTA_DM_SEARCH_CANCELLING,
+	BTA_DM_DISCOVER_ACTIVE,
 };
 
 typedef struct
@@ -112,8 +134,8 @@ typedef struct
 
 typedef struct
 {
-	BT_HDR	hdr;		// size 0x08, offset 0x00
-	char	name[32];	// size 0x20, offset 0x08 // was BD_NAME_LEN (248)
+	BT_HDR	hdr;									// size 0x08, offset 0x00
+	char	name[BTA_DM_REMOTE_DEVICE_NAME_LENGTH];	// size 0x20, offset 0x08 // was BD_NAME_LEN (248)
 } tBTA_DM_API_SET_NAME; // size 0x28
 
 typedef struct
@@ -219,7 +241,7 @@ typedef struct
 	tBTM_PM_STATUS	status;		// size 0x01, offset 0x0e
 	/* 1 byte padding */
 	UINT16			value;		// size 0x02, offset 0x10
-	UINT8			hci_status;	// size 0x01, offset 0x12
+	tHCI_STATUS		hci_status;	// size 0x01, offset 0x12
 	/* 1 byte padding */
 } tBTA_DM_PM_BTM_STATUS; // size 0x14
 
@@ -282,6 +304,14 @@ typedef struct
 
 typedef struct
 {
+	BD_ADDR					peer_bdaddr;	// size 0x06, offset 0x00
+	tBTA_SYS_ID				id;				// size 0x01, offset 0x06
+	UINT8					app_id;			// size 0x01, offset 0x07
+	tBTA_DM_COMPRESS_STATE	state;			// size 0x01, offset 0x08
+} tBTA_DM_COMPRESS_SRVCS; // size 0x09
+
+typedef struct
+{
 	TIMER_LIST_ENT	timer;			// size 0x18, offset 0x00
 	BD_ADDR			peer_bdaddr;	// size 0x06, offset 0x18
 	BOOLEAN			in_use;			// size 0x01, offset 0x1e
@@ -316,22 +346,22 @@ typedef struct
 
 typedef struct
 {
-	tBTA_DM_SEARCH_CBACK	*p_search_cback;	// size 0x04, offset 0x00
-	tBTM_INQ_INFO			*p_btm_inq_info;	// size 0x04, offset 0x04
-	tBTA_SERVICE_MASK		services;			// size 0x04, offset 0x08
-	tBTA_SERVICE_MASK		services_to_search;	// size 0x04, offset 0x0c
-	tBTA_SERVICE_MASK		services_found;		// size 0x04, offset 0x10
-	tSDP_DISCOVERY_DB		*p_sdp_db;			// size 0x04, offset 0x14
-	UINT16					state;				// size 0x02, offset 0x18
-	BD_ADDR					peer_bdaddr;		// size 0x06, offset 0x1a
-	char					peer_name[32];		// size 0x20, offset 0x20 // was BD_NAME_LEN (248)
-	TIMER_LIST_ENT			search_timer;		// size 0x18, offset 0x40
-	TIMER_LIST_ENT			rnr_timer;			// size 0x18, offset 0x58
-	UINT8					service_index;		// size 0x01, offset 0x70
+	tBTA_DM_SEARCH_CBACK	*p_search_cback;								// size 0x04, offset 0x00
+	tBTM_INQ_INFO			*p_btm_inq_info;								// size 0x04, offset 0x04
+	tBTA_SERVICE_MASK		services;										// size 0x04, offset 0x08
+	tBTA_SERVICE_MASK		services_to_search;								// size 0x04, offset 0x0c
+	tBTA_SERVICE_MASK		services_found;									// size 0x04, offset 0x10
+	tSDP_DISCOVERY_DB		*p_sdp_db;										// size 0x04, offset 0x14
+	UINT16					state;											// size 0x02, offset 0x18
+	BD_ADDR					peer_bdaddr;									// size 0x06, offset 0x1a
+	char					peer_name[BTA_DM_REMOTE_DEVICE_NAME_LENGTH];	// size 0x20, offset 0x20 // was BD_NAME_LEN (248)
+	TIMER_LIST_ENT			search_timer;									// size 0x18, offset 0x40
+	TIMER_LIST_ENT			rnr_timer;										// size 0x18, offset 0x58
+	UINT8					service_index;									// size 0x01, offset 0x70
 	/* 3 bytes padding */
-	tBTA_DM_MSG				*p_search_queue;	// size 0x04, offset 0x74
-	BOOLEAN					wait_disc;			// size 0x01, offset 0x78
-	BOOLEAN					sdp_results;		// size 0x01, offset 0x79
+	tBTA_DM_MSG				*p_search_queue;								// size 0x04, offset 0x74
+	BOOLEAN					wait_disc;										// size 0x01, offset 0x78
+	BOOLEAN					sdp_results;									// size 0x01, offset 0x79
 	/* 2 bytes padding */
 } tBTA_DM_SEARCH_CB; // size 0x7c
 
@@ -383,11 +413,17 @@ typedef struct
  * external globals
  */
 
+/* bta_dm_act.c */
+
 /* NOTE: bta_service_id_to_btm_srv_id_lkup_tbl is listed in DWARF info as being
  * an incomplete array type for those units without its definition
  */
 
-extern UINT32 const bta_service_id_to_btm_srv_id_lkup_tbl[];
+extern UINT16 const bta_service_id_to_uuid_lkup_tbl[/* BTA_MAX_SERVICE_ID */];
+extern UINT32 const
+	bta_service_id_to_btm_srv_id_lkup_tbl[/* BTA_MAX_SERVICE_ID */];
+
+// ---
 
 extern tBTA_DM_CONNECTED_SRVCS bta_dm_conn_srvcs;
 
@@ -407,6 +443,7 @@ extern tBTA_DM_COMPRESS *p_bta_dm_compress_cfg;
  */
 
 /* bta_dm_act.c */
+
 void bta_dm_enable(tBTA_DM_MSG *p_data);
 void bta_dm_disable(tBTA_DM_MSG *p_data);
 
@@ -441,10 +478,13 @@ void bta_dm_signal_strength(tBTA_DM_MSG *p_data);
 void bta_dm_acl_change(tBTA_DM_MSG *p_data);
 
 BOOLEAN bta_sys_check_compress(unk_t, UINT8 app_id, BD_ADDR peer_addr);
+
 void bta_dm_keep_acl(tBTA_DM_MSG *p_data);
 void bta_dm_immediate_disable(void);
 void bta_dm_reset_complete(void *p1);
 void bta_dm_send_hci_reset(tBTA_DM_MSG *p_data);
+
+// ---
 
 /* bta_dm_main.c */
 BOOLEAN bta_dm_sm_execute(BT_HDR *p_msg);

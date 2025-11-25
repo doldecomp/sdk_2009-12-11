@@ -36,6 +36,7 @@
 #include "data_types.h"
 
 #include "btm_int.h"
+#include "hcidefs.h" // tHCI_HANDLE
 
 /*******************************************************************************
  * local function declarations
@@ -73,8 +74,8 @@ BOOLEAN BTM_SecAddDevice(BD_ADDR bd_addr, DEV_CLASS dev_class, BD_NAME bd_name,
 		p_dev_rec->sec_flags |= BTM_SEC_NAME_KNOWN;
 
 		BCM_STRNCPY_S((char *)p_dev_rec->sec_bd_name,
-		              sizeof p_dev_rec->sec_bd_name, (char *)bd_name,
-		              64);
+		              BTM_MAX_REM_BD_NAME_LEN + 1, (char *)bd_name,
+		              BTM_MAX_REM_BD_NAME_LEN);
 	}
 
 	if (features)
@@ -140,7 +141,7 @@ tBTM_SEC_DEV_REC *btm_sec_alloc_dev(BD_ADDR bd_addr)
 	memset(p_dev_rec, 0, sizeof(tBTM_SEC_DEV_REC));
 
 	p_dev_rec->sec_flags = BTM_SEC_IN_USE;
-	p_dev_rec->sec_acl_connected = 0;
+	p_dev_rec->sec_acl_connected = FALSE;
 
 	if ((p_inq_info = BTM_InqDbRead(bd_addr)) != NULL)
 	{
@@ -165,7 +166,7 @@ void btm_sec_free_dev(tBTM_SEC_DEV_REC *p_dev_rec)
 	p_dev_rec->sec_flags = 0;
 }
 
-tBTM_SEC_DEV_REC *btm_find_dev_by_handle(UINT16 handle)
+tBTM_SEC_DEV_REC *btm_find_dev_by_handle(tHCI_HANDLE handle)
 {
 	tBTM_SEC_DEV_REC *p_dev_rec = btm_cb.sec_dev_rec;
 	int i;
@@ -211,34 +212,32 @@ static tBTM_SEC_DEV_REC *btm_find_oldest_dev(void)
 	/* explicitly post-increment */
 	for (i = 0; i < BTM_SEC_MAX_DEVICE_RECORDS; i++, p_dev_rec++)
 	{
-		if (!(p_dev_rec->sec_flags & BTM_SEC_IN_USE))
-			continue;
-
-		if (p_dev_rec->sec_flags & BTM_SEC_LINK_KEY_KNOWN)
-			continue;
-
-		if (p_dev_rec->timestamp < ot)
+		if (p_dev_rec->sec_flags & BTM_SEC_IN_USE
+		    && !(p_dev_rec->sec_flags & BTM_SEC_LINK_KEY_KNOWN))
 		{
-			p_oldest = p_dev_rec;
-			ot = p_dev_rec->timestamp;
+			if (p_dev_rec->timestamp < ot)
+			{
+				p_oldest = p_dev_rec;
+				ot = p_dev_rec->timestamp;
+			}
 		}
 	}
 
 	if (ot != 0xffffffff)
-		return (p_oldest);
+		return p_oldest;
 
 	p_dev_rec = btm_cb.sec_dev_rec;
 
 	/* explicitly post-increment */
 	for (i = 0; i < BTM_SEC_MAX_DEVICE_RECORDS; i++, p_dev_rec++)
 	{
-		if (!(p_dev_rec->sec_flags & BTM_SEC_IN_USE))
-			continue;
-
-		if (p_dev_rec->timestamp < ot)
+		if (p_dev_rec->sec_flags & BTM_SEC_IN_USE)
 		{
-			p_oldest = p_dev_rec;
-			ot = p_dev_rec->timestamp;
+			if (p_dev_rec->timestamp < ot)
+			{
+				p_oldest = p_dev_rec;
+				ot = p_dev_rec->timestamp;
+			}
 		}
 	}
 

@@ -35,14 +35,16 @@
  * WCAssert macro family
  */
 
+// CLEANUP: Removed parentheses around both "wc_assert"s
+
 #undef WCAssert_FileLine /* <assert.h> semantics */
 
 #if !defined(NDEBUG)
-# define WCAssert_FileLine(file_, line_, expr_)						\
-	do																\
-	{																\
-		if (!(expr_))												\
-			(wc_assert)("ASSERT at %s line %d\n", file_, line_);	\
+# define WCAssert_FileLine(file_, line_, expr_)					\
+	do															\
+	{															\
+		if (!(expr_))											\
+			wc_assert("ASSERT at %s line %d\n", file_, line_);	\
 	} while (0)
 #else
 # define WCAssert_FileLine(file_, line_, expr_)
@@ -63,8 +65,8 @@
 	extern "C" {
 #endif
 
-/* WARNING: This function does not have a definition */
-void (wc_assert)(char const *message, char const *file, unsigned long int line);
+/* WARNING: This function does not have a definition. */
+void wc_assert(char const *message, char const *file, unsigned long int line);
 
 #ifdef __cplusplus
 	}

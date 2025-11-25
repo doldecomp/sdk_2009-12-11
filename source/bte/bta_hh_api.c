@@ -35,8 +35,8 @@
 #include "bt_types.h"
 #include "data_types.h"
 
-#include "bd.h"
-#include "bta_api.h"
+#include "bd.h" // bdcpy
+#include "bta_api.h" // tBTA_SEC
 #include "bta_hh_int.h"
 #include "bta_sys.h"
 #include "gki.h"
@@ -92,7 +92,10 @@ void BTA_HhDisable(void)
 
 	if ((p_buf = GKI_getbuf(sizeof *p_buf)) != NULL)
 	{
+		// no memset? is this a bug?
+
 		p_buf->event = BTA_HH_API_DISABLE_EVT;
+
 		bta_sys_sendmsg(p_buf);
 	}
 }
@@ -138,7 +141,7 @@ static void bta_hh_snd_write_dev(UINT8 dev_handle, UINT8 t_type, UINT8 param,
                                  UINT16 data, UINT8 rpt_id, BT_HDR *p_data)
 {
 	tBTA_HH_CMD_DATA *p_buf;
-	UINT16 len = sizeof *p_buf;
+	UINT16 len = sizeof *p_buf; // ok
 
 	if ((p_buf = GKI_getbuf(len)) != NULL)
 	{
@@ -231,11 +234,9 @@ void BTA_HhAddDev(BD_ADDR bda, tBTA_HH_ATTR_MASK attr_mask, UINT8 sub_class,
 		p_buf->hdr.event = BTA_HH_API_MAINT_DEV_EVT;
 		p_buf->sub_event = BTA_HH_ADD_DEV_EVT;
 		p_buf->hdr.layer_specific = BTA_HH_INVALID_HANDLE;
-
 		p_buf->attr_mask = (UINT16)attr_mask;
 		p_buf->sub_class = sub_class;
 		p_buf->app_id = app_id;
-
 		memcpy(&p_buf->dscp_info, &dscp_info, sizeof p_buf->dscp_info);
 		bdcpy(p_buf->bda, bda);
 
@@ -278,23 +279,23 @@ void BTA_HhParseBootRpt(tBTA_HH_BOOT_RPT *p_data, UINT8 *p_report,
 {
 	p_data->dev_type = BTA_HH_DEVT_UNKNOWN;
 
-	if (!p_report)
-		return;
-
-	switch (p_report[0])
+	if (p_report)
 	{
-	case BTA_HH_KEYBD_RPT_ID:
-		p_data->dev_type = p_report[0];
-		bta_hh_parse_keybd_rpt(p_data, p_report + 1, report_len - 1);
-		break;
+		switch (p_report[0])
+		{
+		case BTA_HH_KEYBD_RPT_ID:
+			p_data->dev_type = p_report[0];
+			bta_hh_parse_keybd_rpt(p_data, p_report + 1, report_len - 1);
+			break;
 
-	case BTA_HH_MOUSE_RPT_ID:
-		p_data->dev_type = p_report[0];
-		bta_hh_parse_mice_rpt(p_data, p_report + 1, report_len - 1);
-		break;
+		case BTA_HH_MOUSE_RPT_ID:
+			p_data->dev_type = p_report[0];
+			bta_hh_parse_mice_rpt(p_data, p_report + 1, report_len - 1);
+			break;
 
-	default:
-		APPL_TRACE(DEBUG, "Unknown boot report: %d", p_report[0]);
-		break;
+		default:
+			APPL_TRACE(DEBUG, "Unknown boot report: %d", p_report[0]);
+			break;
+		}
 	}
 }

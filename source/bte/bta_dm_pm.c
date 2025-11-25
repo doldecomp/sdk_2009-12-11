@@ -32,14 +32,14 @@
 #include <string.h>
 
 #include "bt_trace.h"
-#include "bt_types.h"
+#include "bt_types.h" // BD_ADDR
 #include "data_types.h"
 
 #include "bd.h"
 #include "bta_api.h"
 #include "bta_sys.h"
 #include "btm_api.h"
-#include "gki.h"
+#include "gki.h" // GKI_getbuf
 #include "hcidefs.h"
 
 /*******************************************************************************
@@ -71,9 +71,9 @@ void bta_dm_init_pm(void)
 {
 	memset(&bta_dm_conn_srvcs, 0, sizeof bta_dm_conn_srvcs);
 
-	if (p_bta_dm_pm_cfg->app_id != 0)
+	if (p_bta_dm_pm_cfg[0].app_id != 0)
 	{
-		bta_sys_pm_register((tBTA_SYS_CONN_CBACK *)&bta_dm_pm_cback);
+		bta_sys_pm_register(&bta_dm_pm_cback);
 
 		BTM_PmRegister(BTM_PM_REG_SET | BTM_PM_REG_NOTIF, &bta_dm_cb.pm_id,
 		               &bta_dm_pm_btm_cback);
@@ -102,7 +102,9 @@ static void bta_dm_pm_cback(tBTA_SYS_CONN_STATUS status, UINT8 id, UINT8 app_id,
 	{
 		if (status == BTA_SYS_SCO_OPEN)
 		{
-			policy_setting = bta_dm_cfg.policy_settings & 0x0b;
+			policy_setting = bta_dm_cfg.policy_settings
+			               & (HCI_ENABLE_MASTER_SLAVE_SWITCH
+			                  | HCI_ENABLE_HOLD_MODE | HCI_ENABLE_PARK_MODE);
 			BTM_SetLinkPolicy(peer_addr, &policy_setting);
 		}
 		else if (status == BTA_SYS_SCO_CLOSE)
@@ -112,29 +114,29 @@ static void bta_dm_pm_cback(tBTA_SYS_CONN_STATUS status, UINT8 id, UINT8 app_id,
 		}
 	}
 
-	for (i = 1; i <= p_bta_dm_pm_cfg->app_id; ++i)
+	for (i = 1; i <= p_bta_dm_pm_cfg[0].app_id; ++i)
 	{
 		if (p_bta_dm_pm_cfg[i].id == id
 		    && (p_bta_dm_pm_cfg[i].app_id == BTA_ALL_APP_ID
 		        || p_bta_dm_pm_cfg[i].app_id == app_id))
+		{
 			break;
+		}
 	}
 
-	if (i > p_bta_dm_pm_cfg->app_id)
+	if (i > p_bta_dm_pm_cfg[0].app_id)
 		return;
 
 	for (k = 0; k < BTA_DM_NUM_PM_TIMER; ++k)
 	{
-		if (!bta_dm_cb.pm_timer[k].in_use)
-			continue;
+		if (bta_dm_cb.pm_timer[k].in_use
+		    && bdcmp(bta_dm_cb.pm_timer[k].peer_bdaddr, peer_addr) == 0)
+		{
+			bta_sys_stop_timer(&bta_dm_cb.pm_timer[k].timer);
+			bta_dm_cb.pm_timer[k].in_use = FALSE;
 
-		if (bdcmp(bta_dm_cb.pm_timer[k].peer_bdaddr, peer_addr) != 0)
-			continue;
-
-		bta_sys_stop_timer(&bta_dm_cb.pm_timer[k].timer);
-		bta_dm_cb.pm_timer[k].in_use = FALSE;
-
-		break;
+			break;
+		}
 	}
 
 	if (p_bta_dm_pm_spec[p_bta_dm_pm_cfg[i].spec_idx]
@@ -159,7 +161,7 @@ static void bta_dm_pm_cback(tBTA_SYS_CONN_STATUS status, UINT8 id, UINT8 app_id,
 	if (p_bta_dm_pm_spec[p_bta_dm_pm_cfg[i].spec_idx]
 	        .actn_tbl[status][0]
 	        .power_mode
-	    == 0x10)
+	    == BTA_DM_PM_NO_PREF)
 	{
 		if (j != bta_dm_conn_srvcs.count)
 		{
@@ -169,6 +171,7 @@ static void bta_dm_pm_cback(tBTA_SYS_CONN_STATUS status, UINT8 id, UINT8 app_id,
 				       &bta_dm_conn_srvcs.conn_srvc[j + 1],
 				       sizeof bta_dm_conn_srvcs.conn_srvc[j]);
 			}
+
 			--bta_dm_conn_srvcs.count;
 		}
 	}
@@ -179,26 +182,26 @@ static void bta_dm_pm_cback(tBTA_SYS_CONN_STATUS status, UINT8 id, UINT8 app_id,
 			APPL_TRACE(WARNING, "bta_dm_act no more connected service cbs");
 			return;
 		}
+		else
+		{
+			bta_dm_conn_srvcs.conn_srvc[j].id = id;
+			bta_dm_conn_srvcs.conn_srvc[j].app_id = app_id;
+			bdcpy(bta_dm_conn_srvcs.conn_srvc[j].peer_bdaddr, peer_addr);
 
-		bta_dm_conn_srvcs.conn_srvc[j].id = id;
-		bta_dm_conn_srvcs.conn_srvc[j].app_id = app_id;
-		bdcpy(bta_dm_conn_srvcs.conn_srvc[j].peer_bdaddr, peer_addr);
-
-		++bta_dm_conn_srvcs.count;
+			++bta_dm_conn_srvcs.count;
+		}
 	}
 
 	for (i = 0; i < bta_dm_cb.device_list.count; ++i)
 	{
 		if (bdcmp(bta_dm_cb.device_list.peer_device[i].peer_bdaddr, peer_addr)
-		    != 0)
+		    == 0)
 		{
-			continue;
+			bta_dm_cb.device_list.peer_device[i].pm_mode_attempted = 0;
+			bta_dm_cb.device_list.peer_device[i].pm_mode_failed = 0;
+
+			break;
 		}
-
-		bta_dm_cb.device_list.peer_device[i].pm_mode_attempted = 0;
-		bta_dm_cb.device_list.peer_device[i].pm_mode_failed = 0;
-
-		break;
 	}
 
 	bta_dm_conn_srvcs.conn_srvc[j].state = status;
@@ -236,80 +239,79 @@ static void bta_dm_pm_set_mode(BD_ADDR peer_addr, BOOLEAN timed_out)
 
 	for (i = 0; i < bta_dm_conn_srvcs.count; ++i)
 	{
-		if (bdcmp(bta_dm_conn_srvcs.conn_srvc[i].peer_bdaddr, peer_addr) != 0)
-			continue;
-
-		for (j = 1; j <= p_bta_dm_pm_cfg->app_id; ++j)
+		if (bdcmp(bta_dm_conn_srvcs.conn_srvc[i].peer_bdaddr, peer_addr) == 0)
 		{
-			if (p_bta_dm_pm_cfg[j].id != bta_dm_conn_srvcs.conn_srvc[i].id)
-				continue;
-
-			if (p_bta_dm_pm_cfg[j].app_id == 0xff)
-				break;
-
-			if (p_bta_dm_pm_cfg[j].app_id
-			    == bta_dm_conn_srvcs.conn_srvc[i].app_id)
+			for (j = 1; j <= p_bta_dm_pm_cfg[0].app_id; ++j)
 			{
-				break;
+				if (p_bta_dm_pm_cfg[j].id == bta_dm_conn_srvcs.conn_srvc[i].id
+				    && (p_bta_dm_pm_cfg[j].app_id == BTA_ALL_APP_ID
+				        || p_bta_dm_pm_cfg[j].app_id
+				               == bta_dm_conn_srvcs.conn_srvc[i].app_id))
+				{
+					break;
+				}
 			}
-		}
 
-		allowed_modes |=
-			p_bta_dm_pm_spec[p_bta_dm_pm_cfg[j].spec_idx].allow_mask;
+			allowed_modes |=
+				p_bta_dm_pm_spec[p_bta_dm_pm_cfg[j].spec_idx].allow_mask;
 
-		if (!(p_bta_dm_pm_spec[p_bta_dm_pm_cfg[j].spec_idx]
+			if (!(p_bta_dm_pm_spec[p_bta_dm_pm_cfg[j].spec_idx]
+					        .actn_tbl[bta_dm_conn_srvcs.conn_srvc[i].state][0]
+					        .power_mode
+					    & failed_pm))
+			{
+				pref_modes |= p_bta_dm_pm_spec[p_bta_dm_pm_cfg[j].spec_idx]
+				              .actn_tbl[bta_dm_conn_srvcs.conn_srvc[i].state][0]
+				              .power_mode;
+
+				if (p_bta_dm_pm_spec[p_bta_dm_pm_cfg[j].spec_idx]
 				        .actn_tbl[bta_dm_conn_srvcs.conn_srvc[i].state][0]
 				        .power_mode
-				    & failed_pm))
-		{
-			pref_modes |= p_bta_dm_pm_spec[p_bta_dm_pm_cfg[j].spec_idx]
-			              .actn_tbl[bta_dm_conn_srvcs.conn_srvc[i].state][0]
-			              .power_mode;
-
-			if (p_bta_dm_pm_spec[p_bta_dm_pm_cfg[j].spec_idx]
-			        .actn_tbl[bta_dm_conn_srvcs.conn_srvc[i].state][0]
-			        .power_mode
-			    > pm_action)
-			{
-				pm_action =
-					p_bta_dm_pm_spec[p_bta_dm_pm_cfg[j].spec_idx]
-						.actn_tbl[bta_dm_conn_srvcs.conn_srvc[i].state][0]
-						.power_mode;
-				timeout =
-					p_bta_dm_pm_spec[p_bta_dm_pm_cfg[j].spec_idx]
-						.actn_tbl[bta_dm_conn_srvcs.conn_srvc[i].state][0]
-						.timeout;
+				    > pm_action)
+				{
+					pm_action =
+						p_bta_dm_pm_spec[p_bta_dm_pm_cfg[j].spec_idx]
+							.actn_tbl[bta_dm_conn_srvcs.conn_srvc[i].state][0]
+							.power_mode;
+					timeout =
+						p_bta_dm_pm_spec[p_bta_dm_pm_cfg[j].spec_idx]
+							.actn_tbl[bta_dm_conn_srvcs.conn_srvc[i].state][0]
+							.timeout;
+				}
 			}
-		}
-		else if (!(p_bta_dm_pm_spec[p_bta_dm_pm_cfg[j].spec_idx]
-		               .actn_tbl[bta_dm_conn_srvcs.conn_srvc[i].state][1]
-		               .power_mode
-		           & failed_pm))
-		{
-			pref_modes |= p_bta_dm_pm_spec[p_bta_dm_pm_cfg[j].spec_idx]
-			                  .actn_tbl[bta_dm_conn_srvcs.conn_srvc[i].state][1]
-			                  .power_mode;
-
-			if (p_bta_dm_pm_spec[p_bta_dm_pm_cfg[j].spec_idx]
-			        .actn_tbl[bta_dm_conn_srvcs.conn_srvc[i].state][1]
-			        .power_mode
-			    > pm_action)
+			else if (!(p_bta_dm_pm_spec[p_bta_dm_pm_cfg[j].spec_idx]
+			               .actn_tbl[bta_dm_conn_srvcs.conn_srvc[i].state][1]
+			               .power_mode
+			           & failed_pm))
 			{
-				pm_action =
+				pref_modes |=
 					p_bta_dm_pm_spec[p_bta_dm_pm_cfg[j].spec_idx]
 						.actn_tbl[bta_dm_conn_srvcs.conn_srvc[i].state][1]
 						.power_mode;
-				timeout =
-					p_bta_dm_pm_spec[p_bta_dm_pm_cfg[j].spec_idx]
-						.actn_tbl[bta_dm_conn_srvcs.conn_srvc[i].state][1]
-						.timeout;
+
+				if (p_bta_dm_pm_spec[p_bta_dm_pm_cfg[j].spec_idx]
+				        .actn_tbl[bta_dm_conn_srvcs.conn_srvc[i].state][1]
+				        .power_mode
+				    > pm_action)
+				{
+					pm_action =
+						p_bta_dm_pm_spec[p_bta_dm_pm_cfg[j].spec_idx]
+							.actn_tbl[bta_dm_conn_srvcs.conn_srvc[i].state][1]
+							.power_mode;
+					timeout =
+						p_bta_dm_pm_spec[p_bta_dm_pm_cfg[j].spec_idx]
+							.actn_tbl[bta_dm_conn_srvcs.conn_srvc[i].state][1]
+							.timeout;
+				}
 			}
 		}
 	}
 
-	if (3 & pm_action && !(allowed_modes & pm_action))
+	if ((BTA_DM_PM_PARK | BTA_DM_PM_SNIFF) & pm_action
+	    && !(allowed_modes & pm_action))
 	{
-		pm_action = 3 & allowed_modes & pref_modes;
+		pm_action =
+			(BTA_DM_PM_PARK | BTA_DM_PM_SNIFF) & allowed_modes & pref_modes;
 
 		if (!pm_action)
 			timeout = 0;
@@ -334,25 +336,26 @@ static void bta_dm_pm_set_mode(BD_ADDR peer_addr, BOOLEAN timed_out)
 		if (i == BTA_DM_NUM_PM_TIMER)
 		{
 			APPL_TRACE(WARNING,"bta_dm_act no more pm timers");
+
 			return;
 		}
 	}
 
-	if (pm_action == 0)
+	if (pm_action == BTA_DM_PM_NO_ACTION)
 	{
 		/* ... */
 	}
-	else if (pm_action == 1)
+	else if (pm_action == BTA_DM_PM_PARK)
 	{
-		p_peer_device->pm_mode_attempted = 1;
+		p_peer_device->pm_mode_attempted = BTA_DM_PM_PARK;
 		bta_dm_pm_park(peer_addr);
 	}
-	else if (pm_action == 2)
+	else if (pm_action == BTA_DM_PM_SNIFF)
 	{
-		p_peer_device->pm_mode_attempted = 2;
+		p_peer_device->pm_mode_attempted = BTA_DM_PM_SNIFF;
 		bta_dm_pm_sniff(peer_addr);
 	}
-	else if (pm_action == 4)
+	else if (pm_action == BTA_DM_PM_ACTIVE)
 	{
 		bta_dm_pm_active(peer_addr);
 	}
@@ -414,25 +417,23 @@ static void bta_dm_pm_timer_cback(void *p_tle)
 
 	for (i = 0; i < BTA_DM_NUM_PM_TIMER; ++i)
 	{
-		if (bta_dm_cb.pm_timer[i].in_use)
+		if (bta_dm_cb.pm_timer[i].in_use
+		    && &bta_dm_cb.pm_timer[i].timer == p_tle)
 		{
-			if (&bta_dm_cb.pm_timer[i].timer == p_tle)
-			{
-				bta_dm_cb.pm_timer[i].in_use = FALSE;
-				break;
-			}
+			bta_dm_cb.pm_timer[i].in_use = FALSE;
+			break;
 		}
 	}
 
-	if (i == BTA_DM_NUM_PM_TIMER)
-		return;
-
-	if ((p_buf = GKI_getbuf(sizeof *p_buf)) != NULL)
+	if (i != BTA_DM_NUM_PM_TIMER)
 	{
-		p_buf->hdr.event = BTA_DM_PM_TIMER_EVT;
-		bdcpy(p_buf->bd_addr, bta_dm_cb.pm_timer[i].peer_bdaddr);
+		if ((p_buf = GKI_getbuf(sizeof *p_buf)) != NULL)
+		{
+			p_buf->hdr.event = BTA_DM_PM_TIMER_EVT;
+			bdcpy(p_buf->bd_addr, bta_dm_cb.pm_timer[i].peer_bdaddr);
 
-		bta_sys_sendmsg(p_buf);
+			bta_sys_sendmsg(p_buf);
+		}
 	}
 }
 
@@ -442,53 +443,55 @@ void bta_dm_pm_btm_status(tBTA_DM_MSG *p_data)
 
 	for (i = 0; i < BTA_DM_NUM_PM_TIMER; ++i)
 	{
-		if (!bta_dm_cb.pm_timer[i].in_use)
-			continue;
-
-		if (bdcmp(bta_dm_cb.pm_timer[i].peer_bdaddr, p_data->pm_status.bd_addr)
-		    != 0)
+		if (bta_dm_cb.pm_timer[i].in_use
+		    && bdcmp(bta_dm_cb.pm_timer[i].peer_bdaddr,
+		             p_data->pm_status.bd_addr)
+		           == 0)
 		{
-			continue;
+			bta_sys_stop_timer(&bta_dm_cb.pm_timer[i].timer);
+			bta_dm_cb.pm_timer[i].in_use = FALSE;
+
+			break;
 		}
-
-		bta_sys_stop_timer(&bta_dm_cb.pm_timer[i].timer);
-		bta_dm_cb.pm_timer[i].in_use = FALSE;
-
-		break;
 	}
 
 	switch (p_data->pm_status.status)
 	{
-	case 0:
+	case BTM_PM_STS_ACTIVE:
 		if (p_data->pm_status.hci_status != 0)
 		{
 			for (i = 0; i < bta_dm_cb.device_list.count; ++i)
 			{
 				if (bdcmp(bta_dm_cb.device_list.peer_device[i].peer_bdaddr,
 				          p_data->pm_status.bd_addr)
-				    != 0)
+				    == 0)
 				{
-					continue;
-				}
+					if (!(bta_dm_cb.device_list.peer_device[i].pm_mode_attempted
+					      & (BTA_DM_PM_PARK | BTA_DM_PM_SNIFF)))
+					{
+						return;
+					}
 
-				if (!(bta_dm_cb.device_list.peer_device[i].pm_mode_attempted
-				      & 3))
-				{
+					bta_dm_cb.device_list.peer_device[i].pm_mode_failed |=
+						bta_dm_cb.device_list.peer_device[i].pm_mode_attempted
+						& (BTA_DM_PM_PARK | BTA_DM_PM_SNIFF);
+
+					bta_dm_pm_set_mode(p_data->pm_status.bd_addr, FALSE);
+
 					return;
 				}
-
-				bta_dm_cb.device_list.peer_device[i].pm_mode_failed |=
-					bta_dm_cb.device_list.peer_device[i].pm_mode_attempted & 3;
-
-				bta_dm_pm_set_mode(p_data->pm_status.bd_addr, FALSE);
-
-				return;
 			}
 
 			return;
 		}
 
 		bta_dm_pm_set_mode(p_data->pm_status.bd_addr, FALSE);
+		break;
+
+		/* NOTE: bluedroid includes other switch cases here guarded by
+		 * preprocessor conditional blocks that are not active here, hence the
+		 * single-case switch block.
+		 */
 	}
 }
 

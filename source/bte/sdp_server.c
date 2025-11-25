@@ -430,34 +430,6 @@ static void process_service_attr_req(tCONN_CB *p_ccb, UINT16 trans_num,
 	L2CA_DataWrite(p_ccb->connection_id, p_buf);
 }
 
-# if 0
-// Range: 0xB28 -> 0x112C
-static void process_service_search_attr_req(tCONN_CB * p_ccb /* r31 */, unsigned short trans_num /* r27 */, unsigned short param_len /* r26 */, unsigned char * p_req /* r29 */) {
-    // Local variables
-    unsigned short max_list_len; // r1+0x14
-    unsigned short rem_len; // r1+0x12
-    unsigned short len_to_send; // r1+0x10
-    unsigned short cont_offset; // r1+0xE
-    tSDP_UUID_SEQ uid_seq; // r1+0xB8
-    unsigned char * p_rsp; // r30
-    unsigned char * p_rsp_start; // r1+0x2C
-    unsigned char * p_rsp_param_len; // r1+0x28
-    unsigned short rsp_param_len; // r1+0xC
-    unsigned short xx; // r28
-    tSDP_RECORD * p_rec; // r1+0x24
-    tSDP_ATTR_SEQ attr_seq; // r1+0x74
-    tSDP_ATTR_SEQ attr_seq_sav; // r1+0x30
-    tSDP_ATTRIBUTE * p_attr; // r1+0x20
-    BT_HDR * p_buf; // r1+0x1C
-    unsigned char maxxed_out; // r1+0x9
-    unsigned char is_cont; // r1+0x8
-    unsigned char * p_seq_start; // r1+0x18
-    unsigned short seq_len; // r1+0xA
-
-    // References
-    // -> struct [anonymous] sdp_cb;
-}
-#endif
 
 static void process_service_search_attr_req(tCONN_CB *p_ccb, UINT16 trans_num,
                                             UINT16 param_len, UINT8 *p_req,

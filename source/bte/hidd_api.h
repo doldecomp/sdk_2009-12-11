@@ -18,6 +18,13 @@
 	extern "C" {
 #endif
 
+typedef UINT8 tHID_CHANNEL;
+enum
+{
+	HID_CHANNEL_INTR,
+	HID_CHANNEL_CTRL,
+};
+
 typedef struct rep_data
 {
 	UINT8	rep_type;	// size 0x01, offset 0x00
@@ -85,7 +92,8 @@ tHID_STATUS HID_DevConnect(void);
 tHID_STATUS HID_DevDisconnect(void);
 tHID_STATUS HID_DevHandShake(UINT8 res_code);
 tHID_STATUS HID_DevVirtualUnplug(void);
-tHID_STATUS HID_DevSendData(UINT8 control_ch, UINT8 rep_type, BT_HDR *data_buf);
+tHID_STATUS HID_DevSendData(tHID_CHANNEL control_ch, UINT8 rep_type,
+                            BT_HDR *data_buf);
 tHID_STATUS HID_DevSetSecurityLevel(char *serv_name, UINT8 sec_lvl);
 tHID_STATUS HID_DevSetPowerMgmtParams(UINT8 conn_substate,
                                       tHID_DEV_PWR_MD pm_params);

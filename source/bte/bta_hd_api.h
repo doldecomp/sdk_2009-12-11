@@ -1,6 +1,11 @@
 #ifndef BTE_BTA_HD_API_H
 #define BTE_BTA_HD_API_H
 
+/* References:
+ * esp-idf <github.com/espressif/esp-idf>
+ * [1] components/bt/host/bluedroid/bta/hd/include/bta_hd_api.h
+ */
+
 /*******************************************************************************
  * headers
  */
@@ -18,10 +23,12 @@
 	extern "C" {
 #endif
 
+// [1]: names
 typedef UINT8 tBTA_HD_STATUS;
 enum
 {
-	BTA_HD_SUCCESS,
+	BTA_HD_OK,
+	BTA_HD_ERROR,
 };
 
 typedef UINT8 tBTA_HD_EVT;

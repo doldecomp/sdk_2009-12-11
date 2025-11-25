@@ -76,8 +76,9 @@ UINT16 GAP_FindAddrByName(BD_NAME devname, tGAP_INQ_PARMS *p_inq_parms,
 		{
 			gap_cb.findaddr_cb.p_cback = p_addr_cb;
 			gap_cb.findaddr_cb.p_cur_inq = NULL;
-			strncpy((char *)gap_cb.findaddr_cb.results.devname, (char *)devname,
-			        BTM_MAX_REM_BD_NAME_LEN);
+			BCM_STRNCPY_S((char *)gap_cb.findaddr_cb.results.devname,
+			              BTM_MAX_REM_BD_NAME_LEN + 1, (char *)devname,
+			              BD_NAME_LEN);
 
 			btm_status =
 				BTM_StartInquiry(p_inq_parms, NULL,

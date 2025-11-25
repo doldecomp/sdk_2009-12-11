@@ -6,8 +6,7 @@
 
 #include <string.h>
 
-#include "bt_types.h"
-#include "data_types.h"
+#include "data_types.h" // UINT8
 
 #include "bta_prm_int.h"
 #include "bta_sys.h"
@@ -39,7 +38,8 @@ void BTA_PatchRam(tBTA_PRM_CBACK *p_cback, char const *p_name, UINT8 fs_app_id)
 	if ((p_buf = GKI_getbuf(sizeof *p_buf)) != NULL)
 	{
 		memset(p_buf, 0, sizeof *p_buf);
-		p_buf->hdr.event = 0x1600;
+
+		p_buf->hdr.event = BTA_PRM_API_ENABLE_EVT;
 		p_buf->p_cback = p_cback;
 		p_buf->fs_app_id = fs_app_id;
 

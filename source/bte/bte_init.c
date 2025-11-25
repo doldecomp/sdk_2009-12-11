@@ -29,10 +29,10 @@
  * headers
  */
 
-#include "gap_api.h"
-#include "hidd_api.h"
-#include "hidh_api.h"
-#include "port_api.h"
+#include "gap_api.h" // GAP_Init
+#include "hidd_api.h" // HID_DevInit
+#include "hidh_api.h" // HID_HostInit
+#include "port_api.h" // RFCOMM_Init
 
 /*******************************************************************************
  * functions

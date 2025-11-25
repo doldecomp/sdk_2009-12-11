@@ -31,10 +31,11 @@
 
 #include <string.h>
 
+#include "bt_target.h" // BTA_DM_REMOTE_DEVICE_NAME_LENGTH
 #include "bt_types.h"
 #include "data_types.h"
 
-#include "bd.h"
+#include "bd.h" // bdcpy
 #include "bta_dm_int.h"
 #include "bta_sys.h"
 #include "btm_api.h"
@@ -119,7 +120,8 @@ void BTA_DmSetDeviceName(char *p_name)
 	if ((p_msg = GKI_getbuf(sizeof *p_msg)) != NULL)
 	{
 		p_msg->hdr.event = BTA_DM_API_SET_NAME_EVT;
-		BCM_STRNCPY_S(p_msg->name, sizeof p_msg->name, p_name, 32);
+		BCM_STRNCPY_S(p_msg->name, sizeof p_msg->name, p_name,
+		              BTA_DM_REMOTE_DEVICE_NAME_LENGTH);
 
 		bta_sys_sendmsg(p_msg);
 	}
@@ -129,8 +131,8 @@ void BTA_DmSetVisibility(tBTA_DM_DISC disc_mode, tBTA_DM_CONN conn_mode)
 {
 	tBTA_DM_API_SET_VISIBILITY *p_msg;
 
-	// ERRATUM: allocating way more space than needed
-	if ((p_msg = GKI_getbuf(sizeof(tBTA_DM_SEC))) != NULL)
+	// ERRATUM: allocating much more space than necessary
+	if ((p_msg = GKI_getbuf(sizeof(tBTA_DM_MSG))) != NULL)
 	{
 		p_msg->hdr.event = BTA_DM_API_SET_VISIBILITY_EVT;
 		p_msg->disc_mode = disc_mode;
@@ -163,6 +165,7 @@ void BTA_DmSearchCancel(void)
 	if ((p_msg = GKI_getbuf(sizeof *p_msg)) != NULL)
 	{
 		p_msg->event = BTA_DM_API_SEARCH_CANCEL_EVT;
+
 		bta_sys_sendmsg(p_msg);
 	}
 }
@@ -183,7 +186,7 @@ void BTA_DmDiscover(BD_ADDR bd_addr, tBTA_SERVICE_MASK services,
 	}
 }
 
-void BTA_DmBond(BD_ADDR bd_addr, UINT8 pin_len, PIN_CODE p_pin)
+void BTA_DmBond(BD_ADDR bd_addr, UINT8 pin_len, UINT8 *p_pin)
 {
 	tBTA_DM_API_BOND *p_msg;
 
@@ -199,7 +202,7 @@ void BTA_DmBond(BD_ADDR bd_addr, UINT8 pin_len, PIN_CODE p_pin)
 }
 
 void BTA_DmPinReply(BD_ADDR bd_addr, BOOLEAN accept, UINT8 pin_len,
-                    PIN_CODE p_pin)
+                    UINT8 *p_pin)
 {
 	tBTA_DM_API_PIN_REPLY *p_msg;
 
@@ -231,18 +234,19 @@ tBTA_STATUS BTA_DmAddDevice(BD_ADDR bd_addr, LINK_KEY link_key,
 
 	if (is_trusted)
 	{
-		for (; trusted_mask && index < 23; ++index)
+		for (; trusted_mask != 0 && index < BTA_MAX_SERVICE_ID; ++index)
 		{
-			if (!(trusted_mask & 1 << index))
-				continue;
+			if (trusted_mask & (1 << index))
+			{
+				btm_mask_index = bta_service_id_to_btm_srv_id_lkup_tbl[index]
+				               / BTM_SEC_ARRAY_BITS;
 
-			btm_mask_index = bta_service_id_to_btm_srv_id_lkup_tbl[index] / 32;
+				trusted_services_mask[btm_mask_index] |=
+					1 << (bta_service_id_to_btm_srv_id_lkup_tbl[index]
+				          - btm_mask_index * BTM_SEC_ARRAY_BITS);
 
-			trusted_services_mask[btm_mask_index] |=
-				1 << (bta_service_id_to_btm_srv_id_lkup_tbl[index]
-			          - btm_mask_index * 32);
-
-			trusted_mask &= ~(1 << index);
+				trusted_mask &= ~(1 << index);
+			}
 		}
 	}
 
@@ -261,7 +265,7 @@ tBTA_STATUS BTA_DmAddDevice(BD_ADDR bd_addr, LINK_KEY link_key,
 
 tBTA_STATUS BTA_DmRemoveDevice(BD_ADDR bd_addr)
 {
-    BOOLEAN status;
+	BOOLEAN status;
 
 	GKI_sched_lock();
 

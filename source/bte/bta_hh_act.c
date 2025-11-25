@@ -32,20 +32,20 @@
 #include <string.h>
 
 #include "bt_trace.h"
-#include "bt_types.h"
+#include "bt_types.h" // BT_HDR
 #include "data_types.h"
 
-#include "bd.h"
+#include "bd.h" // bdcpy
 #include "bta_hh_api.h"
 #include "bta_hh_co.h"
 #include "bta_sys.h"
-#include "gki.h"
+#include "gki.h" // GKI_getbuf
 #include "hiddefs.h"
 #include "hidh_api.h"
-#include "hidh_int.h"
+#include "hidh_int.h" // hh_cb
 #include "l2c_int.h"
-#include "sdp_api.h"
-#include "utl.h"
+#include "sdp_api.h" // SDP_SUCCESS
+#include "utl.h" // utl_freebuf
 
 /*******************************************************************************
  * local function declarations
@@ -57,8 +57,8 @@ static void bta_hh_sdp_cback(UINT16 result, UINT16 attr_mask,
 static void bta_hh_cback(UINT8 dev_handle, UINT8 event, UINT32 data,
                          BT_HDR *pdata);
 static tBTA_HH_STATUS bta_hh_get_trans_status(UINT32 result);
-static char *bta_hh_get_w4_event(UINT16 event);
-static char *bta_hh_hid_event_name(UINT16 event);
+static char const *bta_hh_get_w4_event(UINT16 event);
+static char const *bta_hh_hid_event_name(UINT16 event);
 
 /*******************************************************************************
  * functions
@@ -101,20 +101,21 @@ void bta_hh_api_disable(void)
 	if (!bta_hh_cb.p_cback)
 		return;
 
-	if (!bta_hh_cb.cnt_num)
+	if (bta_hh_cb.cnt_num == 0)
 	{
 		bta_hh_disc_cmpl();
-		return;
 	}
-
-	bta_hh_cb.w4_disable = TRUE;
-
-	for (xx = 0; xx < BTA_HH_MAX_KNOWN; ++xx)
+	else
 	{
-		if (bta_hh_cb.kdev[xx].state == BTA_HH_CONN_ST)
+		bta_hh_cb.w4_disable = TRUE;
+
+		for (xx = 0; xx < BTA_HH_MAX_KNOWN; ++xx)
 		{
-			bta_hh_sm_execute(&bta_hh_cb.kdev[xx], BTA_HH_API_CLOSE_EVT,
-			                  NULL);
+			if (bta_hh_cb.kdev[xx].state == BTA_HH_CONN_ST)
+			{
+				bta_hh_sm_execute(&bta_hh_cb.kdev[xx], BTA_HH_API_CLOSE_EVT,
+				                  NULL);
+			}
 		}
 	}
 }
@@ -149,6 +150,7 @@ static void bta_hh_sdp_cback(UINT16 result, UINT16 attr_mask,
 		if (p_cb->sec_mask)
 			attr_mask |= HID_SEC_REQUIRED;
 
+		// NOTE: Do not touch
 		APPL_TRACE(EVENT, "bta_hh_sdp_cback: p_cb: %d result 0x%02x, \
                             attr_mask 0x%02x",
 		           p_cb, result, attr_mask);
@@ -157,7 +159,8 @@ static void bta_hh_sdp_cback(UINT16 result, UINT16 attr_mask,
 		{
 			if (p_cb->hid_handle == BTA_HH_INVALID_HANDLE)
 			{
-				if ((status = HID_HostAddDev(p_cb->addr, attr_mask, &hdl)) == HID_SUCCESS)
+				if ((status = HID_HostAddDev(p_cb->addr, attr_mask, &hdl))
+				    == HID_SUCCESS)
 				{
 					bta_hh_cb.cb_index[hdl] = p_cb->index;
 
@@ -224,8 +227,8 @@ void bta_hh_start_sdp(tBTA_HH_DEV_CB *p_cb, tBTA_HH_DATA *p_data)
 				 p_bta_hh_cfg->sdp_db_size, &bta_hh_sdp_cback))
 		    != SDP_SUCCESS)
 		{
-			APPL_TRACE(DEBUG,
-				"bta_hh_start_sdp:  HID_HostGetSDPRecord failed: \
+			// NOTE: Do not touch
+			APPL_TRACE(DEBUG, "bta_hh_start_sdp:  HID_HostGetSDPRecord failed: \
                 Status 0x%2X",
 			           status);
 
@@ -259,8 +262,10 @@ void bta_hh_sdp_cmpl(tBTA_HH_DEV_CB *p_cb, tBTA_HH_DATA *p_data)
 
 			if ((status = HID_HostOpenDev(p_cb->hid_handle)) != HID_SUCCESS)
 			{
+				// NOTE: Do not touch
 				APPL_TRACE(DEBUG, "bta_hh_sdp_cmpl:  HID_HostOpenDev failed: \
-                    Status 0x%2X", status);
+                    Status 0x%2X",
+				           status);
 
 				HID_HostRemoveDev(p_cb->hid_handle);
 			}
@@ -328,6 +333,7 @@ void bta_hh_open_cmpl_act(tBTA_HH_DEV_CB *p_cb, tBTA_HH_DATA *p_data)
 		    != HID_SUCCESS)
 		{
 			conn.status = BTA_HH_ERR_PROTO;
+
 			(*bta_hh_cb.p_cback)(BTA_HH_OPEN_EVT, (tBTA_HH *)&conn);
 		}
 		else
@@ -338,6 +344,7 @@ void bta_hh_open_cmpl_act(tBTA_HH_DEV_CB *p_cb, tBTA_HH_DATA *p_data)
 	else
 	{
 		p_cb->opened = TRUE;
+
 		(*bta_hh_cb.p_cback)(BTA_HH_OPEN_EVT, (tBTA_HH *)&conn);
 	}
 
@@ -363,6 +370,7 @@ void bta_hh_open_act(tBTA_HH_DEV_CB *p_cb, tBTA_HH_DATA *p_data)
 
 		memset(&conn_data, 0, sizeof conn_data);
 		bdcpy(conn_data.bd_addr, p_cb->addr);
+
 		bta_hh_start_sdp(p_cb, (tBTA_HH_DATA *)&conn_data);
 	}
 }
@@ -395,6 +403,7 @@ void bta_hh_handsk_act(tBTA_HH_DEV_CB *p_cb, tBTA_HH_DATA *p_data)
 		memset(&hs_data, 0, sizeof hs_data);
 		hs_data.handle = p_cb->hid_handle;
 		hs_data.status = bta_hh_get_trans_status(p_data->hid_cback.data);
+
 		(*bta_hh_cb.p_cback)(p_cb->w4_evt, (tBTA_HH *)&hs_data);
 
 		p_cb->w4_evt = 0;
@@ -405,6 +414,7 @@ void bta_hh_handsk_act(tBTA_HH_DEV_CB *p_cb, tBTA_HH_DATA *p_data)
 	case BTA_HH_SET_IDLE_EVT:
 		cback_data.handle = p_cb->hid_handle;
 		cback_data.status = bta_hh_get_trans_status(p_data->hid_cback.data);
+
 		(*bta_hh_cb.p_cback)(p_cb->w4_evt, (tBTA_HH *)&cback_data);
 
 		p_cb->w4_evt = 0;
@@ -414,12 +424,14 @@ void bta_hh_handsk_act(tBTA_HH_DEV_CB *p_cb, tBTA_HH_DATA *p_data)
 		conn.status = p_data->hid_cback.data ? BTA_HH_ERR_PROTO : BTA_HH_OK;
 		conn.handle = p_cb->hid_handle;
 		bdcpy(conn.bda, p_cb->addr);
+
 		(*bta_hh_cb.p_cback)(p_cb->w4_evt, (tBTA_HH *)&conn);
 
 		bta_hh_trace_dev_db();
+
 		p_cb->w4_evt = 0;
 
-		if (conn.status == 0)
+		if (conn.status == BTA_HH_OK)
 			p_cb->opened = TRUE;
 
 		break;
@@ -451,11 +463,13 @@ void bta_hh_ctrl_dat_act(tBTA_HH_DEV_CB *p_cb, tBTA_HH_DATA *p_data)
 		break;
 
 	case BTA_HH_GET_RPT_EVT:
-		memcpy(&hs_data.rsp_data.rpt_data, pdata, sizeof(BT_HDR));
+		memcpy(&hs_data.rsp_data.rpt_data, pdata,
+		       sizeof hs_data.rsp_data.rpt_data);
+
 		break;
 
 	case BTA_HH_GET_PROTO_EVT:
-		hs_data.rsp_data.proto_mode = (UINT8)*data;
+		hs_data.rsp_data.proto_mode = (UINT8)*data; // ?
 		break;
 
 	default:
@@ -508,6 +522,7 @@ void bta_hh_close_act(tBTA_HH_DEV_CB *p_cb, tBTA_HH_DATA *p_data)
 	bta_sys_conn_close(BTA_ID_HH, p_cb->app_id, p_cb->addr);
 
 	--bta_hh_cb.cnt_num;
+
 	p_cb->opened = FALSE;
 
 	if (disc_dat.status)
@@ -526,7 +541,7 @@ void bta_hh_close_act(tBTA_HH_DEV_CB *p_cb, tBTA_HH_DATA *p_data)
 	p_cb->vp = FALSE;
 	p_cb->w4_evt = 0;
 
-	if (!bta_hh_cb.cnt_num && bta_hh_cb.w4_disable)
+	if (bta_hh_cb.cnt_num == 0 && bta_hh_cb.w4_disable)
 		bta_hh_disc_cmpl();
 }
 
@@ -610,32 +625,30 @@ void bta_hh_get_acl_q_info(void)
 
 	memset(&get_queue_info, 0, sizeof get_queue_info);
 
-	for (i = 0; i < 16; ++i)
+	for (i = 0; i < BTA_HH_MAX_KNOWN; ++i)
 	{
 		p_cb = &bta_hh_cb.kdev[i];
 
-		if (!p_cb->in_use)
-			continue;
-
-		if (p_cb->state != 3)
-			continue;
-
-		get_queue_info.queue_info[num_links].handle = p_cb->hid_handle;
-
-		p_l2c_ccb = l2cu_find_ccb_by_cid(
-			NULL, hh_cb.devices[p_cb->hid_handle].conn.intr_cid);
-		if (p_l2c_ccb)
+		if (p_cb->in_use && p_cb->state == BTA_HH_CONN_ST)
 		{
-			if (((p_l2c_lcb = p_l2c_ccb->p_lcb) != NULL) && p_l2c_lcb->in_use)
-			{
-				get_queue_info.queue_info[num_links].num_queued =
-					p_l2c_lcb->link_xmit_data_q.count;
-				get_queue_info.queue_info[num_links].num_not_acked =
-					p_l2c_lcb->sent_not_acked;
-			}
-		}
+			get_queue_info.queue_info[num_links].handle = p_cb->hid_handle;
 
-		++num_links;
+			if ((p_l2c_ccb = l2cu_find_ccb_by_cid(
+					 NULL, hh_cb.devices[p_cb->hid_handle].conn.intr_cid))
+			    != NULL)
+			{
+				if (((p_l2c_lcb = p_l2c_ccb->p_lcb) != NULL)
+				    && p_l2c_lcb->in_use)
+				{
+					get_queue_info.queue_info[num_links].num_queued =
+						p_l2c_lcb->link_xmit_data_q.count;
+					get_queue_info.queue_info[num_links].num_not_acked =
+						p_l2c_lcb->sent_not_acked;
+				}
+			}
+
+			++num_links;
+		}
 	}
 
 	get_queue_info.num_avail_buffs = l2cb.controller_xmit_window;
@@ -697,6 +710,7 @@ void bta_hh_write_dev_act(tBTA_HH_DEV_CB *p_cb, tBTA_HH_DATA *p_data)
 		case HID_TRANS_DATAC:
 			APPL_TRACE(DEBUG, "bta_hh_write_dev_act:: cmd type = %d",
 			           p_data->api_sndcmd.t_type);
+
 			break;
 		}
 
@@ -765,11 +779,12 @@ static void bta_hh_cback(UINT8 dev_handle, UINT8 event, UINT32 data,
 				break;
 			}
 		}
+
 		break;
 	}
 
 	if (sm_event != BTA_HH_INVALID_EVT
-	    && (p_buf = GKI_getbuf(sizeof(BT_HDR) + sizeof *p_buf)) != NULL)
+	    && (p_buf = GKI_getbuf(sizeof *p_buf + sizeof *p_buf->p_data)) != NULL)
 	{
 		p_buf->hdr.event = sm_event;
 		p_buf->hdr.layer_specific = dev_handle;
@@ -800,7 +815,7 @@ static tBTA_HH_STATUS bta_hh_get_trans_status(UINT32 result)
 	}
 }
 
-static char *bta_hh_get_w4_event(UINT16 event)
+static char const *bta_hh_get_w4_event(UINT16 event)
 {
 	switch (event)
 	{
@@ -830,7 +845,7 @@ static char *bta_hh_get_w4_event(UINT16 event)
 	}
 }
 
-static char *bta_hh_hid_event_name(UINT16 event)
+static char const *bta_hh_hid_event_name(UINT16 event)
 {
 	switch (event)
 	{

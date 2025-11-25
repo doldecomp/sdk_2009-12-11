@@ -126,7 +126,7 @@ typedef struct
 	UINT16			attr_filters[SDP_MAX_ATTR_FILTERS];	// size 0x18, offset 0x4e
 	/* 2 bytes padding */
 	UINT8			*p_free_mem;						// size 0x04, offset 0x68
-} tSDP_DISCOVERY_DB;
+} tSDP_DISCOVERY_DB; // size 0x6c
 
 typedef struct
 {

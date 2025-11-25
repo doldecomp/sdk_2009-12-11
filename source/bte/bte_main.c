@@ -29,7 +29,9 @@
  * headers
  */
 
-#include <decomp.h>
+#include <stddef.h> // NULL
+
+#include <macros.h> // ATTR_ALIGN
 
 #include "data_types.h"
 
@@ -37,7 +39,7 @@
 #include "btu.h"
 #include "gki.h"
 #include "hci.h"
-#include "uusb.h"
+#include "uusb.h" // wait4hci
 
 #define IS_BTE
 #include <context_rvl.h>
@@ -58,7 +60,7 @@ static void BTE_BringUpStack(void);
 
 // .bss
 static OSAlarm _bte_alarm;
-unsigned char __BTUInterruptHandlerStack[0x1000] __attribute__((aligned(32)));
+unsigned char __BTUInterruptHandlerStack[0x1000] ATTR_ALIGN(32);
 
 // .sdata
 static tHCI_CFG bte_hcisu_h2_cfg =
@@ -67,7 +69,7 @@ static tHCI_CFG bte_hcisu_h2_cfg =
 };
 
 // .sbss
-static void (*_bte_app_info)(tBTA_STATUS status);
+static tBTA_APP_INFO_CBACK *_bte_app_info;
 #if !defined(NDEBUG)
 static BOOLEAN enable_dbg_msg;
 #endif
@@ -79,12 +81,13 @@ UINT8 volatile bte_target_mode;
 
 static void BTE_InitSys(void)
 {
-	_bte_app_info = 0;
+	_bte_app_info = NULL;
 }
 
 static void bta_register_os_callbacks(void)
 {
 	OSCreateAlarm(&_bte_alarm);
+
 	OSSetPeriodicAlarm(&_bte_alarm, OSGetTime(), OSMillisecondsToTicks(2),
 	                   &BTUInterruptHandler);
 }
@@ -158,7 +161,7 @@ tBTA_STATUS BTA_Init(void)
 	return 0;
 }
 
-void BTA_CleanUp(void (*p_cb)(tBTA_STATUS status))
+void BTA_CleanUp(tBTA_APP_INFO_CBACK *p_cb)
 {
 	_bte_app_info = p_cb;
 

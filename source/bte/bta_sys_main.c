@@ -1,4 +1,3 @@
-#include "bt_types.h"
 #include "bta_sys_int.h"
 
 /* Original source:
@@ -30,9 +29,10 @@
  * headers
  */
 
-#include <string.h>
+#include <string.h> // memset
 
 #include "bt_trace.h"
+#include "bt_types.h" // BT_HDR
 #include "data_types.h"
 
 #include "bta_dm_int.h"
@@ -47,14 +47,6 @@
 #ifndef BTA_SYS_TIMER_PERIOD
 # define BTA_SYS_TIMER_PERIOD	1000
 #endif
-
-/*******************************************************************************
- * types
- */
-
-/*******************************************************************************
- * local function declarations
- */
 
 /*******************************************************************************
  * variables
@@ -92,7 +84,7 @@ void bta_sys_event(BT_HDR *p_msg)
 
 	if (bta_sys_cb.events_disabled)
 	{
-		if (p_msg->event == 0x101) // TODO: Which event is this
+		if (p_msg->event == BTA_DM_API_DISABLE_EVT)
 			bta_dm_immediate_disable();
 
 		GKI_freebuf(p_msg);

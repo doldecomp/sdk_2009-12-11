@@ -1,6 +1,11 @@
 #ifndef BTE_BTA_HD_INT_H
 #define BTE_BTA_HD_INT_H
 
+/* References:
+ * esp-idf <github.com/espressif/esp-idf>
+ * [1] components/bt/host/bluedroid/bta/hd/include/bta_hd_int.h
+ */
+
 /*******************************************************************************
  * headers
  */
@@ -9,9 +14,16 @@
 #include "data_types.h"
 
 #include "bta_hd_api.h"
+#include "bta_sys.h"
 #include "gki.h"
 #include "hidd_api.h"
 #include "hiddefs.h"
+
+/*******************************************************************************
+ * macros
+ */
+
+#define BTA_HD_APP_NAME_LEN	35	// [1]: name
 
 /*******************************************************************************
  * types
@@ -21,14 +33,71 @@
 	extern "C" {
 #endif
 
+// [1]: names
+enum
+{
+	BTA_HD_API_OPEN_EVT = BTA_SYS_EVT_START(BTA_ID_HD),
+	BTA_HD_API_CLOSE_EVT,
+	BTA_HD_API_DISABLE_EVT,
+	BTA_HD_API_SEND_EVT,
+	BTA_HD_4_EVT,
+	BTA_HD_5_EVT,
+	BTA_HD_6_EVT,
+	BTA_HD_API_ENABLE_EVT,
+
+	BTA_HD_INVALID_EVT
+};
+
+typedef UINT8 tBTA_HDEV_EVT;
+enum
+{
+	BTA_HDEV_EVT_OPEN,
+	BTA_HDEV_EVT_CLOSE,
+	BTA_HDEV_EVT_RETRYING,
+	BTA_HDEV_EVT_MODE_CHG,
+	BTA_HDEV_EVT_PM_FAILED,
+	BTA_HDEV_EVT_CONTROL,
+	BTA_HDEV_EVT_GET_REPORT,
+	BTA_HDEV_EVT_SET_REPORT,
+	BTA_HDEV_EVT_GET_PROTO,
+	BTA_HDEV_EVT_SET_PROTO,
+	BTA_HDEV_EVT_GET_IDLE,
+	BTA_HDEV_EVT_SET_IDLE,
+	BTA_HDEV_EVT_DATA,
+	BTA_HDEV_EVT_DATC,
+	BTA_HDEV_EVT_L2C_CONG,
+};
+
+typedef UINT8 tBTA_HH_TRANS_CTRL_TYPE;
+enum
+{
+	BTA_HD_CTRL_NOP				= HID_PAR_CONTROL_NOP,
+	BTA_HD_CTRL_HARD_RESET		= HID_PAR_CONTROL_HARD_RESET,
+	BTA_HD_CTRL_SOFT_RESET		= HID_PAR_CONTROL_SOFT_RESET,
+	BTA_HD_CTRL_SUSPEND			= HID_PAR_CONTROL_SUSPEND,
+	BTA_HD_CTRL_EXIT_SUSPEND	= HID_PAR_CONTROL_EXIT_SUSPEND,
+	BTA_HD_CTRL_VCAB_UNPLUG		= HID_PAR_CONTROL_VIRTUAL_CABLE_UNPLUG,
+};
+
+typedef UINT8 tBTA_HD_RPT_TYPE;
+enum
+{
+	BTA_HD_REPT_TYPE_MASK = 0x03,
+
+	BTA_HD_REPT_TYPE_OTHER = 0,
+	BTA_HD_REPT_TYPE_INPUT,
+	BTA_HD_REPT_TYPE_OUTPUT,
+	BTA_HD_REPT_TYPE_FEATURE,
+};
+
 typedef struct
 {
-	BT_HDR			hdr;				// size 0x08, offset 0x00
-	char			service_name[36];	// size 0x24, offset 0x08
-	tBTA_HD_CBACK	*p_cback;			// size 0x04, offset 0x2c
-	BD_ADDR			bd_addr;			// size 0x06, offset 0x30
-	UINT8			sec_mask;			// size 0x01, offset 0x36
-	UINT8			app_id;				// size 0x01, offset 0x37
+	BT_HDR			hdr;									// size 0x08, offset 0x00
+	char			service_name[BTA_HD_APP_NAME_LEN + 1];	// size 0x24, offset 0x08
+	tBTA_HD_CBACK	*p_cback;								// size 0x04, offset 0x2c
+	BD_ADDR			bd_addr;								// size 0x06, offset 0x30
+	UINT8			sec_mask;								// size 0x01, offset 0x36
+	UINT8			app_id;									// size 0x01, offset 0x37
 } tBTA_HD_API_ENABLE; // size 0x38
 
 typedef struct
