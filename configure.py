@@ -486,7 +486,7 @@ config.libs = [
     RvlLib(
         "enc",
         [
-            Object(DebugNonMatching, ReleaseNonMatching, "enc/encutility.c"),
+            Object(DebugMatching, ReleaseMatching, "enc/encutility.c"),
             Object(DebugNonMatching, ReleaseNonMatching, "enc/encunicode.c"),
             Object(DebugNonMatching, ReleaseNonMatching, "enc/encjapanese.c"),
             Object(DebugNonMatching, ReleaseNonMatching, "enc/enclatin.c"),
