@@ -1,0 +1,6 @@
+#ifndef __STDCXX_CLIMITS__
+#define __STDCXX_CLIMITS__
+
+#define ULONG_MAX 0xfffffffful
+
+#endif // __STDCXX_CLIMITS__

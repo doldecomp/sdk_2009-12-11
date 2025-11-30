@@ -1,15 +1,13 @@
 #ifndef __STDC_CTYPE_H__
 #define __STDC_CTYPE_H__
 
-extern int tolower(int c);
+extern int (tolower)(int c);
 
 #if defined(NDEBUG)
-inline int tolower(int c)
+inline int (tolower)(int c)
 {
 	/* Astute readers may notice that the definition of _current_locale here
-	 * differs from that of the one in MSL. This is a reference to the fact
-	 * that I don't give a fuck about the fields I'm not using, because that
-	 * would be stupid and useless.
+	 * differs from that of the one in MSL.
 	 */
 	extern struct
 	{

@@ -1,0 +1,11 @@
+#ifndef __STDCXX_TYPE_TRAITS__
+#define __STDCXX_TYPE_TRAITS__
+
+namespace std {
+
+template <typename T> struct remove_reference      { typedef T type; };
+template <typename T> struct remove_reference<T &> { typedef T type; };
+
+} // namespace std
+
+#endif // __STDCXX_TYPE_TRAITS__

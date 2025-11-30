@@ -1,0 +1,21 @@
+#ifndef __STDCXX_UTILITY__
+#define __STDCXX_UTILITY__
+
+#include <type_traits>
+
+namespace std {
+
+/* NOTE: std::move has only existed since C++11. However, it is required here,
+ * in an alternate form that uses lvalue refs instead of rvalue refs, to match
+ * some translation units.
+ */
+
+template <typename T>
+typename ::std::remove_reference<T>::type &(move)(T &p)
+{
+	return p;
+}
+
+} // namespace std
+
+#endif // __STDCXX_UTILITY__

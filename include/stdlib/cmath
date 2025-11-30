@@ -1,0 +1,28 @@
+#ifndef __STDCXX_CMATH__
+#define __STDCXX_CMATH__
+
+namespace std
+{
+	extern "C" double (acos)(double x) throw();
+	extern "C" double (log10)(double x) throw();
+	extern "C" double (pow)(double x, double y) throw();
+	extern "C" double (tan)(double x) throw();
+
+	extern "C" float (acosf)(float x) throw();
+	extern "C" float (log10f)(float x) throw();
+	extern "C" float (powf)(float x, float y) throw();
+	extern "C" float (tanf)(float x) throw();
+
+	inline float (acos)(float x) throw() { return static_cast<float>((::std::acosf)(x)); }
+	inline float (log10)(float x) { return static_cast<float>((::std::log10f)(x)); }
+	inline float (pow)(float x, float y) throw() { return static_cast<float>((::std::powf)(x, y)); }
+
+#if defined(NDEBUG)
+	inline float (acosf)(float x) throw() { return static_cast<float>((::std::acos)(static_cast<double>(x))); }
+	inline float (log10f)(float x) throw() { return static_cast<float>((::std::log10)(static_cast<double>(x))); }
+	inline float (powf)(float x, float y) throw() { return static_cast<float>((::std::pow)(static_cast<double>(x), static_cast<double>(y))); }
+	inline float (tanf)(float x) throw() { return static_cast<float>((::std::tan)(static_cast<double>(x))); }
+#endif
+} // namespace std
+
+#endif // __STDCXX_CMATH__

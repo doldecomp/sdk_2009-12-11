@@ -9,6 +9,6 @@ typedef unsigned short wint_t;
 
 #define WEOF	((wint_t)(-1))
 
-wchar_t *wcschr(wchar_t const *str, wchar_t ch);
+wchar_t *(wcschr)(wchar_t const *str, wchar_t ch);
 
 #endif // __STDC_WCHAR_H__

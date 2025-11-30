@@ -1,0 +1,16 @@
+#ifndef __STDCXX_CSTDIO__
+#define __STDCXX_CSTDIO__
+
+#include <__internal/__size_t.h>
+
+// Not provided by <cstdio>, but necessary for some declarations
+#include <__internal/__va_list.h>
+
+namespace std
+{
+	extern "C" int (vsnprintf)(char *s, ::std::size_t n, char const *format, ::std::va_list arg) throw();
+
+	extern "C" int (vswprintf)(wchar_t *s, ::std::size_t n, wchar_t const *format, ::std::va_list arg) throw();
+} // namespace std
+
+#endif // __STDCXX_CSTDIO__

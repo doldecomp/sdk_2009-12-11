@@ -1,6 +1,6 @@
----
 # single hash - currently unchanged from default. may change
 ### triple hash - default, because it does not apply to this project
+---
 Language: Cpp
 ### BasedOnStyle: LLVM
 AccessModifierOffset: -4
@@ -191,12 +191,13 @@ SortIncludes: CaseInsensitive
 # SortUsingDeclarations: LexicographicNumeric
 SpaceAfterCStyleCast: false
 SpaceAfterLogicalNot: false
+SpaceAfterOperatorKeyword: true
 SpaceAfterTemplateKeyword: true
 SpaceAroundPointerQualifiers: Before
 SpaceBeforeAssignmentOperators: true
 SpaceBeforeCaseColon: false
 ### SpaceBeforeCpp11BracedList: false
-SpaceBeforeCtorInitializerColon: true
+SpaceBeforeCtorInitializerColon: false
 SpaceBeforeInheritanceColon: true
 SpaceBeforeParens: ControlStatements
 SpaceBeforeParensOptions:
