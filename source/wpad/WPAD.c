@@ -9,6 +9,7 @@
 
 #include <macros.h>
 
+#include "buildstamp.h"
 #include <revolution/types.h>
 
 #include "lint.h"
@@ -39,17 +40,11 @@
  * macros
  */
 
-// TODO: refactor out to a different header file
+#define RVL_SDK_WPAD_DEBUG_BUILD_DATE	"Dec 11 2009"
+#define RVL_SDK_WPAD_DEBUG_BUILD_TIME	"15:55:10"
 
-#if defined(NDEBUG)
-#define RVL_SDK_WPAD_VERSION_STRING	\
-	"<< RVL_SDK - WPAD \trelease build: Dec 11 2009 15:59:48" \
-	" (" STR(__CWCC__) "_" STR(__CWBUILD__) ") >>"
-#else
-#define RVL_SDK_WPAD_VERSION_STRING	\
-	"<< RVL_SDK - WPAD \tdebug build: Dec 11 2009 15:55:10"\
-	" (" STR(__CWCC__) "_" STR(__CWBUILD__) ") >>"
-#endif
+#define RVL_SDK_WPAD_RELEASE_BUILD_DATE	"Feb 24 2010"
+#define RVL_SDK_WPAD_RELEASE_BUILD_TIME	"15:59:48"
 
 // WPADGetBLCalibration
 #define WPAD_BLCLB_BLK1_ADDR	0x24	/* known */
@@ -201,7 +196,7 @@ static ULONG const certv[1 + 16 + 1] =
 // clang-format on
 
 // .data, .sdata
-char const *__WPADVersion = RVL_SDK_WPAD_VERSION_STRING;
+char const *__WPADVersion = RVL_SDK_LIB_VERSION_STRING(WPAD);
 static OSShutdownFunctionInfo ShutdownFunctionInfo;
 
 // .bss

@@ -9,6 +9,7 @@
 
 #include <macros.h>
 
+#include "buildstamp.h"
 #include <revolution/types.h>
 
 #include "kmpls_main.h"
@@ -33,17 +34,11 @@
 #undef NULL
 #define NULL ((void *)0) // for asserts on debug
 
-// TODO: refactor out to a different header file
+#define RVL_SDK_KPAD_DEBUG_BUILD_DATE	"Dec 11 2009"
+#define RVL_SDK_KPAD_DEBUG_BUILD_TIME	"15:53:49"
 
-#if defined(NDEBUG)
-#define RVL_SDK_KPAD_VERSION_STRING	\
-	"<< RVL_SDK - KPAD \trelease build: Dec 11 2009 15:58:25" \
-	" (" STR(__CWCC__) "_" STR(__CWBUILD__) ") >>"
-#else
-#define RVL_SDK_KPAD_VERSION_STRING	\
-	"<< RVL_SDK - KPAD \tdebug build: Dec 11 2009 15:53:49"\
-	" (" STR(__CWCC__) "_" STR(__CWBUILD__) ") >>"
-#endif
+#define RVL_SDK_KPAD_RELEASE_BUILD_DATE	"Dec 11 2009"
+#define RVL_SDK_KPAD_RELEASE_BUILD_TIME	"15:58:25"
 
 #define MAX_WBC_FAILURE_COUNT	3
 
@@ -215,7 +210,7 @@ static void KPADiSamplingCallback(KPADChannel chan);
  */
 
 // .data, .sdata
-const char *__KPADVersion = RVL_SDK_KPAD_VERSION_STRING;
+const char *__KPADVersion = RVL_SDK_LIB_VERSION_STRING(KPAD);
 
 // .bss
 static Vec Vec_0 ATTR_UNUSED; // Literally how did this get emitted

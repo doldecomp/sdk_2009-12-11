@@ -7,9 +7,8 @@
 
 #include <macros.h>
 
-#include <revolution/types.h>
-
 #include "buildstamp.h"
+#include <revolution/types.h>
 
 #include "HBMAxSound.h"
 #include "HBMBase.h"
