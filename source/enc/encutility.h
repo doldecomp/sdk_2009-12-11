@@ -34,11 +34,13 @@ enum ENCBreakType_et
  */
 
 void ENCiRegisterVersion(void);
-unk_t ENCiCheckParameters(unk_t, unk4_t signed *, unk4_t signed *, unk4_t *,
-                          unk_t, unk4_t signed *, unk4_t signed *, unk4_t *);
-unk_t ENCiCheckBreakType(unk_t unsigned, unk_t unsigned);
-unk_t ENCiWriteBreakType(unk1_t unsigned *, unk_t long, ENCBreakType type,
-                         unk_t);
+ENCResult ENCiCheckParameters(BOOL dstValid, unk_t signed *dstSizeIn,
+                              unk_t signed *dstSizeOut, BOOL *dstValidOut,
+                              BOOL srcValid, unk_t signed *srcSizeIn,
+                              unk_t signed *srcSizeOut, BOOL *srcLimitedOut);
+int ENCiCheckBreakType(unsigned a, unsigned b);
+int ENCiWriteBreakType(void *stream, unk_t  length, ENCBreakType type,
+                       BOOL valid);
 
 #ifdef __cplusplus
 	}

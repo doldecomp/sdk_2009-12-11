@@ -50,114 +50,114 @@ void ENCiRegisterVersion(void)
 	}
 }
 
-unk_t ENCiCheckParameters(unk_t param_1, unk4_t signed *param_2,
-                          unk4_t signed *param_3, unk4_t *param_4,
-                          unk_t param_5, unk4_t signed *param_6,
-                          unk4_t signed *param_7, unk4_t *param_8)
+ENCResult ENCiCheckParameters(BOOL dstValid, unk_t signed *dstSizeIn,
+                              unk_t signed *dstSizeOut, BOOL *dstValidOut,
+                              BOOL srcValid, unk_t signed *srcSizeIn,
+                              unk_t signed *srcSizeOut, BOOL *srcLimitedOut)
 {
-	unk_t signed ret = 0;
+	ENCResult ret = ENC_ESUCCESS;
 
 	ENCiRegisterVersion();
 
-	if (param_6)
-		*param_7 = *param_6;
+	if (srcSizeIn)
+		*srcSizeOut = *srcSizeIn;
 	else
-		*param_7 = -1;
+		*srcSizeOut = ENC_SRC_UNLIMITED;
 
-	if (param_2)
+	if (dstSizeIn)
 	{
-		*param_3 = *param_2;
+		*dstSizeOut = *dstSizeIn;
 	}
 	else
 	{
-		*param_3 = -1;
+		*dstSizeOut = ENC_DST_INVALID;
 
-		ret = -3;
+		ret = ENC_EINVAL;
 	}
 
-	if (param_5 == 0)
-		ret = -3;
+	if (!srcValid)
+		ret = ENC_EINVAL;
 
-	if (param_1 == 0)
+	if (!dstValid)
 	{
-		*param_4 = false;
+		*dstValidOut = false;
 
-		*param_3 = -1;
+		*dstSizeOut = ENC_DST_INVALID;
 	}
 
-	if (*param_7 < 0)
-		*param_8 = false;
+	if (*srcSizeOut < 0) // ENC_SRC_UNLIMITED
+		*srcLimitedOut = false;
 
-	if (ret != 0)
+	if (ret != ENC_ESUCCESS)
 	{
-		*param_2 = 0;
+		*dstSizeIn = 0;
 
-		*param_6 = 0;
+		*srcSizeIn = 0;
 	}
 
 	return ret;
 }
 
-unk_t ENCiCheckBreakType(unk_t unsigned a, unk_t unsigned b)
+int ENCiCheckBreakType(unsigned a, unsigned b)
 {
 	if (a == '\n')
 	{
-		return 1;
+		return sizeof(char) * 1;
 	}
 	else if (a == '\r')
 	{
 		if (b == '\n')
-			return 2;
+			return sizeof(char) * 2;
 		else
-			return 1;
+			return sizeof(char) * 1;
 	}
 	else
 	{
-		return 0;
+		return sizeof(char) * 0;
 	}
 }
 
-unk_t ENCiWriteBreakType(unk1_t unsigned *param_1, unk_t long param_2, // ?
-                         ENCBreakType type, unk_t param_4)
+int ENCiWriteBreakType(void *stream, unk_t width, ENCBreakType breakType,
+                       BOOL valid)
 {
-	if (param_4 != 0)
+	if (valid)
 	{
-		memset(param_1, '\0', param_2 - 1);
+		memset(stream, '\0', width - 1);
 
-		switch (type)
+		switch (breakType)
 		{
 		case ENC_BREAK_TYPE_WINDOWS:
-			*(param_1 + param_2 - 1) = '\r';
-			memset(param_1 + param_2, '\0', param_2 - 1);
-			*(param_1 + param_2 * 2 - 1) = '\n';
+			*((byte1_t *)stream + width - 1) = '\r';
+			memset((byte1_t *)stream + width, '\0', width - 1);
+			*((byte1_t *)stream + width * 2 - 1) = '\n';
 
-			return 2;
+			return sizeof(char) * 2;
 
 		case ENC_BREAK_TYPE_CLASSIC_MAC_OS:
-			*(param_1 + param_2 - 1) = '\r';
+			*((byte1_t *)stream + width - 1) = '\r';
 
-			return 1;
+			return sizeof(char) * 1;
 
 		case ENC_BREAK_TYPE_UNIX:
-			*(param_1 + param_2 - 1) = '\n';
+			*((byte1_t *)stream + width - 1) = '\n';
 
-			return 1;
+			return sizeof(char) * 1;
 		}
 	}
 	else
 	{
-		switch (type)
+		switch (breakType)
 		{
 		case ENC_BREAK_TYPE_WINDOWS:
-			return 2;
+			return sizeof(char) * 2;
 
 		case ENC_BREAK_TYPE_CLASSIC_MAC_OS:
-			return 1;
+			return sizeof(char) * 1;
 
 		case ENC_BREAK_TYPE_UNIX:
-			return 1;
+			return sizeof(char) * 1;
 		}
 	}
 
-	return 0;
+	return sizeof(char) * 0;
 }
