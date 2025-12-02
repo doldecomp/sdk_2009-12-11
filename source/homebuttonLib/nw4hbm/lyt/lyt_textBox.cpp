@@ -378,6 +378,17 @@ void TextBox::Init(u16 allocStrLen)
 
 TextBox::~TextBox()
 {
+	/* NOTE: This function call generates an unpaired low-half relocation in an
+	 * unreachable code path on release because it was compiled without small
+	 * data sections. This is funny because when dtk unlinks objects and
+	 * reconstructs relocations, it cannot detect this one. It is also funny
+	 * because if this path were taken it would probably load garbage anyways.
+	 *
+	 * You are now cordially invited to Laugh and Smile with this relocation, so
+	 * as to make it feel welcomed into your decompilation, instead of alone and
+	 * rejected, for we welcome all bugs, errata, mistakes, and curiosities in
+	 * this small corner of the internet.
+	 */
 	SetFont(nullptr);
 
 	if (mpMaterial && !mpMaterial->IsUserAllocated())
