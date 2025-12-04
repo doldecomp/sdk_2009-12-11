@@ -39,7 +39,7 @@ ENCResult ENCiCheckParameters(BOOL dstValid, unk_t signed *dstSizeIn,
                               BOOL srcValid, unk_t signed *srcSizeIn,
                               unk_t signed *srcSizeOut, BOOL *srcLimitedOut);
 int ENCiCheckBreakType(unsigned a, unsigned b);
-int ENCiWriteBreakType(void *stream, unk_t  length, ENCBreakType type,
+int ENCiWriteBreakType(void *stream, unk_t width, ENCBreakType type,
                        BOOL valid);
 
 #ifdef __cplusplus

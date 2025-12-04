@@ -488,7 +488,7 @@ config.libs = [
         [
             Object(DebugMatching, ReleaseMatching, "enc/encutility.c"),
             Object(DebugMatching, ReleaseMatching, "enc/encunicode.c"),
-            Object(DebugNonMatching, ReleaseNonMatching, "enc/encjapanese.c"),
+            Object(DebugMatching, ReleaseMatching, "enc/encjapanese.c"),
             Object(DebugNonMatching, ReleaseNonMatching, "enc/enclatin.c"),
             Object(DebugNonMatching, ReleaseNonMatching, "enc/encconvert.c"),
             Object(DebugNonMatching, ReleaseNonMatching, "enc/encchinese.c"),

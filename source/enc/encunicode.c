@@ -1,4 +1,4 @@
-// #include "encunicode.h"
+#include "encunicode.h"
 
 /*******************************************************************************
  * headers
@@ -80,80 +80,82 @@ static u8 base64_array[] =
  * functions
  */
 
-ENCResult ENCConvertStringUnicodeToAscii(unsigned char *dst,
-                                         unk_t signed *dstSize,
+ENCResult ENCConvertStringUnicodeToAscii(ascii_t *dst, unk4_t signed *dstSize,
                                          char16_t const *src,
-                                         unk_t signed *srcSize)
+                                         unk4_t signed *srcSize)
 {
 	return ENCiConvertStringUnicodeToAscii(dst, dstSize, src, srcSize,
 	                                       ENC_BREAK_TYPE_NONE);
 }
 
-ENCResult ENCConvertStringAsciiToUnicode(char16_t *dst, unk_t signed *dstSize,
-                                         unsigned char const *src,
-                                         unk_t signed *srcSize)
+ENCResult ENCConvertStringAsciiToUnicode(char16_t *dst, unk4_t signed *dstSize,
+                                         ascii_t const *src,
+                                         unk4_t signed *srcSize)
 {
 	return ENCiConvertStringAsciiToUnicode(dst, dstSize, src, srcSize,
 	                                       ENC_BREAK_TYPE_NONE);
 }
 
-ENCResult ENCConvertStringUtf32ToUtf16(char16_t *dst, unk_t signed *dstSize,
+ENCResult ENCConvertStringUtf32ToUtf16(char16_t *dst, unk4_t signed *dstSize,
                                        char32_t const *src,
-                                       unk_t signed *srcSize)
+                                       unk4_t signed *srcSize)
 {
 	return ENCiConvertStringUtf32ToUtf16(dst, dstSize, src, srcSize,
 	                                     ENC_BREAK_TYPE_NONE);
 }
 
-ENCResult ENCConvertStringUtf16ToUtf32(char32_t *dst, unk_t signed *dstSize,
+ENCResult ENCConvertStringUtf16ToUtf32(char32_t *dst, unk4_t signed *dstSize,
                                        char16_t const *src,
-                                       unk_t signed *srcSize)
+                                       unk4_t signed *srcSize)
 {
 	return ENCiConvertStringUtf16ToUtf32(dst, dstSize, src, srcSize,
 	                                     ENC_BREAK_TYPE_NONE);
 }
 
-ENCResult ENCConvertStringUtf32ToUtf8(char8_t *dst, unk_t signed *dstSize,
+ENCResult ENCConvertStringUtf32ToUtf8(char8_t *dst, unk4_t signed *dstSize,
                                       char32_t const *src,
-                                      unk_t signed *srcSize)
+                                      unk4_t signed *srcSize)
 {
 	return ENCiConvertStringUtf32ToUtf8(dst, dstSize, src, srcSize,
 	                                    ENC_BREAK_TYPE_NONE);
 }
 
-ENCResult ENCConvertStringUtf8ToUtf32(char32_t *dst, unk_t signed *dstSize,
-                                      char8_t const *src, unk_t signed *srcSize)
+ENCResult ENCConvertStringUtf8ToUtf32(char32_t *dst, unk4_t signed *dstSize,
+                                      char8_t const *src,
+                                      unk4_t signed *srcSize)
 {
 	return ENCiConvertStringUtf8ToUtf32(dst, dstSize, src, srcSize,
 	                                    ENC_BREAK_TYPE_NONE);
 }
 
-ENCResult ENCConvertStringUtf16ToUtf8(char8_t *dst, unk_t signed *dstSize,
+ENCResult ENCConvertStringUtf16ToUtf8(char8_t *dst, unk4_t signed *dstSize,
                                       char16_t const *src,
-                                      unk_t signed *srcSize)
+                                      unk4_t signed *srcSize)
 {
 	return ENCiConvertStringUtf16ToUtf8(dst, dstSize, src, srcSize,
 	                                    ENC_BREAK_TYPE_NONE);
 }
 
-ENCResult ENCConvertStringUtf8ToUtf16(char16_t *dst, unk_t signed *dstSize,
-                                      char8_t const *src, unk_t signed *srcSize)
+ENCResult ENCConvertStringUtf8ToUtf16(char16_t *dst, unk4_t signed *dstSize,
+                                      char8_t const *src,
+                                      unk4_t signed *srcSize)
 {
 	return ENCiConvertStringUtf8ToUtf16(dst, dstSize, src, srcSize,
 	                                    ENC_BREAK_TYPE_NONE);
 }
 
-ENCResult ENCConvertStringUtf16ToUtf16(char16_t *dst, unk_t signed *dstSize,
+ENCResult ENCConvertStringUtf16ToUtf16(char16_t *dst, unk4_t signed *dstSize,
                                        char16_t const *src,
-                                       unk_t signed *srcSize)
+                                       unk4_t signed *srcSize)
 {
 	return ENCiConvertStringUtf16ToUtf16(dst, dstSize, src, srcSize,
 	                                     ENC_BREAK_TYPE_NONE, nullptr);
 }
 
-ENCResult ENCConvertStringUtf16LEToUtf16BE(char16_t *dst, unk_t signed *dstSize,
+ENCResult ENCConvertStringUtf16LEToUtf16BE(char16_t *dst,
+                                           unk4_t signed *dstSize,
                                            char16_t const *src,
-                                           unk_t signed *srcSize)
+                                           unk4_t signed *srcSize)
 {
 	ENCEndianness endianness = ENC_LITTLE_ENDIAN;
 
@@ -161,22 +163,21 @@ ENCResult ENCConvertStringUtf16LEToUtf16BE(char16_t *dst, unk_t signed *dstSize,
 	                                     ENC_BREAK_TYPE_NONE, &endianness);
 }
 
-ENCResult ENCConvertStringUtf7ToUtf16(char16_t *dst, unk_t signed *dstSize,
-                                      unsigned char const *src,
-                                      unk_t signed *srcSize)
+ENCResult ENCConvertStringUtf7ToUtf16(char16_t *dst, unk4_t signed *dstSize,
+                                      utf7_t const *src, unk4_t signed *srcSize)
 {
-	unk4_t x = 0;
+	ENCState state = {0};
 
 	return ENCiConvertStringUtf7ToUtf16(dst, dstSize, src, srcSize,
-	                                    ENC_BREAK_TYPE_NONE, &x);
+	                                    ENC_BREAK_TYPE_NONE, &state);
 }
 
-ENCResult ENCSetUnicodeBOM(char16_t *dst, unk_t signed dstSize)
+ENCResult ENCSetUnicodeBOM(char16_t *dst, unk4_t signed dstSize)
 {
 	return ENCSetUnicodeBOM16(dst, dstSize);
 }
 
-ENCResult ENCSetUnicodeBOM32(char32_t *dst, unk_t signed dstSize)
+ENCResult ENCSetUnicodeBOM32(char32_t *dst, unk4_t signed dstSize)
 {
 	ENCiRegisterVersion();
 
@@ -188,7 +189,7 @@ ENCResult ENCSetUnicodeBOM32(char32_t *dst, unk_t signed dstSize)
 	return ENC_ESUCCESS;
 }
 
-ENCResult ENCSetUnicodeBOM16(char16_t *dst, unk_t signed dstSize)
+ENCResult ENCSetUnicodeBOM16(char16_t *dst, unk4_t signed dstSize)
 {
 	ENCiRegisterVersion();
 
@@ -200,7 +201,7 @@ ENCResult ENCSetUnicodeBOM16(char16_t *dst, unk_t signed dstSize)
 	return ENC_ESUCCESS;
 }
 
-ENCResult ENCSetUnicodeBOM8(char8_t *dst, unk_t signed dstSize)
+ENCResult ENCSetUnicodeBOM8(char8_t *dst, unk4_t signed dstSize)
 {
 	ENCiRegisterVersion();
 
@@ -214,10 +215,9 @@ ENCResult ENCSetUnicodeBOM8(char8_t *dst, unk_t signed dstSize)
 	return ENC_ESUCCESS;
 }
 
-ENCResult ENCiConvertStringUnicodeToAscii(unsigned char *dst,
-                                          unk_t signed *dstSize,
+ENCResult ENCiConvertStringUnicodeToAscii(ascii_t *dst, unk4_t signed *dstSize,
                                           char16_t const *src,
-                                          unk_t signed *srcSize,
+                                          unk4_t signed *srcSize,
                                           ENCBreakType breakType)
 {
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
@@ -254,9 +254,9 @@ ENCResult ENCiConvertStringUnicodeToAscii(unsigned char *dst,
 	return ret;
 }
 
-ENCResult ENCiConvertStringAsciiToUnicode(char16_t *dst, unk_t signed *dstSize,
-                                          unsigned char const *src,
-                                          unk_t signed *srcSize,
+ENCResult ENCiConvertStringAsciiToUnicode(char16_t *dst, unk4_t signed *dstSize,
+                                          ascii_t const *src,
+                                          unk4_t signed *srcSize,
                                           ENCBreakType breakType)
 {
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
@@ -288,9 +288,9 @@ ENCResult ENCiConvertStringAsciiToUnicode(char16_t *dst, unk_t signed *dstSize,
 	return ret;
 }
 
-ENCResult ENCiConvertStringUtf32ToUtf16(char16_t *dst, unk_t signed *dstSize,
+ENCResult ENCiConvertStringUtf32ToUtf16(char16_t *dst, unk4_t signed *dstSize,
                                         char32_t const *src,
-                                        unk_t signed *srcSize,
+                                        unk4_t signed *srcSize,
                                         ENCBreakType breakType)
 {
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
@@ -350,9 +350,9 @@ ENCResult ENCiConvertStringUtf32ToUtf16(char16_t *dst, unk_t signed *dstSize,
 	return ret;
 }
 
-ENCResult ENCiConvertStringUtf16ToUtf32(char32_t *dst, unk_t signed *dstSize,
+ENCResult ENCiConvertStringUtf16ToUtf32(char32_t *dst, unk4_t signed *dstSize,
                                         char16_t const *src,
-                                        unk_t signed *srcSize,
+                                        unk4_t signed *srcSize,
                                         ENCBreakType breakType)
 {
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
@@ -399,9 +399,9 @@ ENCResult ENCiConvertStringUtf16ToUtf32(char32_t *dst, unk_t signed *dstSize,
 	return ret;
 }
 
-ENCResult ENCiConvertStringUtf32ToUtf8(char8_t *dst, unk_t signed *dstSize,
+ENCResult ENCiConvertStringUtf32ToUtf8(char8_t *dst, unk4_t signed *dstSize,
                                        char32_t const *src,
-                                       unk_t signed *srcSize,
+                                       unk4_t signed *srcSize,
                                        ENCBreakType breakType)
 {
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
@@ -466,9 +466,9 @@ ENCResult ENCiConvertStringUtf32ToUtf8(char8_t *dst, unk_t signed *dstSize,
 	return ret;
 }
 
-ENCResult ENCiConvertStringUtf8ToUtf32(char32_t *dst, unk_t signed *dstSize,
+ENCResult ENCiConvertStringUtf8ToUtf32(char32_t *dst, unk4_t signed *dstSize,
                                        char8_t const *src,
-                                       unk_t signed *srcSize,
+                                       unk4_t signed *srcSize,
                                        ENCBreakType breakType)
 {
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
@@ -541,9 +541,9 @@ ENCResult ENCiConvertStringUtf8ToUtf32(char32_t *dst, unk_t signed *dstSize,
 	return ret;
 }
 
-ENCResult ENCiConvertStringUtf16ToUtf8(char8_t *dst, unk_t signed *dstSize,
+ENCResult ENCiConvertStringUtf16ToUtf8(char8_t *dst, unk4_t signed *dstSize,
                                        char16_t const *src,
-                                       unk_t signed *srcSize,
+                                       unk4_t signed *srcSize,
                                        ENCBreakType breakType)
 {
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
@@ -617,9 +617,9 @@ ENCResult ENCiConvertStringUtf16ToUtf8(char8_t *dst, unk_t signed *dstSize,
 	return ret;
 }
 
-ENCResult ENCiConvertStringUtf8ToUtf16(char16_t *dst, unk_t signed *dstSize,
+ENCResult ENCiConvertStringUtf8ToUtf16(char16_t *dst, unk4_t signed *dstSize,
                                        char8_t const *src,
-                                       unk_t signed *srcSize,
+                                       unk4_t signed *srcSize,
                                        ENCBreakType breakType)
 {
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
@@ -701,10 +701,10 @@ ENCResult ENCiConvertStringUtf8ToUtf16(char16_t *dst, unk_t signed *dstSize,
 	return ret;
 }
 
-ENCResult ENCiConvertStringUtf7ToUtf16(char16_t *dst, unk_t signed *dstSize,
-                                       unsigned char const *src,
-                                       unk_t signed *srcSize,
-                                       ENCBreakType breakType, byte4_t *state)
+ENCResult ENCiConvertStringUtf7ToUtf16(char16_t *dst, unk4_t signed *dstSize,
+                                       utf7_t const *src,
+                                       unk4_t signed *srcSize,
+                                       ENCBreakType breakType, ENCState *state)
 {
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
 		                       srcLimited)
@@ -817,9 +817,9 @@ ENCResult ENCiConvertStringUtf7ToUtf16(char16_t *dst, unk_t signed *dstSize,
 	return ret;
 }
 
-ENCResult ENCiConvertStringUtf16ToUtf16(char16_t *dst, unk_t signed *dstSize,
+ENCResult ENCiConvertStringUtf16ToUtf16(char16_t *dst, unk4_t signed *dstSize,
                                         char16_t const *src,
-                                        unk_t signed *srcSize,
+                                        unk4_t signed *srcSize,
                                         ENCBreakType breakType,
                                         ENCEndianness *endianness)
 {

@@ -9,6 +9,8 @@
 
 #include <decomp.h>
 
+#include "revolution/types.h"
+
 /*******************************************************************************
  * macros
  */
@@ -41,6 +43,14 @@ enum ENCResult_et
 #define ENC_EINVAL		ENC_ERR_BUFFER_INVALID
 #define ENC_EILSEQ		ENC_ERR_SRC_MALFORMED
 };
+
+typedef unk4_t signed ENCState; // akin to mbstate_t
+
+// <uchar.h> lists the Unicode typedefs. As for the rest...
+typedef unsigned char ascii_t; // Plain ASCII (SBCS)
+typedef byte_t utf7_t; // UTF-7 (Stateful)
+typedef byte_t jis_t, full_jis_t[2]; // ISO-2022-JP-EXT (Stateful)
+typedef byte_t sjis_t, full_sjis_t[2]; // Shift_JIS (MBCS)
 
 typedef unk4_t ENCEndianness;
 enum ENCEndianness_et
@@ -94,6 +104,25 @@ ENCResult ENCSetUnicodeBOM(char16_t *dst, unk_t signed dstSize);
 ENCResult ENCSetUnicodeBOM32(char32_t *dst, unk_t signed dstSize);
 ENCResult ENCSetUnicodeBOM16(char16_t *dst, unk_t signed dstSize);
 ENCResult ENCSetUnicodeBOM8(char8_t *dst, unk_t signed dstSize);
+
+/* encjapanese.c */
+
+ENCResult ENCConvertStringSjisToUnicode(char16_t *dst, unk4_t signed *dstSize,
+                                        sjis_t const *src,
+                                        unk4_t signed *srcSize);
+ENCResult ENCConvertStringUnicodeToSjis(sjis_t *dst, unk4_t signed *dstSize,
+                                        char16_t const *src,
+                                        unk4_t signed *srcSize);
+ENCResult ENCConvertStringJisToUnicode(char16_t *dst, unk4_t signed *dstSize,
+                                       jis_t const *src,
+                                       unk4_t signed *srcSize);
+ENCResult ENCConvertStringUnicodeToJis(jis_t *dst, unk4_t signed *dstSize,
+                                       char16_t const *src,
+                                       unk4_t signed *srcSize);
+ENCResult ENCConvertStringJisToSjis(sjis_t *dst, unk4_t signed *dstSize,
+                                    jis_t const *src, unk4_t signed *srcSize);
+ENCResult ENCConvertStringSjisToJis(jis_t *dst, unk4_t signed *dstSize,
+                                    sjis_t const *src, unk4_t signed *srcSize);
 
 #ifdef __cplusplus
 	}

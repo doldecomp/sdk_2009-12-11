@@ -33,14 +33,23 @@
 			(dstStream_) != nullptr, (dstSize_), &(dstLimit_), &(dstValid_),	\
 			(srcStream_) != nullptr, (srcSize_), &(srcLimit_), &(srcLimited_));	\
 																				\
-		if ((ret_) != 0)														\
+		if ((ret_) != ENC_ESUCCESS)												\
 			return (ret_);														\
+	} while (0)
+
+#define COLLECT_MB_STATE(curState_, state_)	\
+	do										\
+	{										\
+		if ((state_))						\
+			(curState_) = *(state_);		\
 	} while (0)
 
 // WARNING: Unsafe for use within loop constructs, single-statement clauses
 #define THROW_AND_QUIT(ret_, err_)	\
-	(ret_) = (err_);				\
-	break;							\
+	{								\
+		(ret_) = (err_);			\
+		break;						\
+	}								\
 									\
 	SWALLOW_SEMICOLON()
 
@@ -50,44 +59,18 @@
 	{												\
 		/* unsafe for single-statement clause */	\
 													\
-		THROW_AND_QUIT(ret_, -1);					\
+		THROW_AND_QUIT(ret_, ENC_ENOSPC);			\
 	}												\
 													\
-	SWALLOW_SEMICOLON()
-
-// WARNING: Unsafe for use within loop constructs, single-statement clauses
-#define CHECK_DST_BREAK_TYPE(dstStream_, dstCnt_, dstLimit_, dstValid_,	\
-							 srcStream_, srcCnt_, breakType_, ret_)		\
-	{ /* forcefully limit scope of dstBrkLen */							\
-		unk_t dstBrkLen = ENCiWriteBreakType(							\
-			dstStream_, sizeof *(dstStream_), breakType_, dstValid_);	\
-																		\
-		if ((dstLimit_) - (dstCnt_) < dstBrkLen && (dstValid_))			\
-		{																\
-			/* unsafe for single-statement clause */					\
-																		\
-			THROW_AND_QUIT(ret_, -1);									\
-		}																\
-																		\
-		(srcStream_) += srcBrkLen;										\
-		(srcCnt_) += srcBrkLen;											\
-		(dstCnt_) += dstBrkLen;											\
-																		\
-		if ((dstValid_))												\
-			(dstStream_) += dstBrkLen;									\
-																		\
-		continue;														\
-	}																	\
-																		\
 	SWALLOW_SEMICOLON()
 
 // WARNING: Unsafe for use within loop constructs, single-statement clauses
 #define CHECK_BREAK_TYPE(dstStream_, dstCnt_, dstLimit_, dstValid_,				\
 						 srcStream_, srcCnt_, srcLimit_, srcLimited_,			\
 						 breakType_, ret_)										\
-	if ((breakType_) > 0)														\
+	if ((breakType_) > ENC_BREAK_TYPE_NONE)										\
 	{																			\
-		unk_t srcBrkLen = ENCiCheckBreakType(									\
+		int srcBrkLen = ENCiCheckBreakType(										\
 			(srcStream_)[0], (srcLimit_) - (srcCnt_) > 1 || !(srcLimited_)		\
 								 ? (srcStream_)[1]								\
 								 : 0);											\
@@ -101,6 +84,32 @@
 		}																		\
 	}																			\
 																				\
+	SWALLOW_SEMICOLON()
+
+// WARNING: Unsafe for use within loop constructs, single-statement clauses
+#define CHECK_DST_BREAK_TYPE(dstStream_, dstCnt_, dstLimit_, dstValid_,	\
+							 srcStream_, srcCnt_, breakType_, ret_)		\
+	{ /* limit scope of dstBrkLen */									\
+		int dstBrkLen = ENCiWriteBreakType(								\
+			dstStream_, sizeof *(dstStream_), breakType_, dstValid_);	\
+																		\
+		if ((dstLimit_) - (dstCnt_) < dstBrkLen && (dstValid_))			\
+		{																\
+			/* unsafe for single-statement clause */					\
+																		\
+			THROW_AND_QUIT(ret_, ENC_ENOSPC);							\
+		}																\
+																		\
+		(srcStream_) += srcBrkLen;										\
+		(srcCnt_) += srcBrkLen;											\
+		(dstCnt_) += dstBrkLen;											\
+																		\
+		if ((dstValid_))												\
+			(dstStream_) += dstBrkLen;									\
+																		\
+		continue;														\
+	}																	\
+																		\
 	SWALLOW_SEMICOLON()
 
 #define COPY_CHAR_AS_IS(char_, dstStream_, dstCnt_, dstValid_, srcStream_,	\
@@ -130,6 +139,13 @@
 		++(dstCnt_);															\
 		++(srcStream_);															\
 		++(srcCnt_);															\
+	} while (0)
+
+#define WRITE_BACK_STATE(state_, curState_)	\
+	do										\
+	{										\
+		if (state_)							\
+			*(state_) = (curState_);		\
 	} while (0)
 
 #define WRITE_BACK_SIZES(srcSize_, srcCnt_, dstSize_, dstCnt_)	\
@@ -230,7 +246,7 @@
 				*(dstSize_) = 0;												\
 																				\
 			*(srcSize_) = 0;													\
-			return -4;															\
+			return ENC_EILSEQ;													\
 		}																		\
 	} while (0)
 
@@ -254,7 +270,127 @@
 				*(dstSize_) = 0;												\
 																				\
 			*(srcSize_) = 0;													\
-			return -4;															\
+			return ENC_EILSEQ;													\
+		}																		\
+	} while (0)
+
+// JIS/Shift_JIS
+
+// WARNING: Unsafe for use within loop constructs, single-statement clauses
+#define JIS_CHECK_BREAK_TYPE(dstStream_, dstCnt_, dstLimit_, dstValid_,			\
+						 	srcStream_, srcCnt_, srcLimit_, srcLimited_,		\
+						 	breakType_, state_, ret_)							\
+	if ((breakType_) > ENC_BREAK_TYPE_NONE)										\
+	{																			\
+		int srcBrkLen = ENCiCheckBreakType(										\
+			(srcStream_)[0], (srcLimit_) - (srcCnt_) > 1 || !(srcLimited_)		\
+								 ? (srcStream_)[1]								\
+								 : 0);											\
+																				\
+		if (srcBrkLen > 0)														\
+		{																		\
+			/* unsafe for single-statement clause */							\
+																				\
+			JIS_CHECK_DST_BREAK_TYPE(dstStream_, dstCnt_, dstLimit_, dstValid_,	\
+				srcStream_, srcCnt_, breakType_, state_, ret_);					\
+		}																		\
+	}																			\
+																				\
+	SWALLOW_SEMICOLON()
+
+// WARNING: Unsafe for use within loop constructs, single-statement clauses
+#define JIS_CHECK_DST_BREAK_TYPE(dstStream_, dstCnt_, dstLimit_, dstValid_,		\
+								 srcStream_, srcCnt_, breakType_, state_, ret_)	\
+	{ /* limit scope of dstBrkLen */											\
+		int dstBrkLen = ENCiWriteBreakType(										\
+			dstStream_, sizeof *(dstStream_), breakType_, dstValid_);			\
+																				\
+		if ((dstLimit_) - (dstCnt_) < dstBrkLen && (dstValid_))					\
+		{																		\
+			/* unsafe for single-statement clause */							\
+																				\
+			THROW_AND_QUIT(ret_, ENC_ENOSPC);									\
+		}																		\
+																				\
+		/* Notably, there is a state change here. */							\
+		(state_) = ENC_JIS_STATE_ASCII;											\
+																				\
+		(srcStream_) += srcBrkLen;												\
+		(srcCnt_) += srcBrkLen;													\
+		(dstCnt_) += dstBrkLen;													\
+																				\
+		if ((dstValid_))														\
+			(dstStream_) += dstBrkLen;											\
+																				\
+		continue;																\
+	}																			\
+																				\
+	SWALLOW_SEMICOLON()
+
+// WARNING: Unsafe for use within loop constructs, single-statement clauses
+#define JIS_CHECK_ESCAPE_SEQUENCE(state_, srcStream_, srcCnt_, srcLimit_,	\
+								  srcLimited_, escLen_)						\
+	{ /* this block doesn't re-make it safe */								\
+		(escLen_) = ENCiGetEscapeSequence(&(state_), (srcStream_),			\
+			(srcLimit_) - (srcCnt_), (srcLimited_));						\
+																			\
+		if ((escLen_) < 0)													\
+			break;															\
+																			\
+		if ((escLen_) > 0)													\
+		{																	\
+			(srcStream_) += (escLen_);										\
+			(srcCnt_) += (escLen_);											\
+			continue;														\
+		}																	\
+	}
+
+#define JIS_WRITE_CHAR(mb_, dstStream_, dstCnt_, dstValid_, srcStream_,	\
+					   srcCnt_)											\
+	do																	\
+	{																	\
+		++(srcStream_);													\
+		++(srcCnt_);													\
+		++(dstCnt_);													\
+																		\
+		if (dstValid_)													\
+		{																\
+			*(dstStream_) = (mb_)[0];									\
+			++(dstStream_);												\
+		}																\
+																		\
+		if ((mb_)[1] != 0x00)											\
+		{																\
+			++(dstCnt_);												\
+																		\
+			if (dstValid_)												\
+			{															\
+				*(dstStream_) = (mb_)[1];								\
+				++(dstStream_);											\
+			}															\
+		}																\
+	} while (0)
+
+#define JIS_SAVE_STATE(curState_, prevState_, dstStream_, dstCnt_, dstLimit_,	\
+					   dstValid_, srcCnt_, ret_)								\
+	do																			\
+	{																			\
+		if ((ret_) != ENC_ESUCCESS)												\
+			(curState_) = (prevState_);											\
+																				\
+		if ((curState_) != ENC_JIS_STATE_ASCII && (srcCnt_) > 0)				\
+		{																		\
+			(curState_) = ENC_JIS_STATE_ASCII;									\
+																				\
+			if ((dstValid_) && (dstLimit_) - (dstCnt_) >= 3)					\
+			{																	\
+				*(dstStream_)++ = 0x1B;											\
+				*(dstStream_)++ = 0x28;											\
+				*(dstStream_)++ = 0x42;											\
+			}																	\
+																				\
+			if (!(dstValid_) || (dstLimit_) - (dstCnt_) >= 3)					\
+				(dstCnt_) += 3;													\
 		}																		\
 	} while (0)
 
