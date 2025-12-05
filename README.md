@@ -1,3 +1,9 @@
+# if you are here to grab the bte library and put it in your own decomp please wait until at least february im cleaning it up
+## Or dont i cant stop you but then itll look like shit
+
+---
+
+
 Revolution SDK (Dec. 11, 2009)
 =============
 
