@@ -45,9 +45,9 @@ enum ENCJISState_et
 	 */
 
 	// GZD4 [ESC 02/08 F]
-	ENC_JIS_STATE_ASCII,					// [ESC 02/08 04/02] (Initial state)
-	ENC_JIS_STATE_JIS_X_0201_1976_ROMAN,	// [ESC 02/08 04/10]
-	ENC_JIS_STATE_JIS_X_0201_1976_KANA,		// [ESC 02/08 04/09]
+	ENC_JIS_STATE_US_ASCII,					// [ESC 02/08 04/02] (Initial state)
+	ENC_JIS_STATE_JIS_C6220_1969_RO,		// [ESC 02/08 04/10]
+	ENC_JIS_STATE_JIS_C6220_1969_JP,		// [ESC 02/08 04/09]
 
 	// GZDM4 [ESC 02/04 02/08 F] (See note)
 	ENC_JIS_STATE_JIS_X_0208_1978,			// [ESC 02/04 04/00]
@@ -5312,8 +5312,7 @@ ENCResult ENCConvertStringUnicodeToSjis(sjis_t *dst, unk4_t signed *dstSize,
 }
 
 ENCResult ENCConvertStringJisToUnicode(char16_t *dst, unk4_t signed *dstSize,
-                                       jis_t const *src,
-                                       unk4_t signed *srcSize)
+                                       jis_t const *src, unk4_t signed *srcSize)
 {
 	return ENCiConvertStringJisToUnicode(dst, dstSize, src, srcSize,
 	                                     ENC_BREAK_TYPE_NONE, nullptr);
@@ -5372,7 +5371,7 @@ ENCResult ENCiConvertStringSjisToUnicode(char16_t *dst, unk4_t signed *dstSize,
 		{
 			if (srcLimit - srcCnt < 2 && srcLimited)
 				break;
-			
+
 			++src;
 			sjis_t cur2 = *src;
 
@@ -5408,37 +5407,25 @@ ENCResult ENCiConvertStringSjisToUnicode(char16_t *dst, unk4_t signed *dstSize,
 			{
 				THROW_AND_QUIT(ret, ENC_EILSEQ);
 			}
-			
+
 			++srcCnt;
 		}
 		else
 		{
 			if (cur <= 0x80)
-			{
 				c16 = cur;
-			}
 			else if (cur == 0xA0)
-			{
 				c16 = 0xF8F0;
-			}
 			else if (cur < 0xE0)
-			{
 				c16 = 0xFEC0 + cur;
-			}
 			else if (cur >= 0xFD)
-			{
 				c16 = 0xF7F4 + cur;
-			}
 			else
-			{
 				THROW_AND_QUIT(ret, ENC_EILSEQ);
-			}
 		}
 
 		if (!c16)
-		{
 			THROW_AND_QUIT(ret, ENC_E2);
-		}
 
 		COPY_CHAR_AS_IS(c16, dst, dstCnt, dstValid, src, srcCnt);
 	}
@@ -5469,7 +5456,7 @@ ENCResult ENCiConvertStringUnicodeToSjis(sjis_t *dst, unk4_t signed *dstSize,
 	while (*src && (srcCnt < srcLimit || !srcLimited))
 	{
 		char16_t cur = *src;
-		
+
 		CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, ret);
 
 		CHECK_BREAK_TYPE(dst, dstCnt, dstLimit, dstValid, src, srcCnt, srcLimit,
@@ -5477,7 +5464,7 @@ ENCResult ENCiConvertStringUnicodeToSjis(sjis_t *dst, unk4_t signed *dstSize,
 
 		full_sjis_t mb;
 		ENCiConvertUnicodeToSjis(mb, cur);
-		
+
 		sjis_t b1 = mb[0];
 		sjis_t b2 = mb[1];
 
@@ -5486,7 +5473,7 @@ ENCResult ENCiConvertStringUnicodeToSjis(sjis_t *dst, unk4_t signed *dstSize,
 			ret = ENC_E2;
 			break;
 		}
-		
+
 		if (!b2)
 		{
 			if (dstValid)
@@ -5495,26 +5482,21 @@ ENCResult ENCiConvertStringUnicodeToSjis(sjis_t *dst, unk4_t signed *dstSize,
 				++dst;
 			}
 		}
+		else if (dstValid)
+		{
+			if (dstLimit - dstCnt < 2)
+				THROW_AND_QUIT(ret, ENC_ENOSPC);
+
+			*dst = b1;
+			++dst;
+			*dst = b2;
+			++dst;
+
+			++dstCnt;
+		}
 		else
 		{
-			if (dstValid)
-			{
-				if (dstLimit - dstCnt < 2)
-				{
-					THROW_AND_QUIT(ret, ENC_ENOSPC);
-				}
-				
-				*dst = b1;
-				++dst;
-				*dst = b2;
-				++dst;
-
-				++dstCnt;
-			}
-			else
-			{
-				++dstCnt;
-			}
+			++dstCnt;
 		}
 
 		++dstCnt;
@@ -5532,7 +5514,7 @@ ENCResult ENCiConvertStringJisToSjis(sjis_t *dst, unk4_t signed *dstSize,
                                      jis_t const *src, unk4_t signed *srcSize,
                                      ENCBreakType breakType, ENCState *state)
 {
-	ENCJISState curState = ENC_JIS_STATE_ASCII;
+	ENCJISState curState = ENC_JIS_STATE_US_ASCII;
 
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
 	                       srcLimited)
@@ -5550,12 +5532,12 @@ ENCResult ENCiConvertStringJisToSjis(sjis_t *dst, unk4_t signed *dstSize,
 	{
 		int escLen = 0;
 
-		JIS_CHECK_ESCAPE_SEQUENCE(curState, src, srcCnt, srcLimit,
-										  srcLimited, escLen);
+		JIS_CHECK_ESCAPE_SEQUENCE(curState, src, srcCnt, srcLimit, srcLimited,
+		                          escLen);
 
 		JIS_CHECK_BREAK_TYPE(dst, dstCnt, dstLimit, dstValid, src, srcCnt,
 		                     srcLimit, srcLimited, breakType, curState, ret);
- 
+
 		CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, ret);
 
 		jis_t cur = *src;
@@ -5563,7 +5545,7 @@ ENCResult ENCiConvertStringJisToSjis(sjis_t *dst, unk4_t signed *dstSize,
 		if (cur < 0x20)
 		{
 			if (cur == '\n' || cur == '\r')
-				curState = ENC_JIS_STATE_ASCII;
+				curState = ENC_JIS_STATE_US_ASCII;
 
 			if (dstValid)
 				*dst++ = cur;
@@ -5572,14 +5554,14 @@ ENCResult ENCiConvertStringJisToSjis(sjis_t *dst, unk4_t signed *dstSize,
 		{
 			switch (curState)
 			{
-			case ENC_JIS_STATE_ASCII:
-			case ENC_JIS_STATE_JIS_X_0201_1976_ROMAN:
+			case ENC_JIS_STATE_US_ASCII:
+			case ENC_JIS_STATE_JIS_C6220_1969_RO:
 				if (cur >= 0x80)
 				{
 					ret = ENC_EILSEQ;
 					break;
 				}
-				
+
 				if (dstValid)
 				{
 					*dst = cur;
@@ -5588,7 +5570,7 @@ ENCResult ENCiConvertStringJisToSjis(sjis_t *dst, unk4_t signed *dstSize,
 
 				break;
 
-			case ENC_JIS_STATE_JIS_X_0201_1976_KANA:
+			case ENC_JIS_STATE_JIS_C6220_1969_JP:
 				if (cur == 0x20 || cur >= 0x60)
 				{
 					ret = ENC_EILSEQ;
@@ -5607,9 +5589,9 @@ ENCResult ENCiConvertStringJisToSjis(sjis_t *dst, unk4_t signed *dstSize,
 					a = true;
 					break;
 				}
-				
+
 				jis_t cur2 = *++src;
-			
+
 				if (cur == 0x20 || cur > 0x98 || cur2 < 0x21 || cur2 > 0x7E)
 				{
 					ret = ENC_EILSEQ;
@@ -5619,14 +5601,12 @@ ENCResult ENCiConvertStringJisToSjis(sjis_t *dst, unk4_t signed *dstSize,
 				if (dstValid)
 				{
 					if (dstLimit - dstCnt < 2)
-					{
 						THROW_AND_QUIT(ret, ENC_ENOSPC);
-					}
-					
+
 					ENCiConvertKanjiJisToSjis(dst, cur, cur2);
 					dst += 2;
 				}
-			
+
 				++dstCnt;
 				++srcCnt;
 				break;
@@ -5647,7 +5627,6 @@ ENCResult ENCiConvertStringJisToSjis(sjis_t *dst, unk4_t signed *dstSize,
 		++dstCnt;
 		++src;
 		++srcCnt;
-
 	}
 
 	WRITE_BACK_STATE(state, curState);
@@ -5660,8 +5639,8 @@ ENCResult ENCiConvertStringSjisToJis(jis_t *dst, unk4_t signed *dstSize,
                                      sjis_t const *src, unk4_t signed *srcSize,
                                      ENCBreakType breakType, ENCState *state)
 {
-	ENCState curState = ENC_JIS_STATE_ASCII;
-	ENCState prevState = ENC_JIS_STATE_ASCII;
+	ENCState curState = ENC_JIS_STATE_US_ASCII;
+	ENCState prevState = ENC_JIS_STATE_US_ASCII;
 
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
 	                       srcLimited)
@@ -5695,10 +5674,8 @@ ENCResult ENCiConvertStringSjisToJis(jis_t *dst, unk4_t signed *dstSize,
 		int escLen = ENCiSetEscapeSequence(dst, dstLimit - dstCnt, curState,
 		                                   prevState, dstValid);
 		if (escLen < 0)
-		{
 			THROW_AND_QUIT(ret, ENC_ENOSPC);
-		}
-	
+
 		if (dstValid)
 			dst += escLen;
 
@@ -5712,7 +5689,7 @@ ENCResult ENCiConvertStringSjisToJis(jis_t *dst, unk4_t signed *dstSize,
 
 		switch (curState)
 		{
-		case ENC_JIS_STATE_ASCII:
+		case ENC_JIS_STATE_US_ASCII:
 			mb[0] = cur;
 			break;
 
@@ -5727,7 +5704,7 @@ ENCResult ENCiConvertStringSjisToJis(jis_t *dst, unk4_t signed *dstSize,
 
 				break;
 			}
-		
+
 			++src; // Splitting this expression affects regalloc on debug
 			sjis_t cur2 = *src;
 
@@ -5740,24 +5717,22 @@ ENCResult ENCiConvertStringSjisToJis(jis_t *dst, unk4_t signed *dstSize,
 					ENCiConvertSjisKanji3(mb2, cur, cur2);
 
 					if (!mb2[0] || !mb2[1])
-					{
 						THROW_AND_QUIT(ret, ENC_E2);
-					}
-					
+
 					cur = mb2[0];
 					cur2 = mb2[1];
 				}
-				
+
 				ENCiConvertKanjiSjisToJis(mb, cur, cur2);
 			}
 			else
 			{
 				THROW_AND_QUIT(ret, ENC_EILSEQ);
 			}
-			
+
 			++srcCnt;
 		}
-			break;
+		break;
 
 		default:
 		case 0:
@@ -5785,7 +5760,7 @@ ENCResult ENCiConvertStringJisToUnicode(char16_t *dst, unk4_t signed *dstSize,
                                         unk4_t signed *srcSize,
                                         ENCBreakType breakType, ENCState *state)
 {
-	ENCJISState curState = ENC_JIS_STATE_ASCII;
+	ENCJISState curState = ENC_JIS_STATE_US_ASCII;
 
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
 	                       srcLimited)
@@ -5809,8 +5784,8 @@ ENCResult ENCiConvertStringJisToUnicode(char16_t *dst, unk4_t signed *dstSize,
 		JIS_CHECK_BREAK_TYPE(dst, dstCnt, dstLimit, dstValid, src, srcCnt,
 		                     srcLimit, srcLimited, breakType, curState, ret);
 
-		JIS_CHECK_ESCAPE_SEQUENCE(curState, src, srcCnt, srcLimit,
-										  srcLimited, escLen);
+		JIS_CHECK_ESCAPE_SEQUENCE(curState, src, srcCnt, srcLimit, srcLimited,
+		                          escLen);
 
 		CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, ret);
 
@@ -5819,7 +5794,7 @@ ENCResult ENCiConvertStringJisToUnicode(char16_t *dst, unk4_t signed *dstSize,
 		if (cur < 0x20)
 		{
 			if (cur == '\n' || cur == '\r')
-				curState = ENC_JIS_STATE_ASCII;
+				curState = ENC_JIS_STATE_US_ASCII;
 
 			if (dstValid)
 				*dst++ = cur;
@@ -5828,20 +5803,20 @@ ENCResult ENCiConvertStringJisToUnicode(char16_t *dst, unk4_t signed *dstSize,
 		{
 			switch (curState)
 			{
-			case ENC_JIS_STATE_ASCII:
-			case ENC_JIS_STATE_JIS_X_0201_1976_ROMAN:
+			case ENC_JIS_STATE_US_ASCII:
+			case ENC_JIS_STATE_JIS_C6220_1969_RO:
 				if (cur >= 0x80)
 				{
 					ret = ENC_EILSEQ;
 					break;
 				}
-				
+
 				if (dstValid)
 					*dst++ = cur;
 
 				break;
 
-			case ENC_JIS_STATE_JIS_X_0201_1976_KANA:
+			case ENC_JIS_STATE_JIS_C6220_1969_JP:
 				if (cur == 0x20 || cur >= 0x60)
 					ret = ENC_EILSEQ;
 				else if (dstValid)
@@ -5855,9 +5830,9 @@ ENCResult ENCiConvertStringJisToUnicode(char16_t *dst, unk4_t signed *dstSize,
 					a = true;
 					break;
 				}
-				
+
 				jis_t cur2 = *++src;
-			
+
 				if (cur == 0x20 || cur > 0x98 || cur2 < 0x21 || cur2 > 0x7E)
 				{
 					ret = ENC_EILSEQ;
@@ -5939,8 +5914,8 @@ ENCResult ENCiConvertStringUnicodeToJis(jis_t *dst, unk4_t signed *dstSize,
                                         unk4_t signed *srcSize,
                                         ENCBreakType breakType, ENCState *state)
 {
-	ENCState curState = ENC_JIS_STATE_ASCII;
-	ENCState prevState = ENC_JIS_STATE_ASCII;
+	ENCState curState = ENC_JIS_STATE_US_ASCII;
+	ENCState prevState = ENC_JIS_STATE_US_ASCII;
 
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
 	                       srcLimited)
@@ -5962,17 +5937,13 @@ ENCResult ENCiConvertStringUnicodeToJis(jis_t *dst, unk4_t signed *dstSize,
 		prevState = curState;
 
 		if (ENCiGetJisStateFromUnicode(&curState, src) < 0)
-		{
 			THROW_AND_QUIT(ret, ENC_E2);
-		}
 
 		int escLen = ENCiSetEscapeSequence(dst, dstLimit - dstCnt, curState,
 		                                   prevState, dstValid);
 		if (escLen < 0)
-		{
 			THROW_AND_QUIT(ret, ENC_ENOSPC);
-		}
-	
+
 		if (dstValid)
 			dst += escLen;
 
@@ -5988,7 +5959,7 @@ ENCResult ENCiConvertStringUnicodeToJis(jis_t *dst, unk4_t signed *dstSize,
 
 		switch (curState)
 		{
-		case ENC_JIS_STATE_ASCII:
+		case ENC_JIS_STATE_US_ASCII:
 			if (dstValid)
 			{
 				if (cur < 0x80)
@@ -6005,7 +5976,7 @@ ENCResult ENCiConvertStringUnicodeToJis(jis_t *dst, unk4_t signed *dstSize,
 		{
 			full_sjis_t mb2;
 			ENCiConvertUnicodeToSjis(mb2, cur);
-			
+
 			sjis_t b1 = mb2[0];
 			sjis_t b2 = mb2[1];
 
@@ -6014,34 +5985,32 @@ ENCResult ENCiConvertStringUnicodeToJis(jis_t *dst, unk4_t signed *dstSize,
 				ret = ENC_E2;
 				break;
 			}
-			
+
 			if (b1 >= 0xA0 && b1 < 0xE0)
 			{
 				byte4_t x = b1 - 0xA1;
 
 				mb[0] = kana_array[x * 2 + 0];
 				mb[1] = kana_array[x * 2 + 1];
-			
+
 				break;
 			}
-			
+
 			if (b1 >= 0xFA)
 			{
 				full_jis_t mb;
 				ENCiConvertSjisKanji3(mb, b1, b2);
 
 				if (!mb[0] || !mb[1])
-				{
 					THROW_AND_QUIT(ret, ENC_E2);
-				}
-				
+
 				b1 = mb[0];
 				b2 = mb[1];
 			}
-			
+
 			ENCiConvertKanjiSjisToJis(mb, b1, b2);
 		}
-			break;
+		break;
 
 		default:
 		case ENC_JIS_STATE_INVALID:
@@ -6051,7 +6020,7 @@ ENCResult ENCiConvertStringUnicodeToJis(jis_t *dst, unk4_t signed *dstSize,
 
 		if (ret != ENC_ESUCCESS)
 			break;
-		
+
 		JIS_WRITE_CHAR(mb, dst, dstCnt, dstValid, src, srcCnt);
 	}
 
@@ -6220,17 +6189,17 @@ static int ENCiGetEscapeSequence(ENCJISState *state, jis_t const *src,
 
 			if (*src == 0x42)
 			{
-				*state = ENC_JIS_STATE_ASCII;
+				*state = ENC_JIS_STATE_US_ASCII;
 				return 3;
 			}
 			else if (*src == 0x4a)
 			{
-				*state = ENC_JIS_STATE_JIS_X_0201_1976_ROMAN;
+				*state = ENC_JIS_STATE_JIS_C6220_1969_RO;
 				return 3;
 			}
 			else if (*src == 0x49)
 			{
-				*state = ENC_JIS_STATE_JIS_X_0201_1976_KANA;
+				*state = ENC_JIS_STATE_JIS_C6220_1969_JP;
 				return 3;
 			}
 			else
@@ -6257,7 +6226,7 @@ static int ENCiSetEscapeSequence(jis_t *dst, unk4_t signed dstLen,
 {
 	switch (curState)
 	{
-	case ENC_JIS_STATE_ASCII:
+	case ENC_JIS_STATE_US_ASCII:
 		if (prevState != curState)
 		{
 			if (dstLen < 4 && valid)
@@ -6278,8 +6247,8 @@ static int ENCiSetEscapeSequence(jis_t *dst, unk4_t signed dstLen,
 
 		break;
 
-	case ENC_JIS_STATE_JIS_X_0201_1976_ROMAN:
-	case ENC_JIS_STATE_JIS_X_0201_1976_KANA:
+	case ENC_JIS_STATE_JIS_C6220_1969_RO:
+	case ENC_JIS_STATE_JIS_C6220_1969_JP:
 		// why are these explicitly not handled?
 		return 0;
 
@@ -6323,14 +6292,14 @@ static int ENCiGetJisStateFromSjis(ENCJISState *state, sjis_t const *src)
 			*state = ENC_JIS_STATE_INVALID;
 			return -1;
 		}
-		
+
 		*state = ENC_JIS_STATE_JIS_X_0208_1983;
 		return 0;
 	}
-	
+
 	if (b < 0x80)
 	{
-		*state = ENC_JIS_STATE_ASCII;
+		*state = ENC_JIS_STATE_US_ASCII;
 		return 0;
 	}
 
@@ -6344,16 +6313,16 @@ static int ENCiGetJisStateFromUnicode(ENCJISState *state, char16_t const *src)
 
 	if (c16 < 0x80 || c16 == 0x203E)
 	{
-		*state = ENC_JIS_STATE_ASCII;
+		*state = ENC_JIS_STATE_US_ASCII;
 		return 0;
 	}
-	
+
 	if (c16 == 0x80 || (c16 >= 0xE000 && c16 < 0xF900))
 	{
 		*state = ENC_JIS_STATE_INVALID;
 		return -1;
 	}
-	
+
 	if (c16 < 0x100)
 	{
 		full_sjis_t mb;
@@ -6364,10 +6333,10 @@ static int ENCiGetJisStateFromUnicode(ENCJISState *state, char16_t const *src)
 			*state = ENC_JIS_STATE_INVALID;
 			return -1;
 		}
-		
+
 		if (!mb[1])
 		{
-			*state = ENC_JIS_STATE_ASCII;
+			*state = ENC_JIS_STATE_US_ASCII;
 			return 0;
 		}
 
@@ -6442,7 +6411,7 @@ static void ENCiConvertSjisKanji3(jis_t *dst, sjis_t b1, sjis_t b2)
 	}
 
 	dst[0] = b2 < 0x5C ? b1 - 0x0E : b1 - 0x0D;
-	
+
 	if (b2 < 0x7F)
 		dst[1] = b2 < 0x5C ? b2 + 0xA1 : b2 - 0x1C;
 	else

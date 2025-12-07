@@ -158,6 +158,30 @@
 			*(dstSize_) = (dstCnt_);							\
 	} while (0)
 
+// Trampolines
+
+#define DEFINE_PUBLIC_ENC_TRAMPOLINE_VIA(srcEnc_, srcChar_, dstEnc_, dstChar_,	\
+										 viaEnc_)								\
+	ENCResult ENCConvertString ## srcEnc_ ## To ## dstEnc_(						\
+		dstChar_ *dst, unk4_t signed *dstSize, srcChar_ const *src,				\
+		unk4_t signed *srcSize)													\
+	{																			\
+		return ENCiConvertString ## viaEnc_ ## To ## dstEnc_(					\
+			dst, dstSize, src, srcSize, ENC_BREAK_TYPE_NONE);					\
+	}
+
+#define DEFINE_PUBLIC_ENC_TRAMPOLINE(srcEnc_, srcChar_, dstEnc_, dstChar_)	\
+	DEFINE_PUBLIC_ENC_TRAMPOLINE_VIA(srcEnc_, srcChar_, dstEnc_, dstChar_, srcEnc_)
+
+#define DEFINE_PUBLIC_ENC_TRAMPOLINE_TO_UTF16_VIA(srcEnc_, srcChar_, viaEnc_)	\
+	DEFINE_PUBLIC_ENC_TRAMPOLINE_VIA(srcEnc_, srcChar_, Unicode, char16_t, viaEnc_)
+
+#define DEFINE_PUBLIC_ENC_TRAMPOLINE_TO_UTF16(srcEnc_, srcChar_)	\
+	DEFINE_PUBLIC_ENC_TRAMPOLINE_VIA(srcEnc_, srcChar_, Unicode, char16_t, srcEnc_)
+
+#define DEFINE_PUBLIC_ENC_TRAMPOLINE_FROM_UTF16(dstEnc_, dstChar)	\
+	DEFINE_PUBLIC_ENC_TRAMPOLINE_VIA(Unicode, char16_t, dstEnc_, dstChar, Unicode)
+
 // ASCII
 
 #define IS_ASCII(x)						((x) < 0x80)
@@ -313,7 +337,7 @@
 		}																		\
 																				\
 		/* Notably, there is a state change here. */							\
-		(state_) = ENC_JIS_STATE_ASCII;											\
+		(state_) = ENC_JIS_STATE_US_ASCII;										\
 																				\
 		(srcStream_) += srcBrkLen;												\
 		(srcCnt_) += srcBrkLen;													\
@@ -378,9 +402,9 @@
 		if ((ret_) != ENC_ESUCCESS)												\
 			(curState_) = (prevState_);											\
 																				\
-		if ((curState_) != ENC_JIS_STATE_ASCII && (srcCnt_) > 0)				\
+		if ((curState_) != ENC_JIS_STATE_US_ASCII && (srcCnt_) > 0)				\
 		{																		\
-			(curState_) = ENC_JIS_STATE_ASCII;									\
+			(curState_) = ENC_JIS_STATE_US_ASCII;								\
 																				\
 			if ((dstValid_) && (dstLimit_) - (dstCnt_) >= 3)					\
 			{																	\

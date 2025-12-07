@@ -124,6 +124,84 @@ ENCResult ENCConvertStringJisToSjis(sjis_t *dst, unk4_t signed *dstSize,
 ENCResult ENCConvertStringSjisToJis(jis_t *dst, unk4_t signed *dstSize,
                                     sjis_t const *src, unk4_t signed *srcSize);
 
+/* enclatin.h */
+
+ENCResult ENCConvertStringLatin1ToUnicode(char16_t *dst, unk4_t signed *dstSize,
+                                          unsigned char const *src,
+                                          unk4_t signed *srcSize);
+ENCResult ENCConvertStringUnicodeToLatin1(unsigned char *dst,
+                                          unk4_t signed *dstSize,
+                                          char16_t const *src,
+                                          unk4_t signed *srcSize);
+ENCResult ENCConvertStringLatin2ToUnicode(char16_t *dst, unk4_t signed *dstSize,
+                                          unsigned char const *src,
+                                          unk4_t signed *srcSize);
+ENCResult ENCConvertStringUnicodeToLatin2(unsigned char *dst,
+                                          unk4_t signed *dstSize,
+                                          char16_t const *src,
+                                          unk4_t signed *srcSize);
+ENCResult ENCConvertStringLatin3ToUnicode(char16_t *dst, unk4_t signed *dstSize,
+                                          unsigned char const *src,
+                                          unk4_t signed *srcSize);
+ENCResult ENCConvertStringUnicodeToLatin3(unsigned char *dst,
+                                          unk4_t signed *dstSize,
+                                          char16_t const *src,
+                                          unk4_t signed *srcSize);
+ENCResult ENCConvertStringGreekToUnicode(char16_t *dst, unk4_t signed *dstSize,
+                                         unsigned char const *src,
+                                         unk4_t signed *srcSize);
+ENCResult ENCConvertStringUnicodeToGreek(unsigned char *dst,
+                                         unk4_t signed *dstSize,
+                                         char16_t const *src,
+                                         unk4_t signed *srcSize);
+ENCResult ENCConvertStringLatin6ToUnicode(char16_t *dst, unk4_t signed *dstSize,
+                                          unsigned char const *src,
+                                          unk4_t signed *srcSize);
+ENCResult ENCConvertStringUnicodeToLatin6(unsigned char *dst,
+                                          unk4_t signed *dstSize,
+                                          char16_t const *src,
+                                          unk4_t signed *srcSize);
+ENCResult ENCConvertStringLatin9ToUnicode(char16_t *dst, unk4_t signed *dstSize,
+                                          unsigned char const *src,
+                                          unk4_t signed *srcSize);
+ENCResult ENCConvertStringUnicodeToLatin9(unsigned char *dst,
+                                          unk4_t signed *dstSize,
+                                          char16_t const *src,
+                                          unk4_t signed *srcSize);
+ENCResult ENCConvertStringWin1252ToUnicode(char16_t *dst,
+                                           unk4_t signed *dstSize,
+                                           unsigned char const *src,
+                                           unk4_t signed *srcSize);
+ENCResult ENCConvertStringUnicodeToWin1252(unsigned char *dst,
+                                           unk4_t signed *dstSize,
+                                           char16_t const *src,
+                                           unk4_t signed *srcSize);
+ENCResult ENCConvertStringWin1250ToUnicode(char16_t *dst,
+                                           unk4_t signed *dstSize,
+                                           unsigned char const *src,
+                                           unk4_t signed *srcSize);
+ENCResult ENCConvertStringWin1253ToUnicode(char16_t *dst,
+                                           unk4_t signed *dstSize,
+                                           unsigned char const *src,
+                                           unk4_t signed *srcSize);
+ENCResult ENCConvertStringMacromanToUnicode(char16_t *dst,
+                                            unk4_t signed *dstSize,
+                                            unsigned char const *src,
+                                            unk4_t signed *srcSize);
+ENCResult ENCConvertStringMacgreekToUnicode(char16_t *dst,
+                                            unk4_t signed *dstSize,
+                                            unsigned char const *src,
+                                            unk4_t signed *srcSize);
+ENCResult ENCConvertStringMacceToUnicode(char16_t *dst, unk4_t signed *dstSize,
+                                         unsigned char const *src,
+                                         unk4_t signed *srcSize);
+ENCResult ENCConvertStringIbm850ToUnicode(char16_t *dst, unk4_t signed *dstSize,
+                                          unsigned char const *src,
+                                          unk4_t signed *srcSize);
+ENCResult ENCConvertStringIbm852ToUnicode(char16_t *dst, unk4_t signed *dstSize,
+                                          unsigned char const *src,
+                                          unk4_t signed *srcSize);
+
 #ifdef __cplusplus
 	}
 #endif
