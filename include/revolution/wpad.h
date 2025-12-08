@@ -398,7 +398,7 @@ typedef void WPADConnectCallback(WPADChannel chan, s32 result);
 typedef void WPADExtensionCallback(WPADChannel chan, s32 devType);
 
 typedef void WPADSyncDeviceCallback(s32, s32);
-typedef void WPADSimpleSyncCallback(s32, s32);
+typedef void WPADSimpleSyncCallback(s32 result, s32 num);
 typedef void WPADClearDeviceCallback(int);
 
 // [SGLEA4]/GormitiDebug.elf:.debug_info::0x79f49

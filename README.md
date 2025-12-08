@@ -1,7 +1,7 @@
 Revolution SDK (Dec. 11, 2009)
 =============
 
-A work-in-progress decompilation of the December 11, 2009 version of the Revolution SDK.
+A work-in-progress decompilation of the December 11, 2009 version of the Revolution SDK, and the February 24, 2010 version of the Home Button Menu library.
 
 This repository does not contain any of the original objects. An existing copy of the game [`[SC5PGN]`](https://wiki.dolphin-emu.org/index.php?title=SC5PGN) *Challenge Me: Word Puzzles* is required. (See [Building](#building) below.)
 

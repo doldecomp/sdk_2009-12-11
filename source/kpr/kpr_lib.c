@@ -8,6 +8,7 @@
 
 #include <macros.h> // ARRAY_LENGTH
 
+#include "buildstamp.h"
 #include <revolution/types.h>
 
 #if 0
@@ -16,8 +17,6 @@
 #else
 #include <context_rvl.h>
 #endif
-
-#include "buildstamp.h" // RVL_SDK_LIB_VERSION_STRING
 
 /*******************************************************************************
  * macros

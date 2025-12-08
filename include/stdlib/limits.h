@@ -5,4 +5,6 @@
 
 #define ULONG_MAX 0xfffffffful
 
+#define LONG_MIN (-0x80000000l)
+
 #endif // __STDC_LIMITS_H__

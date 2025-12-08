@@ -1,0 +1,21 @@
+#ifndef __STDCXX_CSTRING__
+#define __STDCXX_CSTRING__
+
+#include <__internal/__size_t.h>
+
+namespace std
+{
+	extern "C" void *(memcpy)(void *s1, const void *s2, ::std::size_t n) throw();
+	extern "C" char *(strcpy)(char *s1, const char *s2) throw();
+	extern "C" char *(strncpy)(char *s1, const char *s2, ::std::size_t n) throw();
+
+	extern "C" char *(strcat)(char *s1, const char *s2) throw();
+
+	extern "C" int (strcmp)(const char *s1, const char *s2) throw();
+	extern "C" int (strncmp)(const char *s1, const char *s2, ::std::size_t n) throw();
+
+	extern "C" void *(memset)(void *s, int c, ::std::size_t n) throw();
+	extern "C" ::std::size_t (strlen)(const char *s) throw();
+} // namespace std
+
+#endif // __STDCXX_CSTRING__

@@ -15,6 +15,9 @@
 	extern "C" {
 #endif
 
+typedef s16 WENCPCMSample;
+typedef u8 WENCADPCMSample;
+
 // [SPQE7T]/ISpyD.elf:.debug_info::0x29f653
 // [R89JEL]/bin/RVL/Debug/mainD.elf:.debug::0x415e77
 typedef struct /* explicitly untagged */
@@ -26,8 +29,8 @@ typedef struct /* explicitly untagged */
  * functions
  */
 
-s32 WENCGetEncodeData(WENCInfo *info, u32 flag, s16 const *pbyPcmData,
-                      s32 nSampleNum, byte_t *pbyAdpcmData);
+s32 WENCGetEncodeData(WENCInfo *info, u32 flag, WENCPCMSample const *pbyPcmData,
+                      s32 nSampleNum, WENCADPCMSample *pbyAdpcmData);
 
 #ifdef __cplusplus
 	}

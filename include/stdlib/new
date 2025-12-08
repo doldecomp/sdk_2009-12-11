@@ -1,0 +1,10 @@
+#ifndef __STDCXX_NEW__
+#define __STDCXX_NEW__
+
+// IWYU pragma: always_keep
+
+#include <__internal/__size_t.h>
+
+inline void *(operator new)(::std::size_t, void *ptr) throw() { return ptr; }
+
+#endif // __STDCXX_NEW__
