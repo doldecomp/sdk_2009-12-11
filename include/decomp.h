@@ -12,4 +12,7 @@
 
 #define unk_t	unk4_t
 
+#define STRUCT_MEMBER(type_, expr_, offset_)	\
+	(*(__typeof__(type_) *)((unsigned long)(expr_) + (offset_)))
+
 #endif // DECOMP_H

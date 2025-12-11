@@ -19,16 +19,6 @@
 	extern "C" {
 #endif
 
-typedef unk_t ENCBreakType;
-enum ENCBreakType_et
-{
-	ENC_BREAK_TYPE_NONE,
-	ENC_BREAK_TYPE_WINDOWS,
-	ENC_BREAK_TYPE_CLASSIC_MAC_OS,
-	ENC_BREAK_TYPE_UNIX,
-	// Hey do you think anyone uses \n\r? Or maybe ^_? What about \u0085
-};
-
 /*******************************************************************************
  * functions
  */
