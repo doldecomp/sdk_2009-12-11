@@ -179,8 +179,11 @@
 #define DEFINE_PUBLIC_ENC_TRAMPOLINE_TO_UTF16(srcEnc_, srcChar_)	\
 	DEFINE_PUBLIC_ENC_TRAMPOLINE_VIA(srcEnc_, srcChar_, Unicode, char16_t, srcEnc_)
 
-#define DEFINE_PUBLIC_ENC_TRAMPOLINE_FROM_UTF16(dstEnc_, dstChar)	\
-	DEFINE_PUBLIC_ENC_TRAMPOLINE_VIA(Unicode, char16_t, dstEnc_, dstChar, Unicode)
+#define DEFINE_PUBLIC_ENC_TRAMPOLINE_FROM_UTF16_VIA(dstEnc_, dstChar_, viaEnc_)	\
+	DEFINE_PUBLIC_ENC_TRAMPOLINE_VIA(Unicode, char16_t, dstEnc_, dstChar_, viaEnc_)
+
+#define DEFINE_PUBLIC_ENC_TRAMPOLINE_FROM_UTF16(dstEnc_, dstChar_)	\
+	DEFINE_PUBLIC_ENC_TRAMPOLINE_VIA(Unicode, char16_t, dstEnc_, dstChar_, Unicode)
 
 // ASCII
 
