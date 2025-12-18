@@ -492,7 +492,7 @@ config.libs = [
             Object(DebugMatching, ReleaseMatching, "enc/enclatin.c", shift_jis = False, extra_cflags = ["-enc UTF-8"]),
             Object(DebugMatching, ReleaseMatching, "enc/encconvert.c", shift_jis = False, extra_cflags = ["-enc UTF-8"]),
             Object(DebugMatching, ReleaseMatching, "enc/encchinese.c", shift_jis = False, extra_cflags = ["-enc UTF-8"]),
-            Object(DebugNonMatching, ReleaseNonMatching, "enc/enckorean.c", shift_jis = False, extra_cflags = ["-enc UTF-8"]),
+            Object(DebugMatching, ReleaseMatching, "enc/enckorean.c", shift_jis = False, extra_cflags = ["-enc UTF-8"]),
         ],
     ),
     RvlLib(
