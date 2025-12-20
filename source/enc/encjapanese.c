@@ -11,78 +11,162 @@
 #include <revolution/types.h>
 
 #include <revolution/enc.h>
-#include "encutility.h"
 #include "encmacros.h"
+#include "encutility.h"
 
 /*******************************************************************************
  * macros
  */
 
-#undef NULL
-#define NULL	((void *)(0))
+// WARNING: Unsafe for use within nested loop constructs, single-statement clauses
+#define UNSAFE_JIS_CHECK_BREAK_TYPE(dstStream_, dstCnt_, dstLimit_, dstValid_,	\
+									srcStream_, srcCnt_, srcLimit_,				\
+									srcLimited_, breakType_, mbState_, ret_)	\
+	if ((breakType_) > ENC_BR_KEEP)												\
+	{																			\
+		int srcBrkLen = ENCiCheckBreakType(										\
+			(*(srcStream_))[0], (srcLimit_) - *(srcCnt_) > 1 || !(srcLimited_)	\
+								 ? (*(srcStream_))[1]							\
+								 : 0);											\
+																				\
+		if (srcBrkLen > 0)														\
+		{																		\
+			UNSAFE_JIS_CHECK_DST_BREAK_TYPE(dstStream_, dstCnt_, dstLimit_,		\
+											dstValid_, srcStream_, srcCnt_,		\
+											breakType_, mbState_, ret_);		\
+		}																		\
+	}																			\
+																				\
+	SWALLOW_SEMICOLON()
 
-/*******************************************************************************
- * types
- */
+// WARNING: Unsafe for use within nested loop constructs, single-statement clauses
+#define UNSAFE_JIS_CHECK_DST_BREAK_TYPE(dstStream_, dstCnt_, dstLimit_,		\
+										dstValid_, srcStream_, srcCnt_,		\
+										breakType_, mbState_, ret_)			\
+	{ /* limit scope of dstBrkLen */										\
+		int dstBrkLen = ENCiWriteBreakType(									\
+			*(dstStream_), sizeof **(dstStream_), breakType_, dstValid_);	\
+																			\
+		if ((dstLimit_) - *(dstCnt_) < dstBrkLen && (dstValid_))			\
+		{																	\
+			UNSAFE_THROW_AND_QUIT(ret_, ENC_ENOBUFS);						\
+		}																	\
+																			\
+		/* Notably, there is additionally a state change here. */			\
+		*(mbState_) = ENC_JIS_STATE_US_ASCII;								\
+																			\
+		*(srcStream_) += srcBrkLen;											\
+		*(srcCnt_) += srcBrkLen;											\
+		*(dstCnt_) += dstBrkLen;											\
+																			\
+		if (dstValid_)														\
+			*(dstStream_) += dstBrkLen;										\
+																			\
+		continue;															\
+	}																		\
+																			\
+	SWALLOW_SEMICOLON()
 
-/* TODO: should these be in the public header, private header, or here? I will
- * keep it here for now.
- */
-typedef ENCState ENCJISState;
-enum ENCJISState_et
-{
-	ENC_JIS_STATE_INVALID,					// Malformed escape sequence
+// WARNING: Unsafe for use within nested loop constructs, single-statement clauses
+#define UNSAFE_JIS_CHECK_ESCAPE_SEQUENCE(mbState_, srcStream_, srcCnt_,			\
+										 srcLimit_, srcLimited_, escLen_)		\
+	{ /* this block doesn't re-make it safe */									\
+		*(escLen_) = ENCiGetEscapeSequence(										\
+			mbState_, *(srcStream_), (srcLimit_) - *(srcCnt_), srcLimited_);	\
+																				\
+		if (*(escLen_) < 0)														\
+			break;																\
+																				\
+		if (*(escLen_) > 0)														\
+		{																		\
+			*(srcStream_) += *(escLen_);										\
+			*(srcCnt_) += *(escLen_);											\
+			continue;															\
+		}																		\
+	}																			\
+																				\
+	SWALLOW_SEMICOLON()
 
-	/* Different character sets are switched between using ISO/IEC 2022 escape
-	 * sequences. There is a list of character sets that have been registered
-	 * with ISO for these escape sequences, and each is given its own sequences
-	 * to switch to them.
-	 *
-	 * N.B. d/d is the high and low nibbles of a byte, each in decimal, so 14/09
-	 * is the byte 0xe9.
-	 *
-	 * https://en.wikipedia.org/wiki/ISO/IEC_2022#Character_set_designations
-	 */
+#define JIS_WRITE_CHAR(mb_, dstStream_, dstCnt_, dstValid_, srcStream_,	\
+					   srcCnt_)											\
+	do																	\
+	{																	\
+		++*(srcStream_);												\
+		++*(srcCnt_);													\
+		++*(dstCnt_);													\
+																		\
+		if (dstValid_)													\
+		{																\
+			**(dstStream_) = (mb_)[0];									\
+			++*(dstStream_);											\
+		}																\
+																		\
+		if ((mb_)[1] != 0x00)											\
+		{																\
+			++*(dstCnt_);												\
+																		\
+			if (dstValid_)												\
+			{															\
+				**(dstStream_) = (mb_)[1];								\
+				++*(dstStream_);										\
+			}															\
+		}																\
+	} while (0)
 
-	// GZD4 [ESC 02/08 F]
-	ENC_JIS_STATE_US_ASCII,					// [ESC 02/08 04/02] (Initial state)
-	ENC_JIS_STATE_JIS_C6220_1969_RO,		// [ESC 02/08 04/10]
-	ENC_JIS_STATE_JIS_C6220_1969_JP,		// [ESC 02/08 04/09]
+#define JIS_GET_MB_STATE(curMbState_, mbState_)	\
+	do											\
+	{											\
+		if (mbState_)							\
+			*(curMbState_) = *(mbState_);		\
+	} while (0)
 
-	// GZDM4 [ESC 02/04 02/08 F] (See note)
-	ENC_JIS_STATE_JIS_X_0208_1978,			// [ESC 02/04 04/00]
-	ENC_JIS_STATE_JIS_X_0208_1983,			// [ESC 02/04 04/02]
-	ENC_JIS_STATE_JIS_X_0212_1990,			// [ESC 02/04 04/04] (See note)
+#define JIS_SAVE_STATE(curMbState_, prevMbState_, dstStream_, dstCnt_,	\
+					   dstLimit_, dstValid_, srcCnt_, ret_)				\
+	do																	\
+	{																	\
+		if ((ret_) != ENC_ESUCCESS)										\
+			*(curMbState_) = (prevMbState_);							\
+																		\
+		if (*(curMbState_) != ENC_JIS_STATE_US_ASCII && (srcCnt_) > 0)	\
+		{																\
+			*(curMbState_) = ENC_JIS_STATE_US_ASCII;					\
+																		\
+			if ((dstValid_) && (dstLimit_) - *(dstCnt_) >= 3)			\
+			{															\
+				*(*(dstStream_))++ = '\x1b';							\
+				*(*(dstStream_))++ = 0x28;								\
+				*(*(dstStream_))++ = 0x42;								\
+			}															\
+																		\
+			if (!(dstValid_) || (dstLimit_) - *(dstCnt_) >= 3)			\
+				*(dstCnt_) += 3;										\
+		}																\
+	} while (0)
 
-	/* NOTE: For GZDM4, the normal escape sequence is [ESC 02/04 02/08 F].
-	 * However, for backward compatibility with earlier standards that already
-	 * registered character sets at [ESC 02/04 F], this form is permitted, but
-	 * only when F is 04/00, 04/01, or 04/02. Note that JIS X 0208:1978 and
-	 * JIS X 0208:1983 are two of these exceptions, but that JIS X 0212:1990 is
-	 * *not*. (The last one, 04/01, is GB-2312-80.) It can only be switched to
-	 * via [ESC 02/04 02/08 04/04]. Why handling for this incorrect escape
-	 * sequence is included, I do not know. (Perhaps someone saw the other
-	 * states using only 3 byte sequences and extrapolated that to this one?)
-	 */
-};
+#define JIS_WRITE_BACK_STATE(mbState_, curMbState_)	\
+	do												\
+	{												\
+		if (mbState_)								\
+			*(mbState_) = (curMbState_);			\
+	} while (0)
 
 /*******************************************************************************
  * local function declarations
  */
 
-static void ENCiConvertUnicodeToSjis(sjis_t *dst, char16_t src);
-static void ENCiFindSjisFromUnicode(sjis_t *dst, char16_t src);
-static void ENCiConvertKanjiJisToSjis(sjis_t *dst, jis_t b1, jis_t b2);
-static void ENCiConvertKanjiSjisToJis(jis_t *dst, sjis_t b1, sjis_t b2);
-static int ENCiGetEscapeSequence(ENCJISState *state, jis_t const *src,
-                                 unk4_t signed srcLen, BOOL limited);
-static int ENCiSetEscapeSequence(jis_t *dst, unk4_t signed dstLen,
-                                 ENCState curState, ENCState prevState,
-                                 BOOL valid);
-static int ENCiGetJisStateFromSjis(ENCJISState *state, sjis_t const *src);
-static int ENCiGetJisStateFromUnicode(ENCJISState *state, char16_t const *src);
-static void ENCiConvertSjisKanji3(jis_t *dst, sjis_t b1, sjis_t b2);
-
+static void ENCiConvertUnicodeToSjis(byte_t *dst, char16_t src);
+static void ENCiFindSjisFromUnicode(byte_t *dst, char16_t src);
+static void ENCiConvertKanjiJisToSjis(byte_t *dst, byte_t src1, byte_t src2);
+static void ENCiConvertKanjiSjisToJis(byte_t *dst, byte_t src1, byte_t src2);
+static int ENCiGetEscapeSequence(ENCJISState *mbState, byte_t const *src,
+                                 s32 srcLen, BOOL limited);
+static int ENCiSetEscapeSequence(byte_t *dst, s32 dstLen,
+                                 ENCJISState curMbState,
+                                 ENCJISState prevMbState, BOOL valid);
+static int ENCiGetJisStateFromSjis(ENCJISState *mbState, byte_t const *src);
+static int ENCiGetJisStateFromUnicode(ENCJISState *mbState,
+                                      char16_t const *src);
+static void ENCiConvertSjisKanji3(byte_t *dst, byte_t src1, byte_t src2);
 
 /*******************************************************************************
  * variables
@@ -118,49 +202,49 @@ ATTR_WEAK char16_t const enc_tbl_jp_mbtowc[] =
 	L'\u25A0', L'\u25B3', L'\u25B2', L'\u25BD',
 	L'\u25BC', L'\u203B', L'\u3012', L'\u2192',
 	L'\u2190', L'\u2191', L'\u2193', L'\u3013',
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
 	L'\0',     L'\0',     L'\0',     L'\u2208',
 	L'\u220B', L'\u2286', L'\u2287', L'\u2282',
-	L'\u2283', L'\u222A', L'\u2229', L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
+	L'\u2283', L'\u222A', L'\u2229', L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
 	L'\0',     L'\0',     L'\0',     L'\u2227',
 	L'\u2228', L'\uFFE2', L'\u21D2', L'\u21D4',
-	L'\u2200', L'\u2203', L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
+	L'\u2200', L'\u2203', L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
 	L'\0',     L'\u2220', L'\u22A5', L'\u2312',
 	L'\u2202', L'\u2207', L'\u2261', L'\u2252',
 	L'\u226A', L'\u226B', L'\u221A', L'\u223D',
 	L'\u221D', L'\u2235', L'\u222B', L'\u222C',
-	L'\0',     L'\0',     L'\0',     L'\0',    
+	L'\0',     L'\0',     L'\0',     L'\0',
 	L'\0',     L'\0',     L'\0',     L'\u212B',
 	L'\u2030', L'\u266F', L'\u266D', L'\u266A',
-	L'\u2020', L'\u2021', L'\u00B6', L'\0',    
+	L'\u2020', L'\u2021', L'\u00B6', L'\0',
 	L'\0',     L'\0',     L'\0',     L'\u25EF',
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
 	L'\0',     L'\0',     L'\0',     L'\uFF10',
 	L'\uFF11', L'\uFF12', L'\uFF13', L'\uFF14',
 	L'\uFF15', L'\uFF16', L'\uFF17', L'\uFF18',
-	L'\uFF19', L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
+	L'\uFF19', L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
 	L'\uFF21', L'\uFF22', L'\uFF23', L'\uFF24',
 	L'\uFF25', L'\uFF26', L'\uFF27', L'\uFF28',
 	L'\uFF29', L'\uFF2A', L'\uFF2B', L'\uFF2C',
 	L'\uFF2D', L'\uFF2E', L'\uFF2F', L'\uFF30',
 	L'\uFF31', L'\uFF32', L'\uFF33', L'\uFF34',
 	L'\uFF35', L'\uFF36', L'\uFF37', L'\uFF38',
-	L'\uFF39', L'\uFF3A', L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
+	L'\uFF39', L'\uFF3A', L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
 	L'\uFF41', L'\uFF42', L'\uFF43', L'\uFF44',
 	L'\uFF45', L'\uFF46', L'\uFF47', L'\uFF48',
 	L'\uFF49', L'\uFF4A', L'\uFF4B', L'\uFF4C',
 	L'\uFF4D', L'\uFF4E', L'\uFF4F', L'\uFF50',
 	L'\uFF51', L'\uFF52', L'\uFF53', L'\uFF54',
 	L'\uFF55', L'\uFF56', L'\uFF57', L'\uFF58',
-	L'\uFF59', L'\uFF5A', L'\0',     L'\0',    
+	L'\uFF59', L'\uFF5A', L'\0',     L'\0',
 	L'\0',     L'\0',     L'\u3041', L'\u3042',
 	L'\u3043', L'\u3044', L'\u3045', L'\u3046',
 	L'\u3047', L'\u3048', L'\u3049', L'\u304A',
@@ -182,9 +266,9 @@ ATTR_WEAK char16_t const enc_tbl_jp_mbtowc[] =
 	L'\u3087', L'\u3088', L'\u3089', L'\u308A',
 	L'\u308B', L'\u308C', L'\u308D', L'\u308E',
 	L'\u308F', L'\u3090', L'\u3091', L'\u3092',
-	L'\u3093', L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
+	L'\u3093', L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
 	L'\u30A1', L'\u30A2', L'\u30A3', L'\u30A4',
 	L'\u30A5', L'\u30A6', L'\u30A7', L'\u30A8',
 	L'\u30A9', L'\u30AA', L'\u30AB', L'\u30AC',
@@ -206,32 +290,32 @@ ATTR_WEAK char16_t const enc_tbl_jp_mbtowc[] =
 	L'\u30E9', L'\u30EA', L'\u30EB', L'\u30EC',
 	L'\u30ED', L'\u30EE', L'\u30EF', L'\u30F0',
 	L'\u30F1', L'\u30F2', L'\u30F3', L'\u30F4',
-	L'\u30F5', L'\u30F6', L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
+	L'\u30F5', L'\u30F6', L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
 	L'\0',     L'\0',     L'\u0391', L'\u0392',
 	L'\u0393', L'\u0394', L'\u0395', L'\u0396',
 	L'\u0397', L'\u0398', L'\u0399', L'\u039A',
 	L'\u039B', L'\u039C', L'\u039D', L'\u039E',
 	L'\u039F', L'\u03A0', L'\u03A1', L'\u03A3',
 	L'\u03A4', L'\u03A5', L'\u03A6', L'\u03A7',
-	L'\u03A8', L'\u03A9', L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
+	L'\u03A8', L'\u03A9', L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
 	L'\0',     L'\0',     L'\u03B1', L'\u03B2',
 	L'\u03B3', L'\u03B4', L'\u03B5', L'\u03B6',
 	L'\u03B7', L'\u03B8', L'\u03B9', L'\u03BA',
 	L'\u03BB', L'\u03BC', L'\u03BD', L'\u03BE',
 	L'\u03BF', L'\u03C0', L'\u03C1', L'\u03C3',
 	L'\u03C4', L'\u03C5', L'\u03C6', L'\u03C7',
-	L'\u03C8', L'\u03C9', L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
+	L'\u03C8', L'\u03C9', L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
 	L'\u0410', L'\u0411', L'\u0412', L'\u0413',
 	L'\u0414', L'\u0415', L'\u0401', L'\u0416',
 	L'\u0417', L'\u0418', L'\u0419', L'\u041A',
@@ -240,10 +324,10 @@ ATTR_WEAK char16_t const enc_tbl_jp_mbtowc[] =
 	L'\u0423', L'\u0424', L'\u0425', L'\u0426',
 	L'\u0427', L'\u0428', L'\u0429', L'\u042A',
 	L'\u042B', L'\u042C', L'\u042D', L'\u042E',
-	L'\u042F', L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
+	L'\u042F', L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
 	L'\u0430', L'\u0431', L'\u0432', L'\u0433',
 	L'\u0434', L'\u0435', L'\u0451', L'\u0436',
 	L'\u0437', L'\u0438', L'\u0439', L'\u043A',
@@ -252,9 +336,9 @@ ATTR_WEAK char16_t const enc_tbl_jp_mbtowc[] =
 	L'\u0443', L'\u0444', L'\u0445', L'\u0446',
 	L'\u0447', L'\u0448', L'\u0449', L'\u044A',
 	L'\u044B', L'\u044C', L'\u044D', L'\u044E',
-	L'\u044F', L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
+	L'\u044F', L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
 	L'\0',     L'\0',     L'\u2500', L'\u2502',
 	L'\u250C', L'\u2510', L'\u2518', L'\u2514',
 	L'\u251C', L'\u252C', L'\u2524', L'\u2534',
@@ -263,116 +347,116 @@ ATTR_WEAK char16_t const enc_tbl_jp_mbtowc[] =
 	L'\u2533', L'\u252B', L'\u253B', L'\u254B',
 	L'\u2520', L'\u252F', L'\u2528', L'\u2537',
 	L'\u253F', L'\u251D', L'\u2530', L'\u2525',
-	L'\u2538', L'\u2542', L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
+	L'\u2538', L'\u2542', L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
 	L'\u2460', L'\u2461', L'\u2462', L'\u2463',
 	L'\u2464', L'\u2465', L'\u2466', L'\u2467',
 	L'\u2468', L'\u2469', L'\u246A', L'\u246B',
@@ -386,8 +470,8 @@ ATTR_WEAK char16_t const enc_tbl_jp_mbtowc[] =
 	L'\u3357', L'\u330D', L'\u3326', L'\u3323',
 	L'\u332B', L'\u334A', L'\u333B', L'\u339C',
 	L'\u339D', L'\u339E', L'\u338E', L'\u338F',
-	L'\u33C4', L'\u33A1', L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
+	L'\u33C4', L'\u33A1', L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
 	L'\0',     L'\0',     L'\u337B', L'\u301D',
 	L'\u301F', L'\u2116', L'\u33CD', L'\u2121',
 	L'\u32A4', L'\u32A5', L'\u32A6', L'\u32A7',
@@ -396,53 +480,53 @@ ATTR_WEAK char16_t const enc_tbl_jp_mbtowc[] =
 	L'\u2261', L'\u222B', L'\u222E', L'\u2211',
 	L'\u221A', L'\u22A5', L'\u2220', L'\u221F',
 	L'\u22BF', L'\u2235', L'\u2229', L'\u222A',
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
 	L'\0',     L'\0',     L'\u4E9C', L'\u5516',
 	L'\u5A03', L'\u963F', L'\u54C0', L'\u611B',
 	L'\u6328', L'\u59F6', L'\u9022', L'\u8475',
@@ -1184,17 +1268,17 @@ ATTR_WEAK char16_t const enc_tbl_jp_mbtowc[] =
 	L'\u8CC4', L'\u8107', L'\u60D1', L'\u67A0',
 	L'\u9DF2', L'\u4E99', L'\u4E98', L'\u9C10',
 	L'\u8A6B', L'\u85C1', L'\u8568', L'\u6900',
-	L'\u6E7E', L'\u7897', L'\u8155', L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
+	L'\u6E7E', L'\u7897', L'\u8155', L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
 	L'\0',     L'\0',     L'\u5F0C', L'\u4E10',
 	L'\u4E15', L'\u4E2A', L'\u4E31', L'\u4E36',
 	L'\u4E3C', L'\u4E3F', L'\u4E42', L'\u4E56',
@@ -2043,122 +2127,122 @@ ATTR_WEAK char16_t const enc_tbl_jp_mbtowc[] =
 	L'\u9F77', L'\u9F72', L'\u9F76', L'\u9F95',
 	L'\u9F9C', L'\u9FA0', L'\u582F', L'\u69C7',
 	L'\u9059', L'\u7464', L'\u51DC', L'\u7199',
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
 	L'\u7E8A', L'\u891C', L'\u9348', L'\u9288',
 	L'\u84DC', L'\u4FC9', L'\u70BB', L'\u6631',
 	L'\u68C8', L'\u92F9', L'\u66FB', L'\u5F45',
@@ -2253,53 +2337,53 @@ ATTR_WEAK char16_t const enc_tbl_jp_mbtowc[] =
 	L'\u2172', L'\u2173', L'\u2174', L'\u2175',
 	L'\u2176', L'\u2177', L'\u2178', L'\u2179',
 	L'\uFFE2', L'\uFFE4', L'\uFF07', L'\uFF02',
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
 	L'\u2170', L'\u2171', L'\u2172', L'\u2173',
 	L'\u2174', L'\u2175', L'\u2176', L'\u2177',
 	L'\u2178', L'\u2179', L'\u2160', L'\u2161',
@@ -2397,53 +2481,53 @@ ATTR_WEAK char16_t const enc_tbl_jp_mbtowc[] =
 	L'\u9ADC', L'\u9B75', L'\u9B72', L'\u9B8F',
 	L'\u9BB1', L'\u9BBB', L'\u9C00', L'\u9D70',
 	L'\u9D6B', L'\uFA2D', L'\u9E19', L'\u9ED1',
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
-	L'\0',     L'\0',     L'\0',     L'\0',    
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
+	L'\0',     L'\0',     L'\0',     L'\0',
 	L'\0',     L'\0',     L'\0',         L'\0'
 };
 
-ATTR_WEAK sjis_t const enc_tbl_jp_wctomb[] =
+ATTR_WEAK byte_t const enc_tbl_jp_wctomb[] =
 {
 	0x22, 0x81, 0xCD, 0x25, 0x84, 0x9F, 0x30, 0x81,
 	0x40, 0x4E, 0x88, 0xEA, 0x4F, 0xFA, 0x6B, 0x51,
@@ -5230,7 +5314,6 @@ ATTR_WEAK sjis_t const enc_tbl_jp_wctomb[] =
 	0x78
 };
 
-// bsearch quick start table
 ATTR_WEAK u16 const enc_offset_jp[] =
 {
 	  27,   57,   86,  117,  143,  171,  204,  233,
@@ -5267,8 +5350,7 @@ ATTR_WEAK u16 const enc_offset_jp[] =
 	7214, 7242, 7276, 7314, 7339, 7366, 7395, 7419
 };
 
-// i *think* so?
-static jis_t const kana_array[] =
+static byte_t const kana_array[] =
 {
 	0x21, 0x23, 0x21, 0x56, 0x21, 0x57, 0x21, 0x22,
 	0x21, 0x26, 0x25, 0x72, 0x25, 0x21, 0x25, 0x23,
@@ -5289,60 +5371,21 @@ static jis_t const kana_array[] =
 };
 
 // .sdata
-ATTR_WEAK BOOL enc_tbl_jp_loaded = true; // ?
+ATTR_WEAK BOOL enc_tbl_jp_loaded = true;
 
 /*******************************************************************************
  * functions
  */
 
-ENCResult ENCConvertStringSjisToUnicode(char16_t *dst, unk4_t signed *dstSize,
-                                        sjis_t const *src,
-                                        unk4_t signed *srcSize)
-{
-	return ENCiConvertStringSjisToUnicode(dst, dstSize, src, srcSize,
-	                                      ENC_BREAK_TYPE_NONE);
-}
+DEFINE_PUBLIC_ENC_TRAMPOLINE_TO_UTF16(Sjis)
+DEFINE_PUBLIC_ENC_TRAMPOLINE_FROM_UTF16(Sjis)
+DEFINE_PUBLIC_ENC_TRAMPOLINE_WITH_MB_STATE_TO_UTF16(Jis)
+DEFINE_PUBLIC_ENC_TRAMPOLINE_WITH_MB_STATE_FROM_UTF16(Jis)
+DEFINE_PUBLIC_ENC_TRAMPOLINE_WITH_MB_STATE(Jis, byte_t, Sjis, byte_t)
+DEFINE_PUBLIC_ENC_TRAMPOLINE_WITH_MB_STATE(Sjis, byte_t, Jis, byte_t)
 
-ENCResult ENCConvertStringUnicodeToSjis(sjis_t *dst, unk4_t signed *dstSize,
-                                        char16_t const *src,
-                                        unk4_t signed *srcSize)
-{
-	return ENCiConvertStringUnicodeToSjis(dst, dstSize, src, srcSize,
-	                                      ENC_BREAK_TYPE_NONE);
-}
-
-ENCResult ENCConvertStringJisToUnicode(char16_t *dst, unk4_t signed *dstSize,
-                                       jis_t const *src, unk4_t signed *srcSize)
-{
-	return ENCiConvertStringJisToUnicode(dst, dstSize, src, srcSize,
-	                                     ENC_BREAK_TYPE_NONE, nullptr);
-}
-
-ENCResult ENCConvertStringUnicodeToJis(jis_t *dst, unk4_t signed *dstSize,
-                                       char16_t const *src,
-                                       unk4_t signed *srcSize)
-{
-	return ENCiConvertStringUnicodeToJis(dst, dstSize, src, srcSize,
-	                                     ENC_BREAK_TYPE_NONE, nullptr);
-}
-
-ENCResult ENCConvertStringJisToSjis(sjis_t *dst, unk4_t signed *dstSize,
-                                    jis_t const *src, unk4_t signed *srcSize)
-{
-	return ENCiConvertStringJisToSjis(dst, dstSize, src, srcSize,
-	                                  ENC_BREAK_TYPE_NONE, nullptr);
-}
-
-ENCResult ENCConvertStringSjisToJis(jis_t *dst, unk4_t signed *dstSize,
-                                    sjis_t const *src, unk4_t signed *srcSize)
-{
-	return ENCiConvertStringSjisToJis(dst, dstSize, src, srcSize,
-	                                  ENC_BREAK_TYPE_NONE, nullptr);
-}
-
-ENCResult ENCiConvertStringSjisToUnicode(char16_t *dst, unk4_t signed *dstSize,
-                                         sjis_t const *src,
-                                         unk4_t signed *srcSize,
+ENCResult ENCiConvertStringSjisToUnicode(char16_t *dst, s32 *dstSize,
+                                         byte_t const *src, s32 *srcSize,
                                          ENCBreakType breakType)
 {
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
@@ -5350,20 +5393,20 @@ ENCResult ENCiConvertStringSjisToUnicode(char16_t *dst, unk4_t signed *dstSize,
 
 	ENCResult ret;
 
-	CHECK_PARAMETERS(dst, dstSize, dstLimit, dstValid, src, srcSize, srcLimit,
-	                 srcLimited, ret);
+	CHECK_PARAMETERS(&ret, dst, dstSize, &dstLimit, &dstValid, src, srcSize,
+	                 &srcLimit, &srcLimited);
 
 	if (!enc_tbl_jp_loaded)
-		return ENC_E2;
+		return ENC_ERANGE;
 
 	while (*src && (srcCnt < srcLimit || !srcLimited))
 	{
-		sjis_t cur = *src;
+		byte_t cur = *src;
 
-		CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, ret);
+		UNSAFE_CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, &ret);
 
-		CHECK_BREAK_TYPE(dst, dstCnt, dstLimit, dstValid, src, srcCnt, srcLimit,
-		                 srcLimited, breakType, ret);
+		UNSAFE_CHECK_BREAK_TYPE(&dst, &dstCnt, dstLimit, dstValid, &src,
+		                        &srcCnt, srcLimit, srcLimited, breakType, &ret);
 
 		char16_t c16;
 
@@ -5372,8 +5415,8 @@ ENCResult ENCiConvertStringSjisToUnicode(char16_t *dst, unk4_t signed *dstSize,
 			if (srcLimit - srcCnt < 2 && srcLimited)
 				break;
 
-			++src;
-			sjis_t cur2 = *src;
+			++src; // Splitting this expression affects regalloc on debug
+			byte_t cur2 = *src;
 
 			if ((cur2 >= 0x40 && cur2 <= 0x7E)
 			    || (cur2 >= 0x80 && cur2 <= 0xFC))
@@ -5405,7 +5448,7 @@ ENCResult ENCiConvertStringSjisToUnicode(char16_t *dst, unk4_t signed *dstSize,
 			}
 			else
 			{
-				THROW_AND_QUIT(ret, ENC_EILSEQ);
+				UNSAFE_THROW_AND_QUIT(&ret, ENC_EILSEQ);
 			}
 
 			++srcCnt;
@@ -5413,21 +5456,33 @@ ENCResult ENCiConvertStringSjisToUnicode(char16_t *dst, unk4_t signed *dstSize,
 		else
 		{
 			if (cur <= 0x80)
+			{
 				c16 = cur;
+			}
 			else if (cur == 0xA0)
-				c16 = 0xF8F0;
+			{
+				c16 = L'';
+			}
 			else if (cur < 0xE0)
+			{
 				c16 = 0xFEC0 + cur;
+			}
 			else if (cur >= 0xFD)
+			{
 				c16 = 0xF7F4 + cur;
+			}
 			else
-				THROW_AND_QUIT(ret, ENC_EILSEQ);
+			{
+				UNSAFE_THROW_AND_QUIT(&ret, ENC_EILSEQ);
+			}
 		}
 
 		if (!c16)
-			THROW_AND_QUIT(ret, ENC_E2);
+		{
+			UNSAFE_THROW_AND_QUIT(&ret, ENC_ERANGE);
+		}
 
-		COPY_CHAR_AS_IS(c16, dst, dstCnt, dstValid, src, srcCnt);
+		WRITE_CHAR(c16, &dst, &dstCnt, dstValid, &src, &srcCnt);
 	}
 
 	WRITE_BACK_SIZES(srcSize, srcCnt, dstSize, dstCnt);
@@ -5435,9 +5490,8 @@ ENCResult ENCiConvertStringSjisToUnicode(char16_t *dst, unk4_t signed *dstSize,
 	return ret;
 }
 
-ENCResult ENCiConvertStringUnicodeToSjis(sjis_t *dst, unk4_t signed *dstSize,
-                                         char16_t const *src,
-                                         unk4_t signed *srcSize,
+ENCResult ENCiConvertStringUnicodeToSjis(byte_t *dst, s32 *dstSize,
+                                         char16_t const *src, s32 *srcSize,
                                          ENCBreakType breakType)
 {
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
@@ -5445,63 +5499,28 @@ ENCResult ENCiConvertStringUnicodeToSjis(sjis_t *dst, unk4_t signed *dstSize,
 
 	ENCResult ret;
 
-	CHECK_PARAMETERS(dst, dstSize, dstLimit, dstValid, src, srcSize, srcLimit,
-	                 srcLimited, ret);
+	CHECK_PARAMETERS(&ret, dst, dstSize, &dstLimit, &dstValid, src, srcSize,
+	                 &srcLimit, &srcLimited);
 
 	if (!enc_tbl_jp_loaded)
-		return ENC_E2;
+		return ENC_ERANGE;
 
-	UTF16_CHECK_BOM(src, srcSize, srcLimit, srcLimited, srcCnt, dstSize);
+	UTF16_CHECK_BOM(&src, srcSize, srcLimit, srcLimited, &srcCnt, dstSize);
 
 	while (*src && (srcCnt < srcLimit || !srcLimited))
 	{
 		char16_t cur = *src;
 
-		CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, ret);
+		UNSAFE_CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, &ret);
 
-		CHECK_BREAK_TYPE(dst, dstCnt, dstLimit, dstValid, src, srcCnt, srcLimit,
-		                 srcLimited, breakType, ret);
+		UNSAFE_CHECK_BREAK_TYPE(&dst, &dstCnt, dstLimit, dstValid, &src,
+		                        &srcCnt, srcLimit, srcLimited, breakType, &ret);
 
-		full_sjis_t mb;
+		byte_t mb[2];
 		ENCiConvertUnicodeToSjis(mb, cur);
 
-		sjis_t b1 = mb[0];
-		sjis_t b2 = mb[1];
-
-		if (!b1)
-		{
-			ret = ENC_E2;
-			break;
-		}
-
-		if (!b2)
-		{
-			if (dstValid)
-			{
-				*dst = b1;
-				++dst;
-			}
-		}
-		else if (dstValid)
-		{
-			if (dstLimit - dstCnt < 2)
-				THROW_AND_QUIT(ret, ENC_ENOSPC);
-
-			*dst = b1;
-			++dst;
-			*dst = b2;
-			++dst;
-
-			++dstCnt;
-		}
-		else
-		{
-			++dstCnt;
-		}
-
-		++dstCnt;
-		++src;
-		++srcCnt;
+		UNSAFE_WRITE_MULTI_BYTE_CHAR(mb, &dst, &dstCnt, dstLimit,
+									 dstValid, &src, &srcCnt, &ret);
 	}
 
 	WRITE_BACK_SIZES(srcSize, srcCnt, dstSize, dstCnt);
@@ -5510,62 +5529,67 @@ ENCResult ENCiConvertStringUnicodeToSjis(sjis_t *dst, unk4_t signed *dstSize,
 }
 
 // NOTE: The JIS/Shift_JIS pair is swapped with the JIS/UTF-16 pair.
-ENCResult ENCiConvertStringJisToSjis(sjis_t *dst, unk4_t signed *dstSize,
-                                     jis_t const *src, unk4_t signed *srcSize,
-                                     ENCBreakType breakType, ENCState *state)
+ENCResult ENCiConvertStringJisToSjis(byte_t *dst, s32 *dstSize,
+                                     byte_t const *src, s32 *srcSize,
+                                     ENCBreakType breakType,
+                                     ENCMBState *mbState)
 {
-	ENCJISState curState = ENC_JIS_STATE_US_ASCII;
+	ENCJISState curMbState = ENC_JIS_STATE_US_ASCII;
 
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
 	                       srcLimited)
 
-	BOOL a = false;
+	BOOL tooFull = false;
 
 	ENCResult ret;
 
-	CHECK_PARAMETERS(dst, dstSize, dstLimit, dstValid, src, srcSize, srcLimit,
-	                 srcLimited, ret);
+	CHECK_PARAMETERS(&ret, dst, dstSize, &dstLimit, &dstValid, src, srcSize,
+	                 &srcLimit, &srcLimited);
 
-	COLLECT_MB_STATE(curState, state);
+	JIS_GET_MB_STATE(&curMbState, mbState);
 
 	while (*src && (srcCnt < srcLimit || !srcLimited))
 	{
 		int escLen = 0;
 
-		JIS_CHECK_ESCAPE_SEQUENCE(curState, src, srcCnt, srcLimit, srcLimited,
-		                          escLen);
+		UNSAFE_JIS_CHECK_ESCAPE_SEQUENCE(&curMbState, &src, &srcCnt, srcLimit,
+		                                 srcLimited, &escLen);
 
-		JIS_CHECK_BREAK_TYPE(dst, dstCnt, dstLimit, dstValid, src, srcCnt,
-		                     srcLimit, srcLimited, breakType, curState, ret);
+		UNSAFE_JIS_CHECK_BREAK_TYPE(&dst, &dstCnt, dstLimit, dstValid, &src,
+		                            &srcCnt, srcLimit, srcLimited, breakType,
+		                            &curMbState, &ret);
 
-		CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, ret);
+		UNSAFE_CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, &ret);
 
-		jis_t cur = *src;
+		byte_t cur = *src;
 
 		if (cur < 0x20)
 		{
 			if (cur == '\n' || cur == '\r')
-				curState = ENC_JIS_STATE_US_ASCII;
+				curMbState = ENC_JIS_STATE_US_ASCII;
 
 			if (dstValid)
 				*dst++ = cur;
 		}
 		else
 		{
-			switch (curState)
+			switch (curMbState)
 			{
 			case ENC_JIS_STATE_US_ASCII:
 			case ENC_JIS_STATE_JIS_C6220_1969_RO:
 				if (cur >= 0x80)
 				{
+					/* NOTE: Semantically, this is not an UNSAFE_THROW_AND_QUIT
+					 * due to the fact that this is a nested loop construct.
+					 */
 					ret = ENC_EILSEQ;
 					break;
 				}
 
 				if (dstValid)
 				{
-					*dst = cur;
-					++dst;
+					/* NOTE: Doubled expressions */
+					*dst = cur; ++dst;
 				}
 
 				break;
@@ -5573,24 +5597,28 @@ ENCResult ENCiConvertStringJisToSjis(sjis_t *dst, unk4_t signed *dstSize,
 			case ENC_JIS_STATE_JIS_C6220_1969_JP:
 				if (cur == 0x20 || cur >= 0x60)
 				{
+					// Same thing here, and for the rest as well.
 					ret = ENC_EILSEQ;
+					break;
 				}
-				else if (dstValid)
+
+				if (dstValid)
 				{
-					*dst = 0x80l + cur;
-					++dst;
+					/* NOTE: Doubled expressions */
+					*dst = 0x80u + cur; ++dst;
 				}
 
 				break;
 
 			case ENC_JIS_STATE_JIS_X_0208_1983:
+			{
 				if (srcLimit - srcCnt < 2 && srcLimited)
 				{
-					a = true;
+					tooFull = true;
 					break;
 				}
 
-				jis_t cur2 = *++src;
+				byte_t cur2 = *++src;
 
 				if (cur == 0x20 || cur > 0x98 || cur2 < 0x21 || cur2 > 0x7E)
 				{
@@ -5601,7 +5629,10 @@ ENCResult ENCiConvertStringJisToSjis(sjis_t *dst, unk4_t signed *dstSize,
 				if (dstValid)
 				{
 					if (dstLimit - dstCnt < 2)
-						THROW_AND_QUIT(ret, ENC_ENOSPC);
+					{
+						ret = ENC_ENOBUFS;
+						break;
+					}
 
 					ENCiConvertKanjiJisToSjis(dst, cur, cur2);
 					dst += 2;
@@ -5609,6 +5640,7 @@ ENCResult ENCiConvertStringJisToSjis(sjis_t *dst, unk4_t signed *dstSize,
 
 				++dstCnt;
 				++srcCnt;
+			}
 				break;
 
 			default:
@@ -5621,7 +5653,7 @@ ENCResult ENCiConvertStringJisToSjis(sjis_t *dst, unk4_t signed *dstSize,
 		if (ret != ENC_ESUCCESS)
 			break;
 
-		if (a)
+		if (tooFull)
 			break;
 
 		++dstCnt;
@@ -5629,65 +5661,68 @@ ENCResult ENCiConvertStringJisToSjis(sjis_t *dst, unk4_t signed *dstSize,
 		++srcCnt;
 	}
 
-	WRITE_BACK_STATE(state, curState);
+	JIS_WRITE_BACK_STATE(mbState, curMbState);
 	WRITE_BACK_SIZES(srcSize, srcCnt, dstSize, dstCnt);
 
 	return ret;
 }
 
-ENCResult ENCiConvertStringSjisToJis(jis_t *dst, unk4_t signed *dstSize,
-                                     sjis_t const *src, unk4_t signed *srcSize,
-                                     ENCBreakType breakType, ENCState *state)
+ENCResult ENCiConvertStringSjisToJis(byte_t *dst, s32 *dstSize,
+                                     byte_t const *src, s32 *srcSize,
+                                     ENCBreakType breakType,
+                                     ENCMBState *mbState)
 {
-	ENCState curState = ENC_JIS_STATE_US_ASCII;
-	ENCState prevState = ENC_JIS_STATE_US_ASCII;
+	ENCJISState curMbState = ENC_JIS_STATE_US_ASCII;
+	ENCJISState prevMbState = ENC_JIS_STATE_US_ASCII;
 
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
 	                       srcLimited)
 
 	ENCResult ret;
 
-	CHECK_PARAMETERS(dst, dstSize, dstLimit, dstValid, src, srcSize, srcLimit,
-	                 srcLimited, ret);
+	CHECK_PARAMETERS(&ret, dst, dstSize, &dstLimit, &dstValid, src, srcSize,
+	                 &srcLimit, &srcLimited);
 
-	COLLECT_MB_STATE(curState, state);
+	JIS_GET_MB_STATE(&curMbState, mbState);
 
 	while (*src && (srcCnt < srcLimit || !srcLimited))
 	{
-		prevState = curState;
+		prevMbState = curMbState;
 
-		sjis_t cur = *src;
+		byte_t cur = *src;
 
 		if (cur == 0x80 || cur == 0xA0 || cur >= 0xFD
-		    || ENCiGetJisStateFromSjis(&curState, src) < 0)
+		    || ENCiGetJisStateFromSjis(&curMbState, src) < 0)
 		{
-			THROW_AND_QUIT(ret, ENC_E2);
+			UNSAFE_THROW_AND_QUIT(&ret, ENC_ERANGE);
 		}
 
-		if (curState == ENC_JIS_STATE_JIS_X_0208_1983 && srcLimit - srcCnt < 2
+		if (curMbState == ENC_JIS_STATE_JIS_X_0208_1983 && srcLimit - srcCnt < 2
 		    && srcLimited && (cur <= 0xA0 || cur >= 0xE0))
 		{
-			curState = prevState;
+			curMbState = prevMbState;
 			break;
 		}
 
-		int escLen = ENCiSetEscapeSequence(dst, dstLimit - dstCnt, curState,
-		                                   prevState, dstValid);
+		int escLen = ENCiSetEscapeSequence(dst, dstLimit - dstCnt, curMbState,
+		                                   prevMbState, dstValid);
 		if (escLen < 0)
-			THROW_AND_QUIT(ret, ENC_ENOSPC);
+		{
+			UNSAFE_THROW_AND_QUIT(&ret, ENC_ENOBUFS);
+		}
 
 		if (dstValid)
 			dst += escLen;
 
 		dstCnt += escLen;
 
-		CHECK_BREAK_TYPE(dst, dstCnt, dstLimit, dstValid, src, srcCnt, srcLimit,
-		                 srcLimited, breakType, ret);
+		UNSAFE_CHECK_BREAK_TYPE(&dst, &dstCnt, dstLimit, dstValid, &src,
+		                        &srcCnt, srcLimit, srcLimited, breakType, &ret);
 
-		full_jis_t mb;
-		mb[0] = mb[1] = 0;
+		byte_t mb[2];
+		mb[0] = mb[1] = 0x00;
 
-		switch (curState)
+		switch (curMbState)
 		{
 		case ENC_JIS_STATE_US_ASCII:
 			mb[0] = cur;
@@ -5705,19 +5740,22 @@ ENCResult ENCiConvertStringSjisToJis(jis_t *dst, unk4_t signed *dstSize,
 				break;
 			}
 
-			++src; // Splitting this expression affects regalloc on debug
-			sjis_t cur2 = *src;
+			++src;
+			byte_t cur2 = *src;
 
 			if ((cur2 >= 0x40 && cur2 <= 0x7E)
 			    || (cur2 >= 0x80 && cur2 <= 0xFC))
 			{
 				if (cur >= 0xFA)
 				{
-					full_jis_t mb2;
+					byte_t mb2[2];
 					ENCiConvertSjisKanji3(mb2, cur, cur2);
 
 					if (!mb2[0] || !mb2[1])
-						THROW_AND_QUIT(ret, ENC_E2);
+					{
+						ret = ENC_ERANGE;
+						break;
+					}
 
 					cur = mb2[0];
 					cur2 = mb2[1];
@@ -5727,81 +5765,83 @@ ENCResult ENCiConvertStringSjisToJis(jis_t *dst, unk4_t signed *dstSize,
 			}
 			else
 			{
-				THROW_AND_QUIT(ret, ENC_EILSEQ);
+				ret = ENC_EILSEQ;
+				break;
 			}
 
 			++srcCnt;
 		}
-		break;
+			break;
 
 		default:
-		case 0:
+		case ENC_JIS_STATE_INVALID:
 			ret = ENC_EILSEQ;
-			break;
+			/* break; */ // consistency
 		}
 
 		if (ret != ENC_ESUCCESS)
 			break;
 
-		JIS_WRITE_CHAR(mb, dst, dstCnt, dstValid, src, srcCnt);
+		JIS_WRITE_CHAR(mb, &dst, &dstCnt, dstValid, &src, &srcCnt);
 	}
 
-	JIS_SAVE_STATE(curState, prevState, dst, dstCnt, dstLimit, dstValid, srcCnt,
-	               ret);
+	JIS_SAVE_STATE(&curMbState, prevMbState, &dst, &dstCnt, dstLimit, dstValid,
+	               srcCnt, ret);
 
-	WRITE_BACK_STATE(state, curState);
+	JIS_WRITE_BACK_STATE(mbState, curMbState);
 	WRITE_BACK_SIZES(srcSize, srcCnt, dstSize, dstCnt);
 
 	return ret;
 }
 
-ENCResult ENCiConvertStringJisToUnicode(char16_t *dst, unk4_t signed *dstSize,
-                                        jis_t const *src,
-                                        unk4_t signed *srcSize,
-                                        ENCBreakType breakType, ENCState *state)
+ENCResult ENCiConvertStringJisToUnicode(char16_t *dst, s32 *dstSize,
+                                        byte_t const *src, s32 *srcSize,
+                                        ENCBreakType breakType,
+                                        ENCMBState *mbState)
 {
-	ENCJISState curState = ENC_JIS_STATE_US_ASCII;
+	ENCJISState curMbState = ENC_JIS_STATE_US_ASCII;
 
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
 	                       srcLimited)
 
-	BOOL a = false;
+	BOOL tooFull = false;
 
 	ENCResult ret;
 
-	CHECK_PARAMETERS(dst, dstSize, dstLimit, dstValid, src, srcSize, srcLimit,
-	                 srcLimited, ret);
+	CHECK_PARAMETERS(&ret, dst, dstSize, &dstLimit, &dstValid, src, srcSize,
+	                 &srcLimit, &srcLimited);
 
 	if (!enc_tbl_jp_loaded)
-		return ENC_E2;
+		return ENC_ERANGE;
 
-	COLLECT_MB_STATE(curState, state);
+	JIS_GET_MB_STATE(&curMbState, mbState);
 
 	while (*src && (srcCnt < srcLimit || !srcLimited))
 	{
 		int escLen = 0;
 
-		JIS_CHECK_BREAK_TYPE(dst, dstCnt, dstLimit, dstValid, src, srcCnt,
-		                     srcLimit, srcLimited, breakType, curState, ret);
+		UNSAFE_JIS_CHECK_BREAK_TYPE(&dst, &dstCnt, dstLimit, dstValid, &src,
+		                            &srcCnt, srcLimit, srcLimited, breakType,
+		                            &curMbState, &ret);
 
-		JIS_CHECK_ESCAPE_SEQUENCE(curState, src, srcCnt, srcLimit, srcLimited,
-		                          escLen);
+		UNSAFE_JIS_CHECK_ESCAPE_SEQUENCE(&curMbState, &src, &srcCnt, srcLimit,
+		                                 srcLimited, &escLen);
 
-		CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, ret);
+		UNSAFE_CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, &ret);
 
-		jis_t cur = *src;
+		byte_t cur = *src;
 
 		if (cur < 0x20)
 		{
 			if (cur == '\n' || cur == '\r')
-				curState = ENC_JIS_STATE_US_ASCII;
+				curMbState = ENC_JIS_STATE_US_ASCII;
 
 			if (dstValid)
 				*dst++ = cur;
 		}
 		else
 		{
-			switch (curState)
+			switch (curMbState)
 			{
 			case ENC_JIS_STATE_US_ASCII:
 			case ENC_JIS_STATE_JIS_C6220_1969_RO:
@@ -5818,20 +5858,25 @@ ENCResult ENCiConvertStringJisToUnicode(char16_t *dst, unk4_t signed *dstSize,
 
 			case ENC_JIS_STATE_JIS_C6220_1969_JP:
 				if (cur == 0x20 || cur >= 0x60)
+				{
 					ret = ENC_EILSEQ;
-				else if (dstValid)
+					break;
+				}
+
+				if (dstValid)
 					*dst++ = 0xFF40 + cur;
 
 				break;
 
 			case ENC_JIS_STATE_JIS_X_0208_1983:
+			{
 				if (srcLimit - srcCnt < 2 && srcLimited)
 				{
-					a = true;
+					tooFull = true;
 					break;
 				}
 
-				jis_t cur2 = *++src;
+				byte_t cur2 = *++src;
 
 				if (cur == 0x20 || cur > 0x98 || cur2 < 0x21 || cur2 > 0x7E)
 				{
@@ -5839,9 +5884,9 @@ ENCResult ENCiConvertStringJisToUnicode(char16_t *dst, unk4_t signed *dstSize,
 					break;
 				}
 
-				char16_t c16;
-				full_sjis_t mb;
+				char16_t c16; // NOTE: ordered before mb
 
+				byte_t mb[2];
 				ENCiConvertKanjiJisToSjis(mb, cur, cur2);
 
 				cur = mb[0];
@@ -5874,7 +5919,7 @@ ENCResult ENCiConvertStringJisToUnicode(char16_t *dst, unk4_t signed *dstSize,
 
 				if (!c16)
 				{
-					ret = ENC_E2;
+					ret = ENC_ERANGE;
 					break;
 				}
 
@@ -5882,7 +5927,7 @@ ENCResult ENCiConvertStringJisToUnicode(char16_t *dst, unk4_t signed *dstSize,
 					*dst++ = c16;
 
 				++srcCnt;
-
+			}
 				break;
 
 			default:
@@ -5895,7 +5940,7 @@ ENCResult ENCiConvertStringJisToUnicode(char16_t *dst, unk4_t signed *dstSize,
 		if (ret != ENC_ESUCCESS)
 			break;
 
-		if (a)
+		if (tooFull)
 			break;
 
 		++dstCnt;
@@ -5903,68 +5948,72 @@ ENCResult ENCiConvertStringJisToUnicode(char16_t *dst, unk4_t signed *dstSize,
 		++srcCnt;
 	}
 
-	WRITE_BACK_STATE(state, curState);
+	JIS_WRITE_BACK_STATE(mbState, curMbState);
 	WRITE_BACK_SIZES(srcSize, srcCnt, dstSize, dstCnt);
 
 	return ret;
 }
 
-ENCResult ENCiConvertStringUnicodeToJis(jis_t *dst, unk4_t signed *dstSize,
-                                        char16_t const *src,
-                                        unk4_t signed *srcSize,
-                                        ENCBreakType breakType, ENCState *state)
+ENCResult ENCiConvertStringUnicodeToJis(byte_t *dst, s32 *dstSize,
+                                        char16_t const *src, s32 *srcSize,
+                                        ENCBreakType breakType,
+                                        ENCMBState *mbState)
 {
-	ENCState curState = ENC_JIS_STATE_US_ASCII;
-	ENCState prevState = ENC_JIS_STATE_US_ASCII;
+	ENCJISState curMbState = ENC_JIS_STATE_US_ASCII;
+	ENCJISState prevMbState = ENC_JIS_STATE_US_ASCII;
 
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
 	                       srcLimited)
 
 	ENCResult ret;
 
-	CHECK_PARAMETERS(dst, dstSize, dstLimit, dstValid, src, srcSize, srcLimit,
-	                 srcLimited, ret);
+	CHECK_PARAMETERS(&ret, dst, dstSize, &dstLimit, &dstValid, src, srcSize,
+	                 &srcLimit, &srcLimited);
 
 	if (!enc_tbl_jp_loaded)
-		return ENC_E2; // ?
+		return ENC_ERANGE;
 
-	COLLECT_MB_STATE(curState, state);
+	JIS_GET_MB_STATE(&curMbState, mbState);
 
-	UTF16_CHECK_BOM(src, srcSize, srcLimit, srcLimited, srcCnt, dstSize);
+	UTF16_CHECK_BOM(&src, srcSize, srcLimit, srcLimited, &srcCnt, dstSize);
 
 	while (*src && (srcCnt < srcLimit || !srcLimited))
 	{
-		prevState = curState;
+		prevMbState = curMbState;
 
-		if (ENCiGetJisStateFromUnicode(&curState, src) < 0)
-			THROW_AND_QUIT(ret, ENC_E2);
+		if (ENCiGetJisStateFromUnicode(&curMbState, src) < 0)
+		{
+			UNSAFE_THROW_AND_QUIT(&ret, ENC_ERANGE);
+		}
 
-		int escLen = ENCiSetEscapeSequence(dst, dstLimit - dstCnt, curState,
-		                                   prevState, dstValid);
+		int escLen = ENCiSetEscapeSequence(dst, dstLimit - dstCnt, curMbState,
+		                                   prevMbState, dstValid);
 		if (escLen < 0)
-			THROW_AND_QUIT(ret, ENC_ENOSPC);
+		{
+			UNSAFE_THROW_AND_QUIT(&ret, ENC_ENOBUFS);
+		}
 
 		if (dstValid)
 			dst += escLen;
 
 		dstCnt += escLen;
 
-		CHECK_BREAK_TYPE(dst, dstCnt, dstLimit, dstValid, src, srcCnt, srcLimit,
-		                 srcLimited, breakType, ret);
+		UNSAFE_CHECK_BREAK_TYPE(&dst, &dstCnt, dstLimit, dstValid, &src,
+		                        &srcCnt, srcLimit, srcLimited, breakType, &ret);
 
 		char16_t cur = *src;
 
-		full_jis_t mb;
-		mb[0] = mb[1] = 0;
+		byte_t mb[2];
+		mb[0] = mb[1] = 0x00;
 
-		switch (curState)
+		switch (curMbState)
 		{
 		case ENC_JIS_STATE_US_ASCII:
 			if (dstValid)
 			{
-				if (cur < 0x80)
+				if (IS_ASCII(cur))
 					mb[0] = cur;
-				else if (cur == 0x203E)
+				else if (cur == L'‾')
 					mb[0] = 0x7E;
 				else if (cur < 0x100)
 					ENCiFindSjisFromUnicode(mb, cur);
@@ -5974,15 +6023,15 @@ ENCResult ENCiConvertStringUnicodeToJis(jis_t *dst, unk4_t signed *dstSize,
 
 		case ENC_JIS_STATE_JIS_X_0208_1983:
 		{
-			full_sjis_t mb2;
+			byte_t mb2[2];
 			ENCiConvertUnicodeToSjis(mb2, cur);
 
-			sjis_t b1 = mb2[0];
-			sjis_t b2 = mb2[1];
+			byte_t b1 = mb2[0];
+			byte_t b2 = mb2[1];
 
 			if (!b1)
 			{
-				ret = ENC_E2;
+				ret = ENC_ERANGE;
 				break;
 			}
 
@@ -5998,87 +6047,102 @@ ENCResult ENCiConvertStringUnicodeToJis(jis_t *dst, unk4_t signed *dstSize,
 
 			if (b1 >= 0xFA)
 			{
-				full_jis_t mb;
-				ENCiConvertSjisKanji3(mb, b1, b2);
+				byte_t mb3[2];
+				ENCiConvertSjisKanji3(mb3, b1, b2);
 
-				if (!mb[0] || !mb[1])
-					THROW_AND_QUIT(ret, ENC_E2);
+				if (!mb3[0] || !mb3[1])
+				{
+					ret = ENC_ERANGE;
+					break;
+				}
 
-				b1 = mb[0];
-				b2 = mb[1];
+				b1 = mb3[0];
+				b2 = mb3[1];
 			}
 
 			ENCiConvertKanjiSjisToJis(mb, b1, b2);
 		}
-		break;
+			break;
 
 		default:
 		case ENC_JIS_STATE_INVALID:
-			ret = ENC_E2;
-			break;
+			ret = ENC_ERANGE;
+			/* break; */ // consistency
 		}
 
 		if (ret != ENC_ESUCCESS)
 			break;
 
-		JIS_WRITE_CHAR(mb, dst, dstCnt, dstValid, src, srcCnt);
+		JIS_WRITE_CHAR(mb, &dst, &dstCnt, dstValid, &src, &srcCnt);
 	}
 
-	JIS_SAVE_STATE(curState, prevState, dst, dstCnt, dstLimit, dstValid, srcCnt,
-	               ret);
+	JIS_SAVE_STATE(&curMbState, prevMbState, &dst, &dstCnt, dstLimit, dstValid,
+	               srcCnt, ret);
 
-	WRITE_BACK_STATE(state, curState);
+	JIS_WRITE_BACK_STATE(mbState, curMbState);
 	WRITE_BACK_SIZES(srcSize, srcCnt, dstSize, dstCnt);
 
 	return ret;
 }
 
-static void ENCiConvertUnicodeToSjis(sjis_t *dst, char16_t src)
+static void ENCiConvertUnicodeToSjis(byte_t *dst, char16_t src)
 {
-	if (src < 0x80)
+	if (IS_ASCII(src))
 	{
 		dst[0] = src;
-		dst[1] = 0;
+		dst[1] = 0x00;
+
+		return;
 	}
-	else if (src >= 0xFF61 && src <= 0xFF9F)
+
+	if (src >= 0xFF61 && src <= 0xFF9F)
 	{
 		dst[0] = 0xFFFF0140 + src;
-		dst[1] = 0;
+		dst[1] = 0x00;
+
+		return;
 	}
-	else if (src < 0xD800 || src >= 0xF900)
+
+	if (src < 0xD800 || src >= 0xF900)
 	{
 		ENCiFindSjisFromUnicode(dst, src);
+
+		return;
 	}
-	else if (src >= 0xE000 && src <= 0xE757)
+
+	if (src >= 0xE000 && src <= 0xE757)
 	{
 		unk_t a = (0xFFFF2000 + src) % 188;
 		unk_t b = (0xFFFF2000 + src - a) / 188;
 
 		dst[0] = 0xF0 + b;
 		dst[1] = a < 0x3Fu ? a + 0x40 : a + 0x41;
+
+		return;
 	}
-	else if (src >= 0xF8F0 && src <= 0xF8F3)
+
+	if (src >= 0xF8F0 && src <= 0xF8F3)
 	{
 		if (src == 0xF8F0)
 			dst[0] = 0xA0;
 		else
 			dst[0] = 0xFFFF080C + (unsigned)src;
 
-		dst[1] = 0;
+		dst[1] = 0x00;
+
+		return;
 	}
-	else
-	{
-		dst[0] = dst[1] = 0;
-	}
+
+	dst[0] = dst[1] = 0x00;
 }
 
-static void ENCiFindSjisFromUnicode(sjis_t *dst, char16_t src)
+static void ENCiFindSjisFromUnicode(byte_t *dst, char16_t src)
 {
-	sjis_t const *mb;
+	byte_t const *mb;
 
-	unsigned char hi = src >> 8;
-	unsigned char lo = src & 0xffu;
-	unk_t signed left = lo != 0 ? enc_offset_jp[lo - 1] : 0;
+	byte_t hi = src >> 8;
+	byte_t lo = src & 0xffu;
+	unk_t signed left = lo != 0x00 ? enc_offset_jp[lo - 1] : 0;
 	unk_t signed right = enc_offset_jp[lo] - 1;
 
 	while (right - left > 1)
@@ -6119,28 +6183,28 @@ static void ENCiFindSjisFromUnicode(sjis_t *dst, char16_t src)
 	dst[0] = dst[1] = 0x00;
 }
 
-static void ENCiConvertKanjiJisToSjis(sjis_t *dst, jis_t b1, jis_t b2)
+static void ENCiConvertKanjiJisToSjis(byte_t *dst, byte_t src1, byte_t src2)
 {
-	unk_t d1 = b1 < 0x5F ? 0x70 : 0xB0;
-	unk_t unsigned d2 = b1 % 2 ? b2 > 0x5F ? 0x20 : 0x1F : 0x7E;
+	unk_t dst1 = src1 < 0x5F ? 0x70 : 0xB0;
+	unk_t unsigned dst2 = src1 % 2 ? src2 > 0x5F ? 0x20 : 0x1F : 0x7E;
 
-	dst[0] = ((b1 + 1) >> 1) + d1;
-	dst[1] = b2 + d2;
+	dst[0] = ((src1 + 1) >> 1) + dst1;
+	dst[1] = src2 + dst2;
 }
 
-static void ENCiConvertKanjiSjisToJis(jis_t *dst, sjis_t b1, sjis_t b2)
+static void ENCiConvertKanjiSjisToJis(byte_t *dst, byte_t src1, byte_t src2)
 {
-	BOOL x = b2 < 0x9F;
+	BOOL a = src2 < 0x9F;
 
-	unk_t d1 = b1 < 0xA0 ? 0x70 : 0xB0;
-	unk_t unsigned d2 = x ? b2 > 0x7F ? 0x20 : 0x1F : 0x7E;
+	unk_t dst1 = src1 < 0xA0 ? 0x70 : 0xB0;
+	unk_t unsigned dst2 = a ? src2 > 0x7F ? 0x20 : 0x1F : 0x7E;
 
-	dst[0] = ((b1 - d1) << 1) - x;
-	dst[1] = b2 - d2;
+	dst[0] = ((src1 - dst1) << 1) - a;
+	dst[1] = src2 - dst2;
 }
 
-static int ENCiGetEscapeSequence(ENCJISState *state, jis_t const *src,
-                                 unk4_t signed srcLen, BOOL limited)
+static int ENCiGetEscapeSequence(ENCJISState *mbState, byte_t const *src,
+                                 s32 srcLen, BOOL limited)
 {
 	if (*src == '\x1b')
 	{
@@ -6160,22 +6224,22 @@ static int ENCiGetEscapeSequence(ENCJISState *state, jis_t const *src,
 
 			if (*src == 0x40)
 			{
-				*state = ENC_JIS_STATE_JIS_X_0208_1978;
+				*mbState = ENC_JIS_STATE_JIS_X_0208_1978;
 				return 3;
 			}
 			else if (*src == 0x42)
 			{
-				*state = ENC_JIS_STATE_JIS_X_0208_1983;
+				*mbState = ENC_JIS_STATE_JIS_X_0208_1983;
 				return 3;
 			}
 			else if (*src == 0x44) // See note in the ENCJISState enum
 			{
-				*state = ENC_JIS_STATE_JIS_X_0212_1990;
+				*mbState = ENC_JIS_STATE_JIS_X_0212_1990;
 				return 3;
 			}
 			else
 			{
-				*state = ENC_JIS_STATE_INVALID;
+				*mbState = ENC_JIS_STATE_INVALID;
 				return 1;
 			}
 		}
@@ -6189,28 +6253,28 @@ static int ENCiGetEscapeSequence(ENCJISState *state, jis_t const *src,
 
 			if (*src == 0x42)
 			{
-				*state = ENC_JIS_STATE_US_ASCII;
+				*mbState = ENC_JIS_STATE_US_ASCII;
 				return 3;
 			}
 			else if (*src == 0x4a)
 			{
-				*state = ENC_JIS_STATE_JIS_C6220_1969_RO;
+				*mbState = ENC_JIS_STATE_JIS_C6220_1969_RO;
 				return 3;
 			}
 			else if (*src == 0x49)
 			{
-				*state = ENC_JIS_STATE_JIS_C6220_1969_JP;
+				*mbState = ENC_JIS_STATE_JIS_C6220_1969_JP;
 				return 3;
 			}
 			else
 			{
-				*state = ENC_JIS_STATE_INVALID;
+				*mbState = ENC_JIS_STATE_INVALID;
 				return 1;
 			}
 		}
 		else
 		{
-			*state = ENC_JIS_STATE_INVALID;
+			*mbState = ENC_JIS_STATE_INVALID;
 			return 1;
 		}
 	}
@@ -6220,16 +6284,16 @@ static int ENCiGetEscapeSequence(ENCJISState *state, jis_t const *src,
 	}
 }
 
-static int ENCiSetEscapeSequence(jis_t *dst, unk4_t signed dstLen,
-                                 ENCState curState, ENCState prevState,
-                                 BOOL valid)
+static int ENCiSetEscapeSequence(byte_t *dst, s32 dstLen,
+                                 ENCJISState curMbState,
+                                 ENCJISState prevMbState, BOOL valid)
 {
-	switch (curState)
+	switch (curMbState)
 	{
 	case ENC_JIS_STATE_US_ASCII:
-		if (prevState != curState)
+		if (prevMbState != curMbState)
 		{
-			if (dstLen < 4 && valid)
+			if (dstLen < (int)sizeof(char) * (3 + 1) && valid)
 				return -1;
 
 			if (valid)
@@ -6253,14 +6317,14 @@ static int ENCiSetEscapeSequence(jis_t *dst, unk4_t signed dstLen,
 		return 0;
 
 	case ENC_JIS_STATE_JIS_X_0208_1983:
-		if (prevState != curState)
+		if (prevMbState != curMbState)
 		{
-			if (dstLen < 8 && valid)
+			if (dstLen < (int)sizeof(byte2_t) * (3 + 1) && valid)
 				return -1;
 
 			if (valid)
 			{
-				*dst++ = 0x1b;
+				*dst++ = '\x1b';
 				*dst++ = 0x24;
 				*dst++ = 0x42;
 			}
@@ -6281,99 +6345,101 @@ static int ENCiSetEscapeSequence(jis_t *dst, unk4_t signed dstLen,
 	return 0;
 }
 
-static int ENCiGetJisStateFromSjis(ENCJISState *state, sjis_t const *src)
+static int ENCiGetJisStateFromSjis(ENCJISState *mbState, byte_t const *src)
 {
-	sjis_t b = *src;
+	byte_t b = *src;
 
 	if (b >= 0x81 && b <= 0xFC)
 	{
 		if (b >= 0xF0 && b < 0xFA)
 		{
-			*state = ENC_JIS_STATE_INVALID;
+			*mbState = ENC_JIS_STATE_INVALID;
 			return -1;
 		}
 
-		*state = ENC_JIS_STATE_JIS_X_0208_1983;
+		*mbState = ENC_JIS_STATE_JIS_X_0208_1983;
 		return 0;
 	}
 
-	if (b < 0x80)
+	if (IS_ASCII(b))
 	{
-		*state = ENC_JIS_STATE_US_ASCII;
+		*mbState = ENC_JIS_STATE_US_ASCII;
 		return 0;
 	}
 
-	*state = ENC_JIS_STATE_INVALID;
+	*mbState = ENC_JIS_STATE_INVALID;
 	return -1;
 }
 
-static int ENCiGetJisStateFromUnicode(ENCJISState *state, char16_t const *src)
+static int ENCiGetJisStateFromUnicode(ENCJISState *mbState, char16_t const *src)
 {
 	char16_t c16 = *src;
 
-	if (c16 < 0x80 || c16 == 0x203E)
+	if (IS_ASCII(c16) || c16 == L'‾')
 	{
-		*state = ENC_JIS_STATE_US_ASCII;
+		*mbState = ENC_JIS_STATE_US_ASCII;
 		return 0;
 	}
 
 	if (c16 == 0x80 || (c16 >= 0xE000 && c16 < 0xF900))
 	{
-		*state = ENC_JIS_STATE_INVALID;
+		*mbState = ENC_JIS_STATE_INVALID;
 		return -1;
 	}
 
 	if (c16 < 0x100)
 	{
-		full_sjis_t mb;
+		byte_t mb[2];
 		ENCiFindSjisFromUnicode(mb, c16);
 
 		if (!mb[0])
 		{
-			*state = ENC_JIS_STATE_INVALID;
+			*mbState = ENC_JIS_STATE_INVALID;
 			return -1;
 		}
 
 		if (!mb[1])
 		{
-			*state = ENC_JIS_STATE_US_ASCII;
+			*mbState = ENC_JIS_STATE_US_ASCII;
 			return 0;
 		}
 
-		*state = ENC_JIS_STATE_JIS_X_0208_1983;
+		*mbState = ENC_JIS_STATE_JIS_X_0208_1983;
 		return 0;
 	}
 
-	*state = ENC_JIS_STATE_JIS_X_0208_1983;
+	*mbState = ENC_JIS_STATE_JIS_X_0208_1983;
 	return 0;
 }
 
-static void ENCiConvertSjisKanji3(jis_t *dst, sjis_t b1, sjis_t b2)
+static void ENCiConvertSjisKanji3(byte_t *dst, byte_t src1, byte_t src2)
 {
-	if (b1 == 0xFC && b2 > 0x4B)
+	if (src1 == 0xFC && src2 > 0x4B)
 	{
 		dst[0] = 0x00;
 		dst[1] = 0x00;
 		return;
 	}
 
-	if (b1 == 0xFA)
+	if (src1 == 0xFA)
 	{
-		if (b2 <= 0x49)
+		if (src2 <= 0x49)
 		{
 			dst[0] = 0xEE;
-			dst[1] = 0xAFu + b2;
+			dst[1] = 0xAFu + src2;
 			return;
 		}
-		else if (b2 <= 0x53)
+
+		if (src2 <= 0x53)
 		{
 			dst[0] = 0x87;
-			dst[1] = 0x0Au + b2;
+			dst[1] = 0x0Au + src2;
 			return;
 		}
-		else if (b2 <= 0x5B)
+
+		if (src2 <= 0x5B)
 		{
-			switch (b2 - 0x54u)
+			switch (src2 - 0x54u)
 			{
 			case 0:
 				dst[0] = 0x81;
@@ -6384,7 +6450,7 @@ static void ENCiConvertSjisKanji3(jis_t *dst, sjis_t b1, sjis_t b2)
 			case 2:
 			case 3:
 				dst[0] = 0xEE;
-				dst[1] = 0xA5 + b2;
+				dst[1] = 0xA5 + src2;
 				return;
 
 			case 4:
@@ -6410,10 +6476,10 @@ static void ENCiConvertSjisKanji3(jis_t *dst, sjis_t b1, sjis_t b2)
 		}
 	}
 
-	dst[0] = b2 < 0x5C ? b1 - 0x0E : b1 - 0x0D;
+	dst[0] = src2 < 0x5C ? src1 - 0x0E : src1 - 0x0D;
 
-	if (b2 < 0x7F)
-		dst[1] = b2 < 0x5C ? b2 + 0xA1 : b2 - 0x1C;
+	if (src2 < 0x7F)
+		dst[1] = src2 < 0x5C ? src2 + 0xA1 : src2 - 0x1C;
 	else
-		dst[1] = b2 < 0x9C ? b2 - 0x1D : b2 - 0x1C;
+		dst[1] = src2 < 0x9C ? src2 - 0x1D : src2 - 0x1C;
 }

@@ -5,18 +5,18 @@
  * headers
  */
 
-#include <uchar.h>
+#include <uchar.h> // char16_t
 
-#include <decomp.h>
+#include <revolution/types.h>
 
 #include <revolution/enc.h>
-#include "encutility.h"
+#include "encmacros.h"
 
 /*******************************************************************************
  * types
  */
 
-struct hash_table
+struct latin_hash_table_entry
 {
 	char16_t		c16;	// size 0x02, offset 0x00
 	unsigned char	cc;		// size 0x01, offset 0x02
@@ -41,122 +41,55 @@ extern char16_t const macce_unicode_array[];
 extern char16_t const ibm850_unicode_array[];
 extern char16_t const ibm852_unicode_array[];
 
-extern struct hash_table const unicode_latin1_array[];
-extern struct hash_table const unicode_latin2_array[];
-extern struct hash_table const unicode_latin3_array[];
-extern struct hash_table const unicode_greek_array[];
-extern struct hash_table const unicode_latin6_array[];
-extern struct hash_table const unicode_latin9_array[];
-extern struct hash_table const unicode_win1252_array[];
-extern struct hash_table const unicode_win1250_array[];
-extern struct hash_table const unicode_win1253_array[];
-extern struct hash_table const unicode_macroman_array[];
-extern struct hash_table const unicode_macgreek_array[];
-extern struct hash_table const unicode_macce_array[];
-extern struct hash_table const unicode_ibm850_array[];
-extern struct hash_table const unicode_ibm852_array[];
+extern struct latin_hash_table_entry const unicode_latin1_array[];
+extern struct latin_hash_table_entry const unicode_latin2_array[];
+extern struct latin_hash_table_entry const unicode_latin3_array[];
+extern struct latin_hash_table_entry const unicode_greek_array[];
+extern struct latin_hash_table_entry const unicode_latin6_array[];
+extern struct latin_hash_table_entry const unicode_latin9_array[];
+extern struct latin_hash_table_entry const unicode_win1252_array[];
+extern struct latin_hash_table_entry const unicode_win1250_array[];
+extern struct latin_hash_table_entry const unicode_win1253_array[];
+extern struct latin_hash_table_entry const unicode_macroman_array[];
+extern struct latin_hash_table_entry const unicode_macgreek_array[];
+extern struct latin_hash_table_entry const unicode_macce_array[];
+extern struct latin_hash_table_entry const unicode_ibm850_array[];
+extern struct latin_hash_table_entry const unicode_ibm852_array[];
 
 /*******************************************************************************
  * functions
  */
 
-ENCResult ENCiConvertStringLatin1ToUnicode(char16_t *dst,
-                                           unk4_t signed *dstSize,
-                                           unsigned char const *src,
-                                           unk4_t signed *srcSize,
-                                           ENCBreakType breakType);
-ENCResult ENCiConvertStringUnicodeToLatin1(unsigned char *dst,
-                                           unk4_t signed *dstSize,
-                                           char16_t const *src,
-                                           unk4_t signed *srcSize,
-                                           ENCBreakType breakType);
-ENCResult ENCiConvertStringLatin2ToUnicode(char16_t *dst,
-                                           unk4_t signed *dstSize,
-                                           unsigned char const *src,
-                                           unk4_t signed *srcSize,
-                                           ENCBreakType breakType);
-ENCResult ENCiConvertStringUnicodeToLatin2(unsigned char *dst,
-                                           unk4_t signed *dstSize,
-                                           char16_t const *src,
-                                           unk4_t signed *srcSize,
-                                           ENCBreakType breakType);
-ENCResult ENCiConvertStringLatin3ToUnicode(char16_t *dst,
-                                           unk4_t signed *dstSize,
-                                           unsigned char const *src,
-                                           unk4_t signed *srcSize,
-                                           ENCBreakType breakType);
-ENCResult ENCiConvertStringUnicodeToLatin3(unsigned char *dst,
-                                           unk4_t signed *dstSize,
-                                           char16_t const *src,
-                                           unk4_t signed *srcSize,
-                                           ENCBreakType breakType);
-ENCResult ENCiConvertStringGreekToUnicode(char16_t *dst, unk4_t signed *dstSize,
-                                          unsigned char const *src,
-                                          unk4_t signed *srcSize,
-                                          ENCBreakType breakType);
-ENCResult ENCiConvertStringUnicodeToGreek(unsigned char *dst,
-                                          unk4_t signed *dstSize,
-                                          char16_t const *src,
-                                          unk4_t signed *srcSize,
-                                          ENCBreakType breakType);
-ENCResult ENCiConvertStringLatin6ToUnicode(char16_t *dst,
-                                           unk4_t signed *dstSize,
-                                           unsigned char const *src,
-                                           unk4_t signed *srcSize,
-                                           ENCBreakType breakType);
-ENCResult ENCiConvertStringUnicodeToLatin6(unsigned char *dst,
-                                           unk4_t signed *dstSize,
-                                           char16_t const *src,
-                                           unk4_t signed *srcSize,
-                                           ENCBreakType breakType);
-ENCResult ENCiConvertStringLatin9ToUnicode(char16_t *dst,
-                                           unk4_t signed *dstSize,
-                                           unsigned char const *src,
-                                           unk4_t signed *srcSize,
-                                           ENCBreakType breakType);
-ENCResult ENCiConvertStringUnicodeToLatin9(unsigned char *dst,
-                                           unk4_t signed *dstSize,
-                                           char16_t const *src,
-                                           unk4_t signed *srcSize,
-                                           ENCBreakType breakType);
-ENCResult ENCiConvertStringUnicodeToWin1252(unsigned char *dst,
-                                            unk4_t signed *dstSize,
-                                            char16_t const *src,
-                                            unk4_t signed *srcSize,
-                                            ENCBreakType breakType);
-ENCResult ENCiConvertStringWin1250ToUnicode(char16_t *dst,
-                                            unk4_t signed *dstSize,
-                                            unsigned char const *src,
-                                            unk4_t signed *srcSize,
-                                            ENCBreakType breakType);
-ENCResult ENCiConvertStringWin1253ToUnicode(char16_t *dst,
-                                            unk4_t signed *dstSize,
-                                            unsigned char const *src,
-                                            unk4_t signed *srcSize,
-                                            ENCBreakType breakType);
-ENCResult ENCiConvertStringMacromanToUnicode(char16_t *dst,
-                                             unk4_t signed *dstSize,
-                                             unsigned char const *src,
-                                             unk4_t signed *srcSize,
-                                             ENCBreakType breakType);
-ENCResult ENCiConvertStringMacgreekToUnicode(char16_t *dst,
-                                             unk4_t signed *dstSize,
-                                             unsigned char const *src,
-                                             unk4_t signed *srcSize,
-                                             ENCBreakType breakType);
-ENCResult ENCiConvertStringMacceToUnicode(char16_t *dst, unk4_t signed *dstSize,
-                                          unsigned char const *src,
-                                          unk4_t signed *srcSize,
-                                          ENCBreakType breakType);
-ENCResult ENCiConvertStringIbm850ToUnicode(char16_t *dst,
-                                           unk4_t signed *dstSize,
-                                           unsigned char const *src,
-                                           unk4_t signed *srcSize,
-                                           ENCBreakType breakType);
-ENCResult ENCiConvertStringIbm852ToUnicode(char16_t *dst,
-                                           unk4_t signed *dstSize,
-                                           unsigned char const *src,
-                                           unk4_t signed *srcSize,
-                                           ENCBreakType breakType);
+ENCResult ENCiConvertStringLatinToUnicode(char16_t *dst, s32 *dstSize,
+                                          byte_t const *src, s32 *srcSize,
+                                          ENCBreakType breakType,
+                                          char16_t const *table);
+ENCResult ENCiConvertStringUnicodeToLatin(
+	byte_t *dst, s32 *dstSize, char16_t const *src, s32 *srcSize,
+	ENCBreakType breakType, struct latin_hash_table_entry const *table);
 
-#endif // RVL_SDK_ENC_LATIN_h
+DECLARE_PRIVATE_ENC_FUNCTION_TO_UTF16(Latin1)
+DECLARE_PRIVATE_ENC_FUNCTION_FROM_UTF16(Latin1)
+DECLARE_PRIVATE_ENC_FUNCTION_TO_UTF16(Latin2)
+DECLARE_PRIVATE_ENC_FUNCTION_FROM_UTF16(Latin2)
+DECLARE_PRIVATE_ENC_FUNCTION_TO_UTF16(Latin3)
+DECLARE_PRIVATE_ENC_FUNCTION_FROM_UTF16(Latin3)
+DECLARE_PRIVATE_ENC_FUNCTION_TO_UTF16(Greek)
+DECLARE_PRIVATE_ENC_FUNCTION_FROM_UTF16(Greek)
+DECLARE_PRIVATE_ENC_FUNCTION_TO_UTF16(Latin6)
+DECLARE_PRIVATE_ENC_FUNCTION_FROM_UTF16(Latin6)
+DECLARE_PRIVATE_ENC_FUNCTION_TO_UTF16(Latin9)
+DECLARE_PRIVATE_ENC_FUNCTION_FROM_UTF16(Latin9)
+DECLARE_PRIVATE_ENC_FUNCTION_TO_UTF16(Win1252)
+DECLARE_PRIVATE_ENC_FUNCTION_FROM_UTF16(Win1252)
+
+// All of these are only convertible from, not to
+DECLARE_PRIVATE_ENC_FUNCTION_TO_UTF16(Win1250)
+DECLARE_PRIVATE_ENC_FUNCTION_TO_UTF16(Win1253)
+DECLARE_PRIVATE_ENC_FUNCTION_TO_UTF16(Macroman)
+DECLARE_PRIVATE_ENC_FUNCTION_TO_UTF16(Macgreek)
+DECLARE_PRIVATE_ENC_FUNCTION_TO_UTF16(Macce)
+DECLARE_PRIVATE_ENC_FUNCTION_TO_UTF16(Ibm850)
+DECLARE_PRIVATE_ENC_FUNCTION_TO_UTF16(Ibm852)
+
+#endif // RVL_SDK_ENC_LATIN_H

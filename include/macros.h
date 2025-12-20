@@ -6,6 +6,8 @@
 #define STR_(x)									#x
 #define STR(x)									STR_(x)
 
+#define SWALLOW_SEMICOLON()						__static_assert(true, "")
+
 // keywords
 
 #ifndef alignas

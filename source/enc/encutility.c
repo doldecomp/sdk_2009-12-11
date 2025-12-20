@@ -4,17 +4,13 @@
  * headers
  */
 
-#include <string.h>
-
-#include <decomp.h>
+#include <string.h> // memset
 
 #include <revolution/types.h>
 
 #include "buildstamp.h"
 
-// #include <revolution/os/OS.h>
-
-#include <context_rvl.h>
+// #include <revolution/os.h>
 
 /*******************************************************************************
  * macros
@@ -44,16 +40,21 @@ void ENCiRegisterVersion(void)
 {
 	if (!encRegistered)
 	{
+		/* CLEANUP: #include the <os.h> header whenever it's good to go (just
+		 * doing this to remove <context_rvl.h> dependencies since it barely
+		 * needs it)
+		 */
+		extern void OSRegisterVersion(char const *version);
+
 		OSRegisterVersion(__ENCVersion);
 
 		encRegistered = true;
 	}
 }
 
-ENCResult ENCiCheckParameters(BOOL dstValid, unk_t signed *dstSizeIn,
-                              unk_t signed *dstSizeOut, BOOL *dstValidOut,
-                              BOOL srcValid, unk_t signed *srcSizeIn,
-                              unk_t signed *srcSizeOut, BOOL *srcLimitedOut)
+ENCResult ENCiCheckParameters(BOOL dstValid, s32 *dstSizeIn, s32 *dstSizeOut,
+                              BOOL *dstValidOut, BOOL srcValid, s32 *srcSizeIn,
+                              s32 *srcSizeOut, BOOL *srcLimitedOut)
 {
 	ENCResult ret = ENC_ESUCCESS;
 
@@ -91,7 +92,6 @@ ENCResult ENCiCheckParameters(BOOL dstValid, unk_t signed *dstSizeIn,
 	if (ret != ENC_ESUCCESS)
 	{
 		*dstSizeIn = 0;
-
 		*srcSizeIn = 0;
 	}
 
@@ -102,22 +102,20 @@ int ENCiCheckBreakType(unsigned a, unsigned b)
 {
 	if (a == '\n')
 	{
-		return sizeof(char) * 1;
+		return sizeof "\n" - 1;
 	}
 	else if (a == '\r')
 	{
 		if (b == '\n')
-			return sizeof(char) * 2;
+			return sizeof "\n\r" - 1;
 		else
-			return sizeof(char) * 1;
+			return sizeof "\r" - 1;
 	}
-	else
-	{
-		return sizeof(char) * 0;
-	}
+
+	return sizeof "" - 1;
 }
 
-int ENCiWriteBreakType(void *stream, unk_t width, ENCBreakType breakType,
+int ENCiWriteBreakType(void *stream, int width, ENCBreakType breakType,
                        BOOL valid)
 {
 	if (valid)
@@ -126,38 +124,38 @@ int ENCiWriteBreakType(void *stream, unk_t width, ENCBreakType breakType,
 
 		switch (breakType)
 		{
-		case ENC_BREAK_TYPE_WINDOWS:
+		case ENC_BR_CRLF:
 			*((byte1_t *)stream + width - 1) = '\r';
 			memset((byte1_t *)stream + width, '\0', width - 1);
 			*((byte1_t *)stream + width * 2 - 1) = '\n';
 
-			return sizeof(char) * 2;
+			return sizeof "\r\n" - 1;
 
-		case ENC_BREAK_TYPE_CLASSIC_MAC_OS:
+		case ENC_BR_CR:
 			*((byte1_t *)stream + width - 1) = '\r';
 
-			return sizeof(char) * 1;
+			return sizeof "\r" - 1;
 
-		case ENC_BREAK_TYPE_UNIX:
+		case ENC_BR_LF:
 			*((byte1_t *)stream + width - 1) = '\n';
 
-			return sizeof(char) * 1;
+			return sizeof "\n" - 1;
 		}
 	}
 	else
 	{
 		switch (breakType)
 		{
-		case ENC_BREAK_TYPE_WINDOWS:
-			return sizeof(char) * 2;
+		case ENC_BR_CRLF:
+			return sizeof "\r\n" - 1;
 
-		case ENC_BREAK_TYPE_CLASSIC_MAC_OS:
-			return sizeof(char) * 1;
+		case ENC_BR_CR:
+			return sizeof "\r" - 1;
 
-		case ENC_BREAK_TYPE_UNIX:
-			return sizeof(char) * 1;
+		case ENC_BR_LF:
+			return sizeof "\n" - 1;
 		}
 	}
 
-	return sizeof(char) * 0;
+	return sizeof "" - 1;
 }

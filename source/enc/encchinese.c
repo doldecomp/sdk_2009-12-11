@@ -4,29 +4,24 @@
  * headers
  */
 
-#include <uchar.h>
+#include <uchar.h> // char16_t
 
 #include <decomp.h>
-#include <macros.h>
+#include <macros.h> // ATTR_WEAK
+
+#include <revolution/types.h>
 
 #include <revolution/enc.h>
 #include "encmacros.h"
 #include "encutility.h"
 
 /*******************************************************************************
- * macros
- */
-
-#undef NULL
-#define NULL	((void *)(0))
-
-/*******************************************************************************
  * local function declarations
  */
 
-static void ENCiConvertUnicodeToGb2312(unsigned char *dst, char16_t src);
-static void ENCiFindGb2312FromUnicode(unsigned char *dst, char16_t src);
-static void ENCiFindExKanjiUnicode(byte2_t src, char16_t *dst);
+static void ENCiConvertUnicodeToGb2312(byte_t *dst, char16_t src);
+static void ENCiFindGb2312FromUnicode(byte_t *dst, char16_t src);
+static void ENCiFindExKanjiUnicode(byte2_t src, char16_t *dst); // why swapped?
 static void ENCiFindExKanjiGBK(byte2_t *dst, char16_t src);
 
 /*******************************************************************************
@@ -34,9 +29,7 @@ static void ENCiFindExKanjiGBK(byte2_t *dst, char16_t src);
  */
 
 // .rodata
-
-// clang-format off
-char16_t const enc_tbl_cn_mbtowc[] =
+ATTR_WEAK char16_t const enc_tbl_cn_mbtowc[] =
 {
 	L'\u3000', L'\u3001', L'\u3002', L'\u00B7',
 	L'\u02C9', L'\u02C7', L'\u00A8', L'\u3003',
@@ -2249,7 +2242,7 @@ char16_t const enc_tbl_cn_mbtowc[] =
 	L'\0',     L'\0',     L'\0',     L'\0',
 };
 
-unsigned char const enc_tbl_cn_wctomb[] =
+ATTR_WEAK byte_t const enc_tbl_cn_wctomb[] =
 {
 	0x25, 0xA9, 0xA4, 0x30, 0xA1, 0xA1, 0x4E, 0xD2,
 	0xBB, 0x52, 0xB5, 0xB6, 0x53, 0xD4, 0xC8, 0x56,
@@ -5049,7 +5042,7 @@ unsigned char const enc_tbl_cn_wctomb[] =
 	0xDA, 0xC3, 0x94, 0xEF, 0xAC,
 };
 
-u16 const enc_offset_cn[] =
+ATTR_WEAK u16 const enc_offset_cn[] =
 {
 	  28,   64,   91,  121,  145,  172,  208,  233,
 	 262,  294,  327,  353,  382,  418,  448,  486,
@@ -5085,7 +5078,7 @@ u16 const enc_offset_cn[] =
 	7277, 7310, 7332, 7355, 7379, 7407, 7431, 7455,
 };
 
-byte2_t const enc_tbl_cnex_mbtowc[] =
+ATTR_WEAK byte2_t const enc_tbl_cnex_mbtowc[] =
 {
 	0x81B3, L'\u4F0B', 0x81C9, L'\u4F3E', 0x8268, L'\u4FEC', 0x826D, L'\u4FF6',
 	0x8284, L'\u5013', 0x828A, L'\u501E', 0x82C6, L'\u5072', 0x83C2, L'\u515F',
@@ -5150,22 +5143,19 @@ byte2_t const enc_tbl_cnex_mbtowc[] =
 	0xF09F, L'\u9983', 0xF354, L'\u9A89', 0xF355, L'\u9A8D', 0xF356, L'\u9A8E',
 	0xF359, L'\u9A99', 0xF574, L'\u9BB0', 0xF85A, L'\u9CFD', 0xFC5B, L'\u9ED0',
 };
-// clang-format on
 
 // .sdata
-ATTR_WEAK BOOL enc_tbl_cn_loaded = TRUE;
+ATTR_WEAK BOOL enc_tbl_cn_loaded = true;
 
 /*******************************************************************************
  * functions
  */
 
-DEFINE_PUBLIC_ENC_TRAMPOLINE_TO_UTF16(Gb2312, unsigned char)
-DEFINE_PUBLIC_ENC_TRAMPOLINE_FROM_UTF16(Gb2312, unsigned char)
+DEFINE_PUBLIC_ENC_TRAMPOLINE_TO_UTF16(Gb2312)
+DEFINE_PUBLIC_ENC_TRAMPOLINE_FROM_UTF16(Gb2312)
 
-ENCResult ENCiConvertStringGb2312ToUnicode(char16_t *dst,
-                                           unk4_t signed *dstSize,
-                                           unsigned char const *src,
-                                           unk4_t signed *srcSize,
+ENCResult ENCiConvertStringGb2312ToUnicode(char16_t *dst, s32 *dstSize,
+                                           byte_t const *src, s32 *srcSize,
                                            ENCBreakType breakType)
 {
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
@@ -5173,21 +5163,20 @@ ENCResult ENCiConvertStringGb2312ToUnicode(char16_t *dst,
 
 	ENCResult ret;
 
-	CHECK_PARAMETERS(dst, dstSize, dstLimit, dstValid, src, srcSize, srcLimit,
-	                 srcLimited, ret);
+	CHECK_PARAMETERS(&ret, dst, dstSize, &dstLimit, &dstValid, src, srcSize,
+	                 &srcLimit, &srcLimited);
 
 	if (!enc_tbl_cn_loaded)
-		return ENC_E2;
+		return ENC_ERANGE;
 
-loop_41:
 	while (*src && (srcCnt < srcLimit || !srcLimited))
 	{
-		unsigned char cur = *src;
+		byte_t cur = *src;
 
-		CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, ret);
+		UNSAFE_CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, &ret);
 
-		CHECK_BREAK_TYPE(dst, dstCnt, dstLimit, dstValid, src, srcCnt, srcLimit,
-		                 srcLimited, breakType, ret);
+		UNSAFE_CHECK_BREAK_TYPE(&dst, &dstCnt, dstLimit, dstValid, &src,
+		                        &srcCnt, srcLimit, srcLimited, breakType, &ret);
 
 		char16_t c16;
 
@@ -5196,23 +5185,23 @@ loop_41:
 			if (srcLimit - srcCnt < 2 && srcLimited)
 				break;
 
-			unsigned char cur2 = *++src;
+			byte_t cur2 = *++src;
 
 			if (cur >= 0xA1 && cur2 >= 0xA1 && cur2 <= 0xFE)
 			{
 				byte4_t x = 0;
-				x += (cur - 0xA1) * 0x5E;
+				x += 0x5E * (cur - 0xA1);
 				x += cur2 - 0xA1;
 
 				c16 = enc_tbl_cn_mbtowc[x];
 			}
 			else
 			{
-				ENCiFindExKanjiUnicode((char16_t)(cur2 + (cur << 8)), &c16);
+				ENCiFindExKanjiUnicode(cur2 + (cur << 8), &c16);
 
 				if (!c16)
 				{
-					THROW_AND_QUIT(ret, ENC_EILSEQ);
+					UNSAFE_THROW_AND_QUIT(&ret, ENC_EILSEQ);
 				}
 			}
 
@@ -5226,20 +5215,20 @@ loop_41:
 			}
 			else if (cur == 0x80)
 			{
-				c16 = 0x20AC;
+				c16 = L'€'; // ? Where does this come from?
 			}
 			else
 			{
-				THROW_AND_QUIT(ret, ENC_EILSEQ);
+				UNSAFE_THROW_AND_QUIT(&ret, ENC_EILSEQ);
 			}
 		}
 
 		if (!c16)
 		{
-			THROW_AND_QUIT(ret, ENC_E2);
+			UNSAFE_THROW_AND_QUIT(&ret, ENC_ERANGE);
 		}
 
-		COPY_CHAR_AS_IS(c16, dst, dstCnt, dstValid, src, srcCnt);
+		WRITE_CHAR(c16, &dst, &dstCnt, dstValid, &src, &srcCnt);
 	}
 
 	WRITE_BACK_SIZES(srcSize, srcCnt, dstSize, dstCnt);
@@ -5247,10 +5236,8 @@ loop_41:
 	return ret;
 }
 
-ENCResult ENCiConvertStringUnicodeToGb2312(unsigned char *dst,
-                                           unk4_t signed *dstSize,
-                                           char16_t const *src,
-                                           unk4_t signed *srcSize,
+ENCResult ENCiConvertStringUnicodeToGb2312(byte_t *dst, s32 *dstSize,
+                                           char16_t const *src, s32 *srcSize,
                                            ENCBreakType breakType)
 {
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
@@ -5258,61 +5245,28 @@ ENCResult ENCiConvertStringUnicodeToGb2312(unsigned char *dst,
 
 	ENCResult ret;
 
-	CHECK_PARAMETERS(dst, dstSize, dstLimit, dstValid, src, srcSize, srcLimit,
-	                 srcLimited, ret);
+	CHECK_PARAMETERS(&ret, dst, dstSize, &dstLimit, &dstValid, src, srcSize,
+	                 &srcLimit, &srcLimited);
 
 	if (!enc_tbl_cn_loaded)
-		return ENC_E2;
+		return ENC_ERANGE;
 
-	UTF16_CHECK_BOM(src, srcSize, srcLimit, srcLimited, srcCnt, dstSize);
+	UTF16_CHECK_BOM(&src, srcSize, srcLimit, srcLimited, &srcCnt, dstSize);
 
 	while (*src && (srcCnt < srcLimit || !srcLimited))
 	{
 		char16_t cur = *src;
 
-		CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, ret);
+		UNSAFE_CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, &ret);
 
-		CHECK_BREAK_TYPE(dst, dstCnt, dstLimit, dstValid, src, srcCnt, srcLimit,
-		                 srcLimited, breakType, ret);
+		UNSAFE_CHECK_BREAK_TYPE(&dst, &dstCnt, dstLimit, dstValid, &src,
+		                        &srcCnt, srcLimit, srcLimited, breakType, &ret);
 
-		unsigned char mb[2];
+		byte_t mb[2];
 		ENCiConvertUnicodeToGb2312(mb, cur);
 
-		unsigned char b1 = mb[0];
-		unsigned char b2 = mb[1];
-
-		if (!b1)
-		{
-			THROW_AND_QUIT(ret, ENC_E2);
-		}
-
-		if (!b2)
-		{
-			if (dstValid)
-			{
-				// NOTE: Doubled expressions
-				*dst = b1; ++dst;
-			}
-		}
-		else if (dstValid)
-		{
-			if (dstLimit - dstCnt < 2)
-				THROW_AND_QUIT(ret, ENC_ENOSPC);
-
-			// NOTE: Doubled expressions
-			*dst = b1; ++dst;
-			*dst = b2; ++dst;
-
-			++dstCnt;
-		}
-		else
-		{
-			++dstCnt;
-		}
-
-		++dstCnt;
-		++src;
-		++srcCnt;
+		UNSAFE_WRITE_MULTI_BYTE_CHAR(mb, &dst, &dstCnt, dstLimit,
+									 dstValid, &src, &srcCnt, &ret);
 	}
 
 	WRITE_BACK_SIZES(srcSize, srcCnt, dstSize, dstCnt);
@@ -5320,35 +5274,35 @@ ENCResult ENCiConvertStringUnicodeToGb2312(unsigned char *dst,
 	return ret;
 }
 
-static void ENCiConvertUnicodeToGb2312(unsigned char *dst, char16_t src)
+static void ENCiConvertUnicodeToGb2312(byte_t *dst, char16_t src)
 {
-	if (src < 0x80)
+	if (IS_ASCII(src))
 	{
 		dst[0] = src;
 		dst[1] = 0x00;
+		return;
 	}
-	else if (src < 0xD800 || src >= 0xF900)
+
+	if (src < 0xD800 || src >= 0xF900)
 	{
 		ENCiFindGb2312FromUnicode(dst, src);
 
 		if (!dst[0] && !dst[1])
 			ENCiFindExKanjiGBK((byte2_t *)dst, src);
 
-		(void)0; // Probably a return statement but meh
+		return;
 	}
-	else
-	{
-		dst[0] = dst[1] = 0x00;
-	}
+
+	dst[0] = dst[1] = 0x00;
 }
 
-static void ENCiFindGb2312FromUnicode(unsigned char *dst, char16_t src)
+static void ENCiFindGb2312FromUnicode(byte_t *dst, char16_t src)
 {
-	unsigned char const *p;
+	byte_t const *p;
 
-	unsigned char hi = src >> 8;
-	unsigned char lo = src & 0xffu;
-	unk_t signed left = lo != 0 ? enc_offset_cn[lo - 1] : 0;
+	byte_t hi = src >> 8;
+	byte_t lo = src & 0xffu;
+	unk_t signed left = lo != 0x00 ? enc_offset_cn[lo - 1] : 0;
 	unk_t signed right = enc_offset_cn[lo] - 1;
 
 	while (right - left > 1)
@@ -5391,13 +5345,13 @@ static void ENCiFindGb2312FromUnicode(unsigned char *dst, char16_t src)
 
 static void ENCiFindExKanjiUnicode(byte2_t src, char16_t *dst)
 {
-	signed long left = 0;
-	signed long right = 0xf8;
+	unk4_t long signed left = 0;
+	unk4_t long signed right = 248;
 
 	while (right - left > 1)
 	{
-		signed long mid = (left + right) / 2;
-		char16_t test = enc_tbl_cnex_mbtowc[mid * 2];
+		unk4_t long signed mid = (left + right) / 2;
+		byte2_t test = enc_tbl_cnex_mbtowc[mid * 2];
 
 		if (src == test)
 		{
@@ -5428,12 +5382,12 @@ static void ENCiFindExKanjiUnicode(byte2_t src, char16_t *dst)
 
 static void ENCiFindExKanjiGBK(byte2_t *dst, char16_t src)
 {
-	signed long left = 0;
-	signed long right = 0xf8;
+	unk4_t long signed left = 0;
+	unk4_t long signed right = 0xf8;
 
 	while (right - left > 1)
 	{
-		signed long mid = (left + right) / 2;
+		unk4_t long signed mid = (left + right) / 2;
 		char16_t test = enc_tbl_cnex_mbtowc[mid * 2 + 1];
 
 		if (src == test)

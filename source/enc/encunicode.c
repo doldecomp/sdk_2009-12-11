@@ -4,7 +4,6 @@
  * headers
  */
 
-#include <stddef.h>
 #include <uchar.h>
 
 #include <decomp.h>
@@ -13,31 +12,111 @@
 
 #include <revolution/enc.h>
 #include "encmacros.h"
-
 #include "encutility.h"
-
-#if defined(__clang__)
-#pragma clang diagnostic ignored "-Wimplicit-function-declaration"
-#pragma clang diagnostic error "-Wunused-variable"
-#endif
 
 /*******************************************************************************
  * macros
  */
 
-#undef NULL
-#define NULL	((void *)(0))
+// WARNING: No double-evaluation protection
+#define SWAP_ENDIAN_16(x)			(((x) >> 8) & 0x00ff) | (((x) << 8) & 0xff00)
+
+// Unicode
+
+#define UTF_IS_DEFINED_CODEPOINT(x)	((x) <= 0x10FFFF)
+#define UTF_IS_2_BYTES_IN_UTF8(x)	((x) <    0x0800)
+#define UTF_IS_3_BYTES_IN_UTF8(x)	((x) <=   0xFFFF)
+
+// UTF-8
+
+#define UTF8_BOM_LEN				3
+#define UTF8_BOM_0					0xEF
+#define UTF8_BOM_1					0xBB
+#define UTF8_BOM_2					0xBF
+
+#define UTF8_IS_CONT(x)				((unsigned)((x) & 0xC0) == 0x80)
+#define UTF8_IS_INITIAL_2(x)		((unsigned)((x) & 0xE0) == 0xC0)
+#define UTF8_IS_INITIAL_3(x)		((unsigned)((x) & 0xF0) == 0xE0)
+#define UTF8_IS_INITIAL_4(x)		((unsigned)((x) & 0xF8) == 0xF0)
+
+#define UTF8_GET_INITIAL_2(x)		((x) & 0x1F)
+#define UTF8_GET_INITIAL_3(x)		((x) & 0x0F)
+#define UTF8_GET_INITIAL_4(x)		((x) & 0x07)
+#define UTF8_GET_CONT(x)			((x) & 0x3F)
+
+#define UTF8_MAKE_INITIAL_2(x)		(0xC0 + ( (x) >>  6                    ))
+#define UTF8_MAKE_INITIAL_3(x)		(0xE0 + ( (x) >> 12                    ))
+#define UTF8_MAKE_INITIAL_4(x)		(0xF0 + ( (x) >> 18                    ))
+#define UTF8_MAKE_CONT(x, offset_)	(0x80 + (((x) >>  6 * (offset_)) & 0x3F))
+
+#define UTF8_CHECK_BOM(stream_, limit_, limited_, cnt_)	\
+	do if ((limit_) >= UTF8_BOM_LEN || !(limited_))		\
+	{													\
+		char8_t const *bom = *(stream_);				\
+														\
+		if (*bom == UTF8_BOM_0)							\
+		{												\
+			++bom;										\
+														\
+			if (*bom == UTF8_BOM_1)						\
+			{											\
+				++bom;									\
+														\
+				if (*bom == UTF8_BOM_2)					\
+				{										\
+					*(stream_) = bom + 1;				\
+					*(cnt_) += UTF8_BOM_LEN;			\
+				}										\
+			}											\
+		}												\
+	} while (0)
+
+// UTF-16
+
+#define UTF16_BOM_LEN					1
+#define UTF16_BE_BOM					0xFEFF
+#define UTF16_LE_BOM					0xFFFE
+
+#define UTF16_IS_SURROGATE(x)			((unsigned)((x) & 0xF800) == 0xD800)
+
+#define UTF16_GET_HIGH_SURROGATE(x)		(((x) - 0xD7C0) << 10)
+#define UTF16_GET_LOW_SURROGATE(x)		( (x) & 0x03EF       )
+
+#define UTF16_MAKE_HIGH_SURROGATE(x)	(0xD7C0 + ((x) >> 10))
+#define UTF16_MAKE_LOW_SURROGATE(x)		(0xDC00 + ((x) & 0x3FF))
+
+// UTF-32
+
+#define UTF32_BOM_LEN					1
+#define UTF32_BE_BOM					0x0000FEFF
+#define UTF32_LE_BOM					0xFFFE0000
+
+#define UTF32_CHECK_BOM(stream_, srcSize_, limit_, limited_, cnt_, dstSize_)	\
+	do if ((limit_) > 0 || !(limited_))											\
+	{																			\
+		if (**(stream_) == UTF32_BE_BOM)										\
+		{																		\
+			++*(cnt_);															\
+			++*(stream_);														\
+		}																		\
+		else if (**(stream_) == UTF32_LE_BOM)									\
+		{																		\
+			if (dstSize_)														\
+				*(dstSize_) = 0;												\
+																				\
+			*(srcSize_) = 0;													\
+			return ENC_EILSEQ;													\
+		}																		\
+	} while (0)
 
 /*******************************************************************************
  * local function declarations
  */
 
 static char32_t ENCiConvertUtf8To32(char8_t const *src, int length);
-static void ENCiConvertUtf32To8(char8_t *dst, int length, char32_t c32);
-
+static void ENCiConvertUtf32To8(char8_t *dst, int length, char32_t src);
 static char32_t ENCiConvertUtf16To32(char16_t const *src, int length);
-static void ENCiConvertUtf32To16(char16_t *dst, int length, char32_t c32);
-
+static void ENCiConvertUtf32To16(char16_t *dst, int length, char32_t src);
 static u8 ENCiGetBase64Value(unsigned char c);
 
 /*******************************************************************************
@@ -45,10 +124,13 @@ static u8 ENCiGetBase64Value(unsigned char c);
  */
 
 // .data
-static u8 base64_array[] =
+
+// clang-format off
+static u8 base64_array[128] =
 {
 #if defined(__clang__)
 # pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wgnu-designator"
 # pragma clang diagnostic ignored "-Winitializer-overrides"
 #endif
 
@@ -75,149 +157,74 @@ static u8 base64_array[] =
 # pragma clang diagnostic pop
 #endif
 };
+// clang-format on
 
 /*******************************************************************************
  * functions
  */
 
-ENCResult ENCConvertStringUnicodeToAscii(ascii_t *dst, unk4_t signed *dstSize,
-                                         char16_t const *src,
-                                         unk4_t signed *srcSize)
-{
-	return ENCiConvertStringUnicodeToAscii(dst, dstSize, src, srcSize,
-	                                       ENC_BREAK_TYPE_NONE);
-}
+DEFINE_PUBLIC_ENC_TRAMPOLINE_FROM_UTF16(Ascii)
+DEFINE_PUBLIC_ENC_TRAMPOLINE_TO_UTF16(Ascii)
+DEFINE_PUBLIC_ENC_TRAMPOLINE(Utf32, char32_t, Utf16, char16_t)
+DEFINE_PUBLIC_ENC_TRAMPOLINE(Utf16, char16_t, Utf32, char32_t)
+DEFINE_PUBLIC_ENC_TRAMPOLINE(Utf32, char32_t, Utf8, char8_t)
+DEFINE_PUBLIC_ENC_TRAMPOLINE(Utf8, char8_t, Utf32, char32_t)
+DEFINE_PUBLIC_ENC_TRAMPOLINE(Utf16, char16_t, Utf8, char8_t)
+DEFINE_PUBLIC_ENC_TRAMPOLINE(Utf8, char8_t, Utf16, char16_t)
+DEFINE_PUBLIC_ENC_TRAMPOLINE_WITH_MB_STATE(Utf16, char16_t, Utf16, char16_t)
+DEFINE_PUBLIC_ENC_TRAMPOLINE_WITH_GIVEN_MB_STATE_VIA(
+	Utf16LE, char16_t, Utf16, Utf16BE, char16_t, Utf16,
+	ENC_UTF16_STATE_LITTLE_ENDIAN)
+DEFINE_PUBLIC_ENC_TRAMPOLINE_WITH_GIVEN_MB_STATE(Utf7, byte_t, Utf16, char16_t,
+                                                 ENC_UTF7_STATE_INITIAL)
 
-ENCResult ENCConvertStringAsciiToUnicode(char16_t *dst, unk4_t signed *dstSize,
-                                         ascii_t const *src,
-                                         unk4_t signed *srcSize)
-{
-	return ENCiConvertStringAsciiToUnicode(dst, dstSize, src, srcSize,
-	                                       ENC_BREAK_TYPE_NONE);
-}
-
-ENCResult ENCConvertStringUtf32ToUtf16(char16_t *dst, unk4_t signed *dstSize,
-                                       char32_t const *src,
-                                       unk4_t signed *srcSize)
-{
-	return ENCiConvertStringUtf32ToUtf16(dst, dstSize, src, srcSize,
-	                                     ENC_BREAK_TYPE_NONE);
-}
-
-ENCResult ENCConvertStringUtf16ToUtf32(char32_t *dst, unk4_t signed *dstSize,
-                                       char16_t const *src,
-                                       unk4_t signed *srcSize)
-{
-	return ENCiConvertStringUtf16ToUtf32(dst, dstSize, src, srcSize,
-	                                     ENC_BREAK_TYPE_NONE);
-}
-
-ENCResult ENCConvertStringUtf32ToUtf8(char8_t *dst, unk4_t signed *dstSize,
-                                      char32_t const *src,
-                                      unk4_t signed *srcSize)
-{
-	return ENCiConvertStringUtf32ToUtf8(dst, dstSize, src, srcSize,
-	                                    ENC_BREAK_TYPE_NONE);
-}
-
-ENCResult ENCConvertStringUtf8ToUtf32(char32_t *dst, unk4_t signed *dstSize,
-                                      char8_t const *src,
-                                      unk4_t signed *srcSize)
-{
-	return ENCiConvertStringUtf8ToUtf32(dst, dstSize, src, srcSize,
-	                                    ENC_BREAK_TYPE_NONE);
-}
-
-ENCResult ENCConvertStringUtf16ToUtf8(char8_t *dst, unk4_t signed *dstSize,
-                                      char16_t const *src,
-                                      unk4_t signed *srcSize)
-{
-	return ENCiConvertStringUtf16ToUtf8(dst, dstSize, src, srcSize,
-	                                    ENC_BREAK_TYPE_NONE);
-}
-
-ENCResult ENCConvertStringUtf8ToUtf16(char16_t *dst, unk4_t signed *dstSize,
-                                      char8_t const *src,
-                                      unk4_t signed *srcSize)
-{
-	return ENCiConvertStringUtf8ToUtf16(dst, dstSize, src, srcSize,
-	                                    ENC_BREAK_TYPE_NONE);
-}
-
-ENCResult ENCConvertStringUtf16ToUtf16(char16_t *dst, unk4_t signed *dstSize,
-                                       char16_t const *src,
-                                       unk4_t signed *srcSize)
-{
-	return ENCiConvertStringUtf16ToUtf16(dst, dstSize, src, srcSize,
-	                                     ENC_BREAK_TYPE_NONE, nullptr);
-}
-
-ENCResult ENCConvertStringUtf16LEToUtf16BE(char16_t *dst,
-                                           unk4_t signed *dstSize,
-                                           char16_t const *src,
-                                           unk4_t signed *srcSize)
-{
-	ENCEndianness endianness = ENC_LITTLE_ENDIAN;
-
-	return ENCiConvertStringUtf16ToUtf16(dst, dstSize, src, srcSize,
-	                                     ENC_BREAK_TYPE_NONE, &endianness);
-}
-
-ENCResult ENCConvertStringUtf7ToUtf16(char16_t *dst, unk4_t signed *dstSize,
-                                      utf7_t const *src, unk4_t signed *srcSize)
-{
-	ENCState state = {0};
-
-	return ENCiConvertStringUtf7ToUtf16(dst, dstSize, src, srcSize,
-	                                    ENC_BREAK_TYPE_NONE, &state);
-}
-
-ENCResult ENCSetUnicodeBOM(char16_t *dst, unk4_t signed dstSize)
+ENCResult ENCSetUnicodeBOM(char16_t *dst, s32 dstSize)
 {
 	return ENCSetUnicodeBOM16(dst, dstSize);
 }
 
-ENCResult ENCSetUnicodeBOM32(char32_t *dst, unk4_t signed dstSize)
+ENCResult ENCSetUnicodeBOM32(char32_t *dst, s32 dstSize)
 {
 	ENCiRegisterVersion();
 
 	if (dst == nullptr || dstSize < UTF32_BOM_LEN)
-		return ENC_ENOSPC;
+		return ENC_ENOBUFS;
 
 	*dst = UTF32_BE_BOM;
 
 	return ENC_ESUCCESS;
 }
 
-ENCResult ENCSetUnicodeBOM16(char16_t *dst, unk4_t signed dstSize)
+ENCResult ENCSetUnicodeBOM16(char16_t *dst, s32 dstSize)
 {
 	ENCiRegisterVersion();
 
 	if (dst == nullptr || dstSize < UTF16_BOM_LEN)
-		return ENC_ENOSPC;
+		return ENC_ENOBUFS;
 
 	*dst = UTF16_BE_BOM;
 
 	return ENC_ESUCCESS;
 }
 
-ENCResult ENCSetUnicodeBOM8(char8_t *dst, unk4_t signed dstSize)
+ENCResult ENCSetUnicodeBOM8(char8_t *dst, s32 dstSize)
 {
 	ENCiRegisterVersion();
 
 	if (dst == nullptr || dstSize < UTF8_BOM_LEN)
-		return ENC_ENOSPC;
+		return ENC_ENOBUFS;
 
 	*dst++ = 0xFE; // ERRATUM: The correct byte is 0xEF, not 0xFE
 	*dst++ = UTF8_BOM_1;
 	*dst = UTF8_BOM_2;
 
+	// I hope they fix it in a later version !
+
 	return ENC_ESUCCESS;
 }
 
-ENCResult ENCiConvertStringUnicodeToAscii(ascii_t *dst, unk4_t signed *dstSize,
-                                          char16_t const *src,
-                                          unk4_t signed *srcSize,
+ENCResult ENCiConvertStringUnicodeToAscii(byte_t *dst, s32 *dstSize,
+                                          char16_t const *src, s32 *srcSize,
                                           ENCBreakType breakType)
 {
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
@@ -225,27 +232,27 @@ ENCResult ENCiConvertStringUnicodeToAscii(ascii_t *dst, unk4_t signed *dstSize,
 
 	ENCResult ret;
 
-	CHECK_PARAMETERS(dst, dstSize, dstLimit, dstValid, src, srcSize, srcLimit,
-	                 srcLimited, ret);
+	CHECK_PARAMETERS(&ret, dst, dstSize, &dstLimit, &dstValid, src, srcSize,
+	                 &srcLimit, &srcLimited);
 
-	UTF16_CHECK_BOM(src, srcSize, srcLimit, srcLimited, srcCnt, dstSize);
+	UTF16_CHECK_BOM(&src, srcSize, srcLimit, srcLimited, &srcCnt, dstSize);
 
 	while (*src && (srcCnt < srcLimit || !srcLimited))
 	{
 		char16_t cur = *src;
 
-		CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, ret);
+		UNSAFE_CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, &ret);
 
-		CHECK_BREAK_TYPE(dst, dstCnt, dstLimit, dstValid, src, srcCnt, srcLimit,
-		                 srcLimited, breakType, ret);
+		UNSAFE_CHECK_BREAK_TYPE(&dst, &dstCnt, dstLimit, dstValid, &src,
+		                        &srcCnt, srcLimit, srcLimited, breakType, &ret);
 
 		if (IS_ASCII(cur))
 		{
-			COPY_CHAR_AS_IS(cur, dst, dstCnt, dstValid, src, srcCnt);
+			WRITE_CHAR(cur, &dst, &dstCnt, dstValid, &src, &srcCnt);
 		}
 		else
 		{
-			THROW_AND_QUIT(ret, ENC_E2);
+			UNSAFE_THROW_AND_QUIT(&ret, ENC_ERANGE);
 		}
 	}
 
@@ -254,9 +261,8 @@ ENCResult ENCiConvertStringUnicodeToAscii(ascii_t *dst, unk4_t signed *dstSize,
 	return ret;
 }
 
-ENCResult ENCiConvertStringAsciiToUnicode(char16_t *dst, unk4_t signed *dstSize,
-                                          ascii_t const *src,
-                                          unk4_t signed *srcSize,
+ENCResult ENCiConvertStringAsciiToUnicode(char16_t *dst, s32 *dstSize,
+                                          byte_t const *src, s32 *srcSize,
                                           ENCBreakType breakType)
 {
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
@@ -264,23 +270,25 @@ ENCResult ENCiConvertStringAsciiToUnicode(char16_t *dst, unk4_t signed *dstSize,
 
 	ENCResult ret;
 
-	CHECK_PARAMETERS(dst, dstSize, dstLimit, dstValid, src, srcSize, srcLimit,
-	                 srcLimited, ret);
+	CHECK_PARAMETERS(&ret, dst, dstSize, &dstLimit, &dstValid, src, srcSize,
+	                 &srcLimit, &srcLimited);
 
 	while (*src && (srcCnt < srcLimit || !srcLimited))
 	{
-		CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, ret);
+		UNSAFE_CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, &ret);
 
-		CHECK_BREAK_TYPE(dst, dstCnt, dstLimit, dstValid, src, srcCnt, srcLimit,
-		                 srcLimited, breakType, ret);
+		UNSAFE_CHECK_BREAK_TYPE(&dst, &dstCnt, dstLimit, dstValid, &src,
+		                        &srcCnt, srcLimit, srcLimited, breakType, &ret);
 
 		// reversed from above?
 		if (!IS_ASCII(*src))
 		{
-			THROW_AND_QUIT(ret, ENC_EILSEQ);
+			UNSAFE_THROW_AND_QUIT(&ret, ENC_EILSEQ);
 		}
-
-		COPY_CHAR_AS_IS(*src, dst, dstCnt, dstValid, src, srcCnt);
+		else
+		{
+			WRITE_CHAR(*src, &dst, &dstCnt, dstValid, &src, &srcCnt);
+		}
 	}
 
 	WRITE_BACK_SIZES(srcSize, srcCnt, dstSize, dstCnt);
@@ -288,9 +296,8 @@ ENCResult ENCiConvertStringAsciiToUnicode(char16_t *dst, unk4_t signed *dstSize,
 	return ret;
 }
 
-ENCResult ENCiConvertStringUtf32ToUtf16(char16_t *dst, unk4_t signed *dstSize,
-                                        char32_t const *src,
-                                        unk4_t signed *srcSize,
+ENCResult ENCiConvertStringUtf32ToUtf16(char16_t *dst, s32 *dstSize,
+                                        char32_t const *src, s32 *srcSize,
                                         ENCBreakType breakType)
 {
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
@@ -298,32 +305,32 @@ ENCResult ENCiConvertStringUtf32ToUtf16(char16_t *dst, unk4_t signed *dstSize,
 
 	ENCResult ret;
 
-	CHECK_PARAMETERS(dst, dstSize, dstLimit, dstValid, src, srcSize, srcLimit,
-	                 srcLimited, ret);
+	CHECK_PARAMETERS(&ret, dst, dstSize, &dstLimit, &dstValid, src, srcSize,
+	                 &srcLimit, &srcLimited);
 
-	UTF32_CHECK_BOM(src, srcSize, srcLimit, srcLimited, srcCnt, dstSize);
+	UTF32_CHECK_BOM(&src, srcSize, srcLimit, srcLimited, &srcCnt, dstSize);
 
 	while (*src && (srcCnt < srcLimit || !srcLimited))
 	{
 		char32_t cur = *src;
 
-		CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, ret);
+		UNSAFE_CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, &ret);
 
-		CHECK_BREAK_TYPE(dst, dstCnt, dstLimit, dstValid, src, srcCnt, srcLimit,
-		                 srcLimited, breakType, ret);
+		UNSAFE_CHECK_BREAK_TYPE(&dst, &dstCnt, dstLimit, dstValid, &src,
+		                        &srcCnt, srcLimit, srcLimited, breakType, &ret);
 
 		if (cur > 0xFFFF)
 		{
 			if (!UTF_IS_DEFINED_CODEPOINT(cur))
 			{
-				THROW_AND_QUIT(ret, ENC_EILSEQ);
+				UNSAFE_THROW_AND_QUIT(&ret, ENC_EILSEQ);
 			}
 			
 			if (dstValid)
 			{
 				if (dstLimit - dstCnt < 2)
 				{
-					THROW_AND_QUIT(ret, ENC_ENOSPC);
+					UNSAFE_THROW_AND_QUIT(&ret, ENC_ENOBUFS);
 				}
 				
 				ENCiConvertUtf32To16(dst, 2, cur);
@@ -334,7 +341,7 @@ ENCResult ENCiConvertStringUtf32ToUtf16(char16_t *dst, unk4_t signed *dstSize,
 		}
 		else if (UTF16_IS_SURROGATE(cur))
 		{
-			THROW_AND_QUIT(ret, ENC_EILSEQ);
+			UNSAFE_THROW_AND_QUIT(&ret, ENC_EILSEQ);
 		}
 		else
 		{
@@ -342,7 +349,7 @@ ENCResult ENCiConvertStringUtf32ToUtf16(char16_t *dst, unk4_t signed *dstSize,
 				*dst = cur;
 		}
 
-		INCREMENT_STREAMS(dst, dstCnt, dstValid, src, srcCnt);
+		INCREMENT_STREAMS(&dst, &dstCnt, dstValid, &src, &srcCnt);
 	}
 
 	WRITE_BACK_SIZES(srcSize, srcCnt, dstSize, dstCnt);
@@ -350,9 +357,8 @@ ENCResult ENCiConvertStringUtf32ToUtf16(char16_t *dst, unk4_t signed *dstSize,
 	return ret;
 }
 
-ENCResult ENCiConvertStringUtf16ToUtf32(char32_t *dst, unk4_t signed *dstSize,
-                                        char16_t const *src,
-                                        unk4_t signed *srcSize,
+ENCResult ENCiConvertStringUtf16ToUtf32(char32_t *dst, s32 *dstSize,
+                                        char16_t const *src, s32 *srcSize,
                                         ENCBreakType breakType)
 {
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
@@ -360,19 +366,19 @@ ENCResult ENCiConvertStringUtf16ToUtf32(char32_t *dst, unk4_t signed *dstSize,
 
 	ENCResult ret;
 
-	CHECK_PARAMETERS(dst, dstSize, dstLimit, dstValid, src, srcSize, srcLimit,
-	                 srcLimited, ret);
+	CHECK_PARAMETERS(&ret, dst, dstSize, &dstLimit, &dstValid, src, srcSize,
+	                 &srcLimit, &srcLimited);
 
-	UTF16_CHECK_BOM(src, srcSize, srcLimit, srcLimited, srcCnt, dstSize);
+	UTF16_CHECK_BOM(&src, srcSize, srcLimit, srcLimited, &srcCnt, dstSize);
 
 	while (*src && (srcCnt < srcLimit || !srcLimited))
 	{
 		char16_t cur = *src;
 
-		CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, ret);
+		UNSAFE_CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, &ret);
 
-		CHECK_BREAK_TYPE(dst, dstCnt, dstLimit, dstValid, src, srcCnt, srcLimit,
-		                 srcLimited, breakType, ret);
+		UNSAFE_CHECK_BREAK_TYPE(&dst, &dstCnt, dstLimit, dstValid, &src,
+		                        &srcCnt, srcLimit, srcLimited, breakType, &ret);
 
 		if (!UTF16_IS_SURROGATE(cur))
 		{
@@ -391,7 +397,7 @@ ENCResult ENCiConvertStringUtf16ToUtf32(char32_t *dst, unk4_t signed *dstSize,
 			++srcCnt;
 		}
 
-		INCREMENT_STREAMS(dst, dstCnt, dstValid, src, srcCnt);
+		INCREMENT_STREAMS(&dst, &dstCnt, dstValid, &src, &srcCnt);
 	}
 
 	WRITE_BACK_SIZES(srcSize, srcCnt, dstSize, dstCnt);
@@ -399,9 +405,8 @@ ENCResult ENCiConvertStringUtf16ToUtf32(char32_t *dst, unk4_t signed *dstSize,
 	return ret;
 }
 
-ENCResult ENCiConvertStringUtf32ToUtf8(char8_t *dst, unk4_t signed *dstSize,
-                                       char32_t const *src,
-                                       unk4_t signed *srcSize,
+ENCResult ENCiConvertStringUtf32ToUtf8(char8_t *dst, s32 *dstSize,
+                                       char32_t const *src, s32 *srcSize,
                                        ENCBreakType breakType)
 {
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
@@ -409,19 +414,19 @@ ENCResult ENCiConvertStringUtf32ToUtf8(char8_t *dst, unk4_t signed *dstSize,
 
 	ENCResult ret;
 
-	CHECK_PARAMETERS(dst, dstSize, dstLimit, dstValid, src, srcSize, srcLimit,
-	                 srcLimited, ret);
+	CHECK_PARAMETERS(&ret, dst, dstSize, &dstLimit, &dstValid, src, srcSize,
+	                 &srcLimit, &srcLimited);
 
-	UTF32_CHECK_BOM(src, srcSize, srcLimit, srcLimited, srcCnt, dstSize);
+	UTF32_CHECK_BOM(&src, srcSize, srcLimit, srcLimited, &srcCnt, dstSize);
 
 	while (*src && (srcCnt < srcLimit || !srcLimited))
 	{
 		char32_t cur = *src;
 
-		CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, ret);
+		UNSAFE_CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, &ret);
 
-		CHECK_BREAK_TYPE(dst, dstCnt, dstLimit, dstValid, src, srcCnt, srcLimit,
-		                 srcLimited, breakType, ret);
+		UNSAFE_CHECK_BREAK_TYPE(&dst, &dstCnt, dstLimit, dstValid, &src,
+		                        &srcCnt, srcLimit, srcLimited, breakType, &ret);
 
 		if (IS_ASCII(cur))
 		{
@@ -430,11 +435,11 @@ ENCResult ENCiConvertStringUtf32ToUtf8(char8_t *dst, unk4_t signed *dstSize,
 		}
 		else
 		{
-			int dstMbLen = 0;
+			unk4_t long dstMbLen = 0;
 
 			if (UTF16_IS_SURROGATE(cur) || !UTF_IS_DEFINED_CODEPOINT(cur))
 			{
-				THROW_AND_QUIT(ret, ENC_EILSEQ);
+				UNSAFE_THROW_AND_QUIT(&ret, ENC_EILSEQ);
 			}
 
 			if (UTF_IS_2_BYTES_IN_UTF8(cur))
@@ -448,7 +453,7 @@ ENCResult ENCiConvertStringUtf32ToUtf8(char8_t *dst, unk4_t signed *dstSize,
 			{
 				if (dstLimit - dstCnt < dstMbLen)
 				{
-					THROW_AND_QUIT(ret, ENC_ENOSPC);
+					UNSAFE_THROW_AND_QUIT(&ret, ENC_ENOBUFS);
 				}
 
 				ENCiConvertUtf32To8(dst, dstMbLen, cur);
@@ -458,7 +463,7 @@ ENCResult ENCiConvertStringUtf32ToUtf8(char8_t *dst, unk4_t signed *dstSize,
 			dstCnt += dstMbLen - 1;
 		}
 
-		INCREMENT_STREAMS(dst, dstCnt, dstValid, src, srcCnt);
+		INCREMENT_STREAMS(&dst, &dstCnt, dstValid, &src, &srcCnt);
 	}
 
 	WRITE_BACK_SIZES(srcSize, srcCnt, dstSize, dstCnt);
@@ -466,9 +471,8 @@ ENCResult ENCiConvertStringUtf32ToUtf8(char8_t *dst, unk4_t signed *dstSize,
 	return ret;
 }
 
-ENCResult ENCiConvertStringUtf8ToUtf32(char32_t *dst, unk4_t signed *dstSize,
-                                       char8_t const *src,
-                                       unk4_t signed *srcSize,
+ENCResult ENCiConvertStringUtf8ToUtf32(char32_t *dst, s32 *dstSize,
+                                       char8_t const *src, s32 *srcSize,
                                        ENCBreakType breakType)
 {
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
@@ -476,23 +480,21 @@ ENCResult ENCiConvertStringUtf8ToUtf32(char32_t *dst, unk4_t signed *dstSize,
 
 	ENCResult ret;
 
-	CHECK_PARAMETERS(dst, dstSize, dstLimit, dstValid, src, srcSize, srcLimit,
-	                 srcLimited, ret);
+	CHECK_PARAMETERS(&ret, dst, dstSize, &dstLimit, &dstValid, src, srcSize,
+	                 &srcLimit, &srcLimited);
 
-
-	UTF8_CHECK_BOM(src, srcLimit, srcLimited, srcCnt);
+	UTF8_CHECK_BOM(&src, srcLimit, srcLimited, &srcCnt);
 
 	while (*src && (srcCnt < srcLimit || !srcLimited))
 	{
-		char32_t c32; // why is it out here>
-
 		char8_t cur = *src;
-		
-		CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, ret);
 
-		CHECK_BREAK_TYPE(dst, dstCnt, dstLimit, dstValid, src, srcCnt, srcLimit,
-		                 srcLimited, breakType, ret);
+		UNSAFE_CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, &ret);
 
+		char32_t c32; // why is it over here?
+
+		UNSAFE_CHECK_BREAK_TYPE(&dst, &dstCnt, dstLimit, dstValid, &src,
+		                        &srcCnt, srcLimit, srcLimited, breakType, &ret);
 
 		if (IS_ASCII(cur))
 		{
@@ -500,7 +502,7 @@ ENCResult ENCiConvertStringUtf8ToUtf32(char32_t *dst, unk4_t signed *dstSize,
 		}
 		else
 		{
-			int srcMbLen = 0;
+			unk4_t long srcMbLen = 0;
 
 			if (UTF8_IS_INITIAL_2(cur))
 			{
@@ -516,24 +518,23 @@ ENCResult ENCiConvertStringUtf8ToUtf32(char32_t *dst, unk4_t signed *dstSize,
 			}
 			else
 			{
-				THROW_AND_QUIT(ret, ENC_EILSEQ);
+				UNSAFE_THROW_AND_QUIT(&ret, ENC_EILSEQ);
 			}
 			
 			if (srcLimit - srcCnt < srcMbLen && srcLimited)
 				break;
 			
 			c32 = ENCiConvertUtf8To32(src, srcMbLen);
-
 			if (!c32)
 			{
-				THROW_AND_QUIT(ret, ENC_EILSEQ);
+				UNSAFE_THROW_AND_QUIT(&ret, ENC_EILSEQ);
 			}
 
 			src += srcMbLen - 1;
 			srcCnt += srcMbLen - 1;
 		}
 
-		COPY_CHAR_AS_IS(c32, dst, dstCnt, dstValid, src, srcCnt);
+		WRITE_CHAR(c32, &dst, &dstCnt, dstValid, &src, &srcCnt);
 	}
 
 	WRITE_BACK_SIZES(srcSize, srcCnt, dstSize, dstCnt);
@@ -541,9 +542,8 @@ ENCResult ENCiConvertStringUtf8ToUtf32(char32_t *dst, unk4_t signed *dstSize,
 	return ret;
 }
 
-ENCResult ENCiConvertStringUtf16ToUtf8(char8_t *dst, unk4_t signed *dstSize,
-                                       char16_t const *src,
-                                       unk4_t signed *srcSize,
+ENCResult ENCiConvertStringUtf16ToUtf8(char8_t *dst, s32 *dstSize,
+                                       char16_t const *src, s32 *srcSize,
                                        ENCBreakType breakType)
 {
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
@@ -551,28 +551,28 @@ ENCResult ENCiConvertStringUtf16ToUtf8(char8_t *dst, unk4_t signed *dstSize,
 
 	ENCResult ret;
 
-	CHECK_PARAMETERS(dst, dstSize, dstLimit, dstValid, src, srcSize, srcLimit,
-	                 srcLimited, ret);
+	CHECK_PARAMETERS(&ret, dst, dstSize, &dstLimit, &dstValid, src, srcSize,
+	                 &srcLimit, &srcLimited);
 
-	UTF16_CHECK_BOM(src, srcSize, srcLimit, srcLimited, srcCnt, dstSize);
+	UTF16_CHECK_BOM(&src, srcSize, srcLimit, srcLimited, &srcCnt, dstSize);
 
 	while (*src && (srcCnt < srcLimit || !srcLimited))
 	{
 		char16_t cur = *src;
 
-		CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, ret);
+		UNSAFE_CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, &ret);
 
-		CHECK_BREAK_TYPE(dst, dstCnt, dstLimit, dstValid, src, srcCnt, srcLimit,
-		                 srcLimited, breakType, ret);
+		UNSAFE_CHECK_BREAK_TYPE(&dst, &dstCnt, dstLimit, dstValid, &src,
+		                        &srcCnt, srcLimit, srcLimited, breakType, &ret);
 
 		if (IS_ASCII(cur))
 		{
-			COPY_CHAR_AS_IS(cur, dst, dstCnt, dstValid, src, srcCnt);
+			WRITE_CHAR(cur, &dst, &dstCnt, dstValid, &src, &srcCnt);
 		}
 		else
 		{
-			int dstMbLen = 0;
-			int srcMbLen = 0;
+			unk4_t long dstMbLen = 0;
+			unk4_t long srcMbLen = 0;
 
 			if (UTF_IS_2_BYTES_IN_UTF8(cur))
 			{
@@ -597,11 +597,11 @@ ENCResult ENCiConvertStringUtf16ToUtf8(char8_t *dst, unk4_t signed *dstSize,
 			{
 				if (dstLimit - dstCnt < srcMbLen)
 				{
-					THROW_AND_QUIT(ret, ENC_ENOSPC);
+					UNSAFE_THROW_AND_QUIT(&ret, ENC_ENOBUFS);
 				}
 
 				char32_t c32 = ENCiConvertUtf16To32(src, dstMbLen);
-				ENCiConvertUtf32To8(dst, srcMbLen, c32);
+				ENCiConvertUtf32To8(dst, srcMbLen, c32); // NOLINT (it's not)
 
 				dst += srcMbLen;
 			}
@@ -617,9 +617,8 @@ ENCResult ENCiConvertStringUtf16ToUtf8(char8_t *dst, unk4_t signed *dstSize,
 	return ret;
 }
 
-ENCResult ENCiConvertStringUtf8ToUtf16(char16_t *dst, unk4_t signed *dstSize,
-                                       char8_t const *src,
-                                       unk4_t signed *srcSize,
+ENCResult ENCiConvertStringUtf8ToUtf16(char16_t *dst, s32 *dstSize,
+                                       char8_t const *src, s32 *srcSize,
                                        ENCBreakType breakType)
 {
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
@@ -627,28 +626,28 @@ ENCResult ENCiConvertStringUtf8ToUtf16(char16_t *dst, unk4_t signed *dstSize,
 
 	ENCResult ret;
 
-	CHECK_PARAMETERS(dst, dstSize, dstLimit, dstValid, src, srcSize, srcLimit,
-	                 srcLimited, ret);
+	CHECK_PARAMETERS(&ret, dst, dstSize, &dstLimit, &dstValid, src, srcSize,
+	                 &srcLimit, &srcLimited);
 
-	UTF8_CHECK_BOM(src, srcLimit, srcLimited, srcCnt);
+	UTF8_CHECK_BOM(&src, srcLimit, srcLimited, &srcCnt);
 
 	while (*src && (srcCnt < srcLimit || !srcLimited))
 	{
 		char8_t cur = *src;
 
-		CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, ret);
+		UNSAFE_CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, &ret);
 
-		CHECK_BREAK_TYPE(dst, dstCnt, dstLimit, dstValid, src, srcCnt, srcLimit,
-		                 srcLimited, breakType, ret);
+		UNSAFE_CHECK_BREAK_TYPE(&dst, &dstCnt, dstLimit, dstValid, &src,
+		                        &srcCnt, srcLimit, srcLimited, breakType, &ret);
 
 		if (IS_ASCII(cur))
 		{
-			COPY_CHAR_AS_IS(cur, dst, dstCnt, dstValid, src, srcCnt);
+			WRITE_CHAR(cur, &dst, &dstCnt, dstValid, &src, &srcCnt);
 		}
 		else
 		{
-			int srcMbLen = 0;
-			int dstMbLen = 0;
+			unk4_t long srcMbLen = 0;
+			unk4_t long dstMbLen = 0;
 
 			if (UTF8_IS_INITIAL_2(cur))
 			{
@@ -667,23 +666,24 @@ ENCResult ENCiConvertStringUtf8ToUtf16(char16_t *dst, unk4_t signed *dstSize,
 			}
 			else
 			{
-				THROW_AND_QUIT(ret, ENC_EILSEQ);
+				UNSAFE_THROW_AND_QUIT(&ret, ENC_EILSEQ);
 			}
 
 			if (srcLimit - srcCnt < srcMbLen && srcLimited)
 				break;
 
 			char32_t c32 = ENCiConvertUtf8To32(src, srcMbLen);
+
 			if (!c32)
 			{
-				THROW_AND_QUIT(ret, ENC_EILSEQ);
+				UNSAFE_THROW_AND_QUIT(&ret, ENC_EILSEQ);
 			}
 
 			if (dstValid)
 			{
 				if (dstLimit - dstCnt < dstMbLen)
 				{
-					THROW_AND_QUIT(ret, ENC_ENOSPC);
+					UNSAFE_THROW_AND_QUIT(&ret, ENC_ENOBUFS);
 				}
 
 				ENCiConvertUtf32To16(dst, dstMbLen, c32);
@@ -701,76 +701,82 @@ ENCResult ENCiConvertStringUtf8ToUtf16(char16_t *dst, unk4_t signed *dstSize,
 	return ret;
 }
 
-ENCResult ENCiConvertStringUtf7ToUtf16(char16_t *dst, unk4_t signed *dstSize,
-                                       utf7_t const *src,
-                                       unk4_t signed *srcSize,
-                                       ENCBreakType breakType, ENCState *state)
+ENCResult ENCiConvertStringUtf7ToUtf16(char16_t *dst, s32 *dstSize,
+                                       byte_t const *src, s32 *srcSize,
+                                       ENCBreakType breakType,
+                                       ENCMBState *mbState)
 {
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
-		                       srcLimited)
+	                       srcLimited)
 
-	BOOL _7BitMode = false;
+	BOOL base64Mode = false;
 
-	unk4_t unsigned a = 0;
-	unk4_t unsigned b = 0;
+	byte4_t partialBits = 0x00000000;
+	unsigned int partialOffset = 0;
 
 	ENCResult ret;
 
-	CHECK_PARAMETERS(dst, dstSize, dstLimit, dstValid, src, srcSize, srcLimit,
-	                 srcLimited, ret);
+	CHECK_PARAMETERS(&ret, dst, dstSize, &dstLimit, &dstValid, src, srcSize,
+	                 &srcLimit, &srcLimited);
 
-	if (state && *state & 8)
+	if (mbState && ENC_UTF7_STATE_IS_BASE64_MODE(*mbState))
 	{
-		_7BitMode = true;
+		base64Mode = true;
 
-		a = *state & 0xFFFC0000;
-		b = (*state & 7) << 1;
+		partialBits = ENC_UTF7_STATE_GET_PARTIAL_BITS(*mbState);
+		partialOffset = ENC_UTF7_STATE_GET_PARTIAL_OFFSET(*mbState);
 	}
 
 	while (*src && (srcCnt < srcLimit || !srcLimited))
 	{
-		if (_7BitMode)
+		if (base64Mode)
 		{
-			unsigned char cur = *src;
+			byte_t cur = *src;
 
 			if (dstCnt >= dstLimit && dstValid && cur != '-')
 			{
-				THROW_AND_QUIT(ret, ENC_ENOSPC);
+				UNSAFE_THROW_AND_QUIT(&ret, ENC_ENOBUFS);
 			}
 			
-			if (cur == '-')
+			if (cur == '-') // shift out
 			{
-				_7BitMode = false;
+				base64Mode = false;
 
 				++src;
 				++srcCnt;
+
 				continue;
 			}
 
-			unk4_t unsigned c = ENCiGetBase64Value(cur);
+			unk4_t unsigned b64 = ENCiGetBase64Value(cur);
 
-			if (c > 63) // in particular, 0xff is the error sentinel
+			if (b64 > 63) // in particular, 0xff is the error sentinel
 			{
-				THROW_AND_QUIT(ret, ENC_EILSEQ);
+				UNSAFE_THROW_AND_QUIT(&ret, ENC_EILSEQ);
 			}
 
-			a |= c << (26 - b);
+			/* Calculations with offset subtract 6 to account for the size of
+			 * the base64 unit that gets shifted
+			 */
+			partialBits |= b64 << (32 - 6 - partialOffset);
 
-			if (b < 10)
+			if (partialOffset < 16 - 6)
 			{
-				b += 6;
+				partialOffset += 6;
 			}
 			else
 			{
 				if (dstValid)
 				{
-					*dst = a >> 16;
-					++dst;
+					/* NOTE: Doubled expressions */
+					*dst = partialBits >> 16; ++dst;
 				}
 
-				a <<= 16;
-				b -= 10;
-				dstCnt += 1;
+				partialBits <<= 16;
+
+				partialOffset -= 16 - 6;
+
+				++dstCnt;
 			}
 
 			++src;
@@ -778,18 +784,19 @@ ENCResult ENCiConvertStringUtf7ToUtf16(char16_t *dst, unk4_t signed *dstSize,
 		}
 		else
 		{
-			unsigned char cur = *src;
+			byte_t cur = *src;
 
 			if (dstCnt >= dstLimit && dstValid && cur != '+')
 			{
-				THROW_AND_QUIT(ret, ENC_ENOSPC);
+				UNSAFE_THROW_AND_QUIT(&ret, ENC_ENOBUFS);
 			}
 
-			if (cur == '+')
+			if (cur == '+') // shift in
 			{
-				_7BitMode = true;
-				a = 0;
-				b = 0;
+				base64Mode = true;
+
+				partialBits = 0x00000000;
+				partialOffset = 0;
 
 				++src;
 				++srcCnt;
@@ -797,19 +804,20 @@ ENCResult ENCiConvertStringUtf7ToUtf16(char16_t *dst, unk4_t signed *dstSize,
 				continue;
 			}
 
-			CHECK_BREAK_TYPE(dst, dstCnt, dstLimit, dstValid, src, srcCnt,
-			                 srcLimit, srcLimited, breakType, ret);
+			UNSAFE_CHECK_BREAK_TYPE(&dst, &dstCnt, dstLimit, dstValid, &src,
+			                        &srcCnt, srcLimit, srcLimited, breakType,
+			                        &ret);
 
-			COPY_CHAR_AS_IS(cur, dst, dstCnt, dstValid, src, srcCnt);
+			WRITE_CHAR(cur, &dst, &dstCnt, dstValid, &src, &srcCnt);
 		}
 	}
 
-	if (state)
+	if (mbState)
 	{
-		if (_7BitMode)
-			*state = 8 | (a & 0xFFFC0000) | ((unsigned)(b >> 1) & 7);
+		if (base64Mode)
+			*mbState = ENC_UTF7_STATE_COLLECT(partialBits, partialOffset);
 		else
-			*state = 0;
+			*mbState = ENC_UTF7_STATE_INITIAL;
 	}
 
 	WRITE_BACK_SIZES(srcSize, srcCnt, dstSize, dstCnt);
@@ -817,11 +825,10 @@ ENCResult ENCiConvertStringUtf7ToUtf16(char16_t *dst, unk4_t signed *dstSize,
 	return ret;
 }
 
-ENCResult ENCiConvertStringUtf16ToUtf16(char16_t *dst, unk4_t signed *dstSize,
-                                        char16_t const *src,
-                                        unk4_t signed *srcSize,
+ENCResult ENCiConvertStringUtf16ToUtf16(char16_t *dst, s32 *dstSize,
+                                        char16_t const *src, s32 *srcSize,
                                         ENCBreakType breakType,
-                                        ENCEndianness *endianness)
+                                        ENCMBState *mbState)
 {
 	CREATE_STATE_VARIABLES(dstCnt, dstLimit, dstValid, srcCnt, srcLimit,
 	                       srcLimited)
@@ -830,31 +837,33 @@ ENCResult ENCiConvertStringUtf16ToUtf16(char16_t *dst, unk4_t signed *dstSize,
 
 	ENCResult ret;
 
-	CHECK_PARAMETERS(dst, dstSize, dstLimit, dstValid, src, srcSize, srcLimit,
-	                 srcLimited, ret);
+	CHECK_PARAMETERS(&ret, dst, dstSize, &dstLimit, &dstValid, src, srcSize,
+	                 &srcLimit, &srcLimited);
 
+	// UTF16_CHECK_BOM but also manipulates state
 	if (srcLimit > 0 || !srcLimited)
 	{
 		if (*src == UTF16_BE_BOM)
 		{
-			if (endianness != nullptr)
-				*endianness = ENC_BIG_ENDIAN;
+			if (mbState != nullptr)
+				*mbState = ENC_UTF16_STATE_BIG_ENDIAN;
 
 			++srcCnt;
 			++src;
 		}
 		else if (*src == UTF16_LE_BOM)
 		{
-			if (endianness != nullptr)
-				*endianness = ENC_LITTLE_ENDIAN;
+			if (mbState != nullptr)
+				*mbState = ENC_UTF16_STATE_LITTLE_ENDIAN;
 
 			littleEndian = true;
+
 			++srcCnt;
 			++src;
 		}
 		else
 		{
-			if (endianness != nullptr && *endianness == ENC_LITTLE_ENDIAN)
+			if (mbState != nullptr && *mbState == ENC_UTF16_STATE_LITTLE_ENDIAN)
 				littleEndian = true;
 		}
 	}
@@ -866,49 +875,34 @@ ENCResult ENCiConvertStringUtf16ToUtf16(char16_t *dst, unk4_t signed *dstSize,
 		if (littleEndian)
 			cur = SWAP_ENDIAN_16(cur);
 
-		if (dstCnt >= dstLimit && dstValid)
-		{
-			THROW_AND_QUIT(ret, ENC_ENOSPC);
-		}
-		
-		if (breakType > 0)
+		UNSAFE_CHECK_DST_SPACE(dstCnt, dstLimit, dstValid, &ret);
+
+		if (breakType > ENC_BR_KEEP)
 		{
 			int srcBrkLen = 0;
 
-			char16_t x = 0;
+			char16_t cur2 = L'\0';
 
+			// UNSAFE_CHECK_BREAK_TYPE but also potentially swaps endianness
 			if (srcLimit - srcCnt > 1 || !srcLimited)
 			{
-				x = src[1];
+				cur2 = src[1];
 
 				if (littleEndian)
-					x = SWAP_ENDIAN_16(x);
+					cur2 = SWAP_ENDIAN_16(cur2);
 			}
 
-			srcBrkLen = ENCiCheckBreakType(cur, x);
+			srcBrkLen = ENCiCheckBreakType(cur, cur2);
 
 			if (srcBrkLen > 0)
 			{
-				int dstBrkLen =
-					ENCiWriteBreakType(dst, 2, breakType, dstValid);
-
-				if (dstLimit - dstCnt < dstBrkLen && dstValid)
-				{
-					THROW_AND_QUIT(ret, ENC_ENOSPC);
-				}
-				
-				src += srcBrkLen;
-				srcCnt += srcBrkLen;
-				dstCnt += dstBrkLen;
-				
-				if (dstValid)
-					dst += dstBrkLen;
-
-				continue;
+				// This can be reused though
+				UNSAFE_CHECK_DST_BREAK_TYPE(&dst, &dstCnt, dstLimit, dstValid,
+				                            &src, &srcCnt, breakType, &ret);
 			}
 		}
 
-		COPY_CHAR_AS_IS(cur, dst, dstCnt, dstValid, src, srcCnt);
+		WRITE_CHAR(cur, &dst, &dstCnt, dstValid, &src, &srcCnt);
 	}
 
 	WRITE_BACK_SIZES(srcSize, srcCnt, dstSize, dstCnt);
@@ -918,13 +912,14 @@ ENCResult ENCiConvertStringUtf16ToUtf16(char16_t *dst, unk4_t signed *dstSize,
 
 static char32_t ENCiConvertUtf8To32(char8_t const *src, int length)
 {
-	char32_t c32;
 	int i;
+
+	char32_t c32;
 
 	switch (length)
 	{
 	case 1:
-		c32 = UTF8_GET_INITIAL_1(src[0]);
+		c32 = src[0];
 		break;
 
 	case 2:
@@ -940,13 +935,13 @@ static char32_t ENCiConvertUtf8To32(char8_t const *src, int length)
 		break;
 
 	default:
-		return 0;
+		return L'\0';
 	}
 
 	for (i = 1; i < length; ++i)
 	{
 		if (!UTF8_IS_CONT(src[i]))
-			return 0;
+			return L'\0';
 
 		c32 <<= 6;
 		c32 += UTF8_GET_CONT(src[i]);
@@ -955,26 +950,26 @@ static char32_t ENCiConvertUtf8To32(char8_t const *src, int length)
 	return c32;
 }
 
-static void ENCiConvertUtf32To8(char8_t *dst, int length, char32_t c32)
+static void ENCiConvertUtf32To8(char8_t *dst, int length, char32_t src)
 {
 	int i;
 
 	switch (length)
 	{
 	case 1:
-		dst[0] = UTF8_MAKE_INITIAL_1(c32);
+		dst[0] = src;
 		break;
 
 	case 2:
-		dst[0] = UTF8_MAKE_INITIAL_2(c32 >> 6 * 1);
+		dst[0] = UTF8_MAKE_INITIAL_2(src);
 		break;
 
 	case 3:
-		dst[0] = UTF8_MAKE_INITIAL_3(c32 >> 6 * 2);
+		dst[0] = UTF8_MAKE_INITIAL_3(src);
 		break;
 
 	case 4:
-		dst[0] = UTF8_MAKE_INITIAL_4(c32 >> 6 * 3);
+		dst[0] = UTF8_MAKE_INITIAL_4(src);
 		break;
 
 	default:
@@ -982,16 +977,17 @@ static void ENCiConvertUtf32To8(char8_t *dst, int length, char32_t c32)
 	}
 
 	for (i = 1; i < length; ++i)
-		dst[i] = UTF8_MAKE_CONT((c32 >> (length - i - 1) * 6) & 0x3F);
+		dst[i] = UTF8_MAKE_CONT(src, length - i - 1);
 }
 
 static char32_t ENCiConvertUtf16To32(char16_t const *src, int length)
 {
 	if (length == 1)
 	{
-		return src[0];
+		return *src;
 	}
-	/* else */ if (length == 2)
+
+	if (length == 2)
 	{
 		char32_t c32;
 
@@ -1000,34 +996,29 @@ static char32_t ENCiConvertUtf16To32(char16_t const *src, int length)
 
 		return c32;
 	}
-	/* else */
-	{
-		return 0;
-	}
+
+	return L'\0';
 }
 
-static void ENCiConvertUtf32To16(char16_t *dst, int length, char32_t c32)
+static void ENCiConvertUtf32To16(char16_t *dst, int length, char32_t src)
 {
 	if (length == 1)
 	{
-		dst[0] = c32;
+		*dst = src;
 	}
-	/* else */ if (length == 2)
+
+	/* NOTE: No else clause here */
+
+	if (length == 2)
 	{
-		dst[0] = UTF16_MAKE_HIGH_SURROGATE(c32 >> 10);
-		dst[1] = UTF16_MAKE_LOW_SURROGATE(c32 & 0x3FF);
-	}
-	/* else */
-	{
-		/* I bet the lasses wrangling IDO would absolutely fucking hate the
-		 * way I'm keeping these functions (kind of) consistent
-		 */
+		dst[0] = UTF16_MAKE_HIGH_SURROGATE(src);
+		dst[1] = UTF16_MAKE_LOW_SURROGATE(src);
 	}
 }
 
 static u8 ENCiGetBase64Value(unsigned char c)
 {
-	if (IS_OUTSIDE_ASCII(c))
+	if (c > 0x7F)
 		return 0xff;
 
 	return base64_array[c];

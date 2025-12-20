@@ -5,31 +5,24 @@
  * headers
  */
 
-#include <decomp.h>
-
 #include <revolution/types.h>
 
 #include <revolution/enc.h>
 
 /*******************************************************************************
- * types
+ * functions
  */
 
 #ifdef __cplusplus
 	extern "C" {
 #endif
 
-/*******************************************************************************
- * functions
- */
-
 void ENCiRegisterVersion(void);
-ENCResult ENCiCheckParameters(BOOL dstValid, unk_t signed *dstSizeIn,
-                              unk_t signed *dstSizeOut, BOOL *dstValidOut,
-                              BOOL srcValid, unk_t signed *srcSizeIn,
-                              unk_t signed *srcSizeOut, BOOL *srcLimitedOut);
+ENCResult ENCiCheckParameters(BOOL dstValid, s32 *dstSizeIn, s32 *dstSizeOut,
+                              BOOL *dstValidOut, BOOL srcValid, s32 *srcSizeIn,
+                              s32 *srcSizeOut, BOOL *srcLimitedOut);
 int ENCiCheckBreakType(unsigned a, unsigned b);
-int ENCiWriteBreakType(void *stream, unk_t width, ENCBreakType type,
+int ENCiWriteBreakType(void *stream, int width, ENCBreakType breakType,
                        BOOL valid);
 
 #ifdef __cplusplus

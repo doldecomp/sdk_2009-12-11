@@ -5,12 +5,12 @@
  * headers
  */
 
-#include <uchar.h>
+#include <uchar.h> // char16_t
 
-#include <decomp.h>
+#include <revolution/types.h>
 
 #include <revolution/enc.h>
-#include "encutility.h"
+#include "encmacros.h"
 
 /*******************************************************************************
  * external globals
@@ -20,19 +20,26 @@
 	extern "C" {
 #endif
 
+// .rodata
+extern char16_t const enc_tbl_kr_mbtowc1[];
+extern char16_t const enc_tbl_kr_mbtowc2[];
+extern byte_t const enc_tbl_kr_wctomb1[];
+extern byte_t const enc_tbl_kr_wctomb2[];
+extern u16 const enc_offset_kr1[];
+extern u16 const enc_offset_kr2[];
+extern char16_t const enc_tbl_uhc_mbtowc[];
+extern u16 const enc_offset_uhc[];
+
+// .sdata
+extern BOOL enc_tbl_kr_loaded;
+extern BOOL enc_tbl_uhc_loaded;
+
 /*******************************************************************************
  * functions
  */
 
-ENCResult ENCiConvertStringUhcToUnicode(char16_t *dst, unk4_t signed *dstSize,
-                                        unsigned char const *src,
-                                        unk4_t signed *srcSize,
-                                        ENCBreakType breakType);
-ENCResult ENCiConvertStringUnicodeToUhc(unsigned char *dst,
-                                        unk4_t signed *dstSize,
-                                        char16_t const *src,
-                                        unk4_t signed *srcSize,
-                                        ENCBreakType breakType);
+DECLARE_PRIVATE_ENC_FUNCTION_TO_UTF16(Uhc)
+DECLARE_PRIVATE_ENC_FUNCTION_FROM_UTF16(Uhc)
 
 #ifdef __cplusplus
 	}
