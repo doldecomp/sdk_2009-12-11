@@ -1,6 +1,10 @@
 #ifndef MACROS_H
 #define MACROS_H
 
+// macro helpers
+
+#define SWALLOW_SEMICOLON()						__static_assert(true, "")
+
 // keywords
 
 #ifndef alignas
