@@ -2,7 +2,7 @@
 #define __STDC_STRING_H__
 
 #include <__internal/__size_t.h>
-#include <__internal/__NULL.h>
+#include <__internal/__NULL.h> // IWYU pragma: export
 
 #ifdef __cplusplus
 	extern "C" {

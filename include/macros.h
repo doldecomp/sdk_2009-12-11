@@ -37,9 +37,11 @@
 #define MIN_EQ(x, y)								((x) <= (y) ? (x) : (y))
 #define CLAMP(x, low, high)							((x) <  (low) ? (low) : (x) > (high) ? (high) : (x))
 
+
 #define ROUND_UP(x, align)							(((x) + ((align) - 1)) & -(align))
 #define ROUND_DOWN(x, align)						( (x)                  & -(align))
-#define ROUND_DOWN_PTR(x, align)					((void *)((unsigned long)(x) & -(align)))
+#define ROUND_UP_PTR(x, align)						((void *)((((unsigned long)(x)) + ((align) - 1)) & -(align)))
+#define ROUND_DOWN_PTR(x, align)					((void *)(  (unsigned long)(x)                   & -(align)))
 
 #define POINTER_ADD_TYPE(type_, ptr_, offset_)		((type_)((unsigned long)(ptr_) + (unsigned long)(offset_)))
 #define POINTER_ADD(ptr_, offset_)					POINTER_ADD_TYPE(__typeof__(ptr_), ptr_, offset_)

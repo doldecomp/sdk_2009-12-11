@@ -5,7 +5,10 @@
 
 #include <revolution/types.h>
 
-#include <context_bte.h>
+// TODO: migrate all code using this context into using normal bte headers
+#if !defined(IS_BTE)
+# include <context_bte.h>
+#endif
 
 #ifdef __cplusplus
 	extern "C" {
@@ -134,6 +137,7 @@ struct OSContext
 	f64			psf[32];			// size 0x100, offset 0x1c8
 }; // size 0x2c8
 
+void OSSwitchFiber(OSFiber *fiber, void *stack);
 void OSSwitchFiberEx(register_t arg0, register_t arg1, register_t arg2,
                      register_t arg3, OSFiber *fiber, void *stack);
 
@@ -330,6 +334,7 @@ char const *OSGetFontWidth(char const *str, s32 *widthOut);
 char const *OSGetFontTexture(char const *str, void **texOut, s32 *xOut,
                              s32 *yOut, s32 *widthOut);
 
+BOOL OSEnableInterrupts(void);
 BOOL OSDisableInterrupts(void);
 BOOL OSRestoreInterrupts(BOOL status);
 
@@ -2070,6 +2075,10 @@ inline void GXTexCoord2f32(f32 u, f32 v)
 
 // IPC
 
+typedef s32 IPCResult;
+
+IPCResult IPCCltInit(void);
+
 extern u32 volatile __IPCRegs[] AT_ADDRESS(0xcd000000);
 
 inline u32 ACRReadReg(u32 reg)
@@ -2311,6 +2320,7 @@ enum SCSensorBarPos_et
 	SC_SENSOR_BAR_TOP,
 };
 
+#if !defined(IS_BTE) // irrelevant, and causes errors right now
 typedef struct SCBtDeviceInfo // basic dev info?
 {
 	BD_ADDR					devAddr;	// size 0x06, offset 0x00
@@ -2353,6 +2363,7 @@ void SCGetBtDeviceInfoArray(SCBtDeviceInfoArray *array);
 BOOL SCSetBtDeviceInfoArray(SCBtDeviceInfoArray const *array);
 void SCGetBtCmpDevInfoArray(SCBtCmpDevInfoArray *array);
 BOOL SCSetBtCmpDevInfoArray(SCBtCmpDevInfoArray const *array);
+#endif
 u32 SCGetBtDpdSensibility(void);
 BOOL SCSetBtDpdSensibility(u8 sens);
 u8 SCGetWpadMotorMode(void);
@@ -2377,6 +2388,27 @@ enum SCProductGameRegion_et
 };
 
 SCProductGameRegion SCGetProductGameRegion(void);
+
+// USB
+
+typedef void (*USBCallback)(IPCResult result, void *arg);
+
+IPCResult IUSB_OpenLib(void);
+IPCResult IUSB_CloseLib(void);
+IPCResult IUSB_OpenDeviceIds(char const *interface, u16 vid, u16 pid,
+                             IPCResult *resultOut);
+IPCResult IUSB_CloseDeviceAsync(s32 fd, USBCallback callback,
+                                void *callbackArg);
+IPCResult IUSB_ReadIntrMsgAsync(s32 fd, u32 endpoint, u32 length, void *buffer,
+                                USBCallback callback, void *callbackArg);
+IPCResult IUSB_ReadBlkMsgAsync(s32 fd, u32 endpoint, u32 length, void *buffer,
+                               USBCallback callback, void *callbackArg);
+IPCResult IUSB_WriteBlkMsgAsync(s32 fd, u32 endpoint, u32 length,
+                                void const *buffer, USBCallback callback,
+                                void *callbackArg);
+IPCResult IUSB_WriteCtrlMsgAsync(s32 fd, u8 requestType, u8 request, u16 value,
+                                 u16 index, u16 length, void *buffer,
+                                 USBCallback callback, void *callbackArg);
 
 // VI
 

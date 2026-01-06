@@ -31,7 +31,10 @@ typedef int						BOOL;
 #define true					1
 #define false					0
 
+#undef TRUE
 #define TRUE					true
+
+#undef FALSE
 #define FALSE					false
 
 // Character types (C++ only)
