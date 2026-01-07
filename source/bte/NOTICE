@@ -1,7 +1,17 @@
-This NOTICE is for informational purposes only. All files are still bound by any
-licenses they contain, and anything in this file does not change that.
+This NOTICE is for informational purposes only. All files in this library are
+still bound by any license they contain, and any text in this file does not
+change that.
 
----
+--------------------------------------------------------------------------------
+
+It was (and still is) my preference that nobody would use this code in their
+decompilation until I finish cleaning it up. I strongly dislike my unfinished
+work being used. (This unfinished work was released because someone asked about
+how the Wii handles connections to the Wiimote at a low level, for work
+unrelated to decompilation, of which the code of the Wii's Bluetooth subsystem
+was relevant.)
+
+--------------------------------------------------------------------------------
 
 This decompilation of the BTE library contains code from bluedroid
 <https://android.googlesource.com/platform/external/bluetooth/bluedroid>,
